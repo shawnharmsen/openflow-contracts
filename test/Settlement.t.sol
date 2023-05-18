@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import "forge-std/Test.sol";
 import {ERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import {Settlement} from "../src/Settlement.sol";
+import {ISettlement} from "../../src/interfaces/ISettlement.sol";
 import {Solver} from "../src/Solver.sol";
 import {SigUtils} from "../test/utils/SigUtils.sol";
 
@@ -25,7 +26,7 @@ contract SettlementTest is Test {
     function setUp() public {
         // Configuration
         settlement = new Settlement();
-        solver = new Solver();
+        solver = new Solver(address(settlement));
         sigUtils = new SigUtils(
             settlement.domainSeparator(),
             settlement.TYPE_HASH()
@@ -81,12 +82,11 @@ contract SettlementTest is Test {
         );
 
         // Build order
-        Settlement.Order memory order = Settlement.Order({
+        ISettlement.Order memory order = ISettlement.Order({
             signature: hex"00",
-            executor: address(solver),
             data: solverData,
-            payload: Settlement.Payload({
-                signingScheme: Settlement.SigningScheme.Eip712,
+            payload: ISettlement.Payload({
+                signingScheme: ISettlement.SigningScheme.Eip712,
                 fromToken: address(tokenA),
                 toToken: address(tokenB),
                 fromAmount: swapAmount,
@@ -105,7 +105,7 @@ contract SettlementTest is Test {
         order.signature = signature;
 
         // Execute order
-        settlement.executeOrder(order);
+        solver.executeOrder(order);
 
         // Expectations after swap
         userATokenABalanceBefore = tokenA.balanceOf(userA);

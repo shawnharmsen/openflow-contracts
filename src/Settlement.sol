@@ -40,7 +40,6 @@ contract Settlement {
 
     struct Order {
         bytes signature;
-        address executor;
         bytes data;
         Payload payload;
     }
@@ -108,12 +107,12 @@ contract Settlement {
         _verify(order);
         ERC20(order.payload.fromToken).safeTransferFrom(
             order.payload.sender,
-            order.executor,
+            msg.sender,
             order.payload.fromAmount
         );
-        IResolver(order.executor).hook(order.data);
+        IResolver(msg.sender).hook(order.data);
         ERC20(order.payload.toToken).safeTransferFrom(
-            order.executor,
+            msg.sender,
             order.payload.recipient,
             order.payload.toAmount
         );
