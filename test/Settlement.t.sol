@@ -129,5 +129,31 @@ contract SettlementTest is Test {
             userATokenBBalanceBefore == swapAmount,
             "User A should now have token B"
         );
+
+        // Expect revert if user solver to submit a duplicate order
+        vm.expectRevert("Nonce already used");
+        solver.executeOrder(order);
+
+        // Increase nonce and try again
+        order.payload.nonce++;
+
+        // Sign order
+        digest = sigUtils.buildDigest(order.payload);
+        (v, r, s) = vm.sign(_USER_A_PRIVATE_KEY, digest);
+        signature = abi.encodePacked(r, s, v);
+        order.signature = signature;
+
+        // Increase timestamp
+        vm.warp(block.timestamp + 1);
+
+        // Expect order to expire
+        vm.expectRevert("Deadline expired");
+        solver.executeOrder(order);
+
+        // Decrease timestamp
+        vm.warp(block.timestamp - 1);
+
+        // Order should execute now
+        solver.executeOrder(order);
     }
 }

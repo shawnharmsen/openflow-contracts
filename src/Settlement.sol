@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BUSL 1.1
 pragma solidity 0.8.19;
 
 /*******************************************************
@@ -128,11 +128,11 @@ contract Settlement {
             order.signature,
             digest
         );
+        require(signatory == order.payload.sender, "Invalid signer");
+        require(block.timestamp <= order.payload.deadline, "Deadline expired");
         require(
-            signatory == order.payload.sender &&
-                block.timestamp <= order.payload.deadline &&
-                order.payload.nonce == nonces[signatory]++,
-            "Payload verification failed"
+            order.payload.nonce == nonces[signatory]++,
+            "Nonce already used"
         );
     }
 
