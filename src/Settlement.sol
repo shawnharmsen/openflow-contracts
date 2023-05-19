@@ -57,15 +57,13 @@ contract Settlement {
      *******************************************************/
     bytes32 private constant _DOMAIN_NAME = keccak256("Blockswap");
     bytes32 private constant _DOMAIN_VERSION = keccak256("v0.0.1");
-    bytes32 private constant _DOMAIN_SALT =
-        keccak256(abi.encodePacked(_DOMAIN_NAME, "_", _DOMAIN_VERSION));
+    bytes32 private constant _DOMAIN_TYPE_HASH =
+        keccak256(
+            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+        );
     bytes32 public constant TYPE_HASH =
         keccak256(
             "Swap(uint8 signingScheme,address fromToken,address toToken,uint256 fromAmount,uint256 toAmount,address sender,address recipient,uint256 nonce,uint256 deadline)"
-        );
-    bytes32 private constant _DOMAIN_TYPE_HASH =
-        keccak256(
-            "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract,bytes32 salt)"
         );
     uint256 private constant _ECDSA_SIGNATURE_LENGTH = 65;
     bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;
@@ -113,8 +111,7 @@ contract Settlement {
                 _DOMAIN_NAME,
                 _DOMAIN_VERSION,
                 block.chainid,
-                address(this),
-                _DOMAIN_SALT
+                address(this)
             )
         );
     }
