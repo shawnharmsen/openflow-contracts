@@ -24,6 +24,9 @@ contract SettlementTest is Test {
     SigUtils public sigUtils;
 
     function setUp() public {
+        // Begin as User A
+        startHoax(userA);
+
         // Configuration
         settlement = new Settlement();
         solver = new Solver(address(settlement));
@@ -39,9 +42,6 @@ contract SettlementTest is Test {
 
         // Solver gets 100 Token B
         deal(address(tokenB), address(solver), INITIAL_TOKEN_AMOUNT);
-
-        // Begin as User A
-        startHoax(userA);
 
         // Grant settlement infinite allowance
         tokenA.approve(address(settlement), type(uint256).max);
@@ -101,8 +101,7 @@ contract SettlementTest is Test {
         // Sign order
         bytes32 digest = sigUtils.buildDigest(order.payload);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(_USER_A_PRIVATE_KEY, digest);
-        bytes memory signature = abi.encodePacked(r, s, v);
-        order.signature = signature;
+        order.signature = abi.encodePacked(r, s, v);
 
         // Execute order
         solver.executeOrder(order);
@@ -140,8 +139,7 @@ contract SettlementTest is Test {
         // Sign order
         digest = sigUtils.buildDigest(order.payload);
         (v, r, s) = vm.sign(_USER_A_PRIVATE_KEY, digest);
-        signature = abi.encodePacked(r, s, v);
-        order.signature = signature;
+        order.signature = abi.encodePacked(r, s, v);
 
         // Increase timestamp
         vm.warp(block.timestamp + 1);
