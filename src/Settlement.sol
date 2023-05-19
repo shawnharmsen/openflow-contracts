@@ -24,7 +24,7 @@ contract Settlement {
         keccak256(abi.encodePacked(_DOMAIN_NAME, "_", _DOMAIN_VERSION));
     bytes32 public constant TYPE_HASH =
         keccak256(
-            "Swap(SigningScheme signingScheme,address fromToken,address toToken,uint fromAmount,uint toAmount,address sender,address recipient,uint256 nonce,uint256 deadline,bytes data)"
+            "Swap(uint8 signingScheme,address fromToken,address toToken,uint256 fromAmount,uint256 toAmount,address sender,address recipient,uint256 nonce,uint256 deadline)"
         );
     bytes32 private constant _DOMAIN_TYPE_HASH =
         keccak256(
