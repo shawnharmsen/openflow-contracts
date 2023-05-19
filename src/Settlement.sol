@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
-import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
-import {ERC20} from "solmate/tokens/ERC20.sol";
+
+/*******************************************************
+ *                     Interfaces
+ *******************************************************/
+interface IERC20 {
+    function transferFrom(address from, address to, uint256 amount) external;
+}
 
 interface IResolver {
     function hook(bytes calldata data) external;
@@ -12,6 +17,38 @@ interface EIP1271Verifier {
         bytes32 _hash,
         bytes calldata _signature
     ) external view returns (bytes4 magicValue);
+}
+
+/*******************************************************
+ *                     Solmate Library
+ *******************************************************/
+library SafeTransferLib {
+    function safeTransferFrom(
+        IERC20 token,
+        address from,
+        address to,
+        uint256 amount
+    ) internal {
+        bool success;
+        assembly {
+            let freeMemoryPointer := mload(0x40)
+            mstore(
+                freeMemoryPointer,
+                0x23b872dd00000000000000000000000000000000000000000000000000000000
+            )
+            mstore(add(freeMemoryPointer, 4), from)
+            mstore(add(freeMemoryPointer, 36), to)
+            mstore(add(freeMemoryPointer, 68), amount)
+            success := and(
+                or(
+                    and(eq(mload(0), 1), gt(returndatasize(), 31)),
+                    iszero(returndatasize())
+                ),
+                call(gas(), token, 0, freeMemoryPointer, 100, 0, 32)
+            )
+        }
+        require(success, "TRANSFER_FROM_FAILED");
+    }
 }
 
 contract Settlement {
@@ -83,7 +120,7 @@ contract Settlement {
         );
     }
 
-    using SafeTransferLib for ERC20;
+    using SafeTransferLib for IERC20;
 
     /*******************************************************
      *                   Settlement Logic
@@ -105,13 +142,13 @@ contract Settlement {
 
     function executeOrder(Order calldata order) public {
         _verify(order);
-        ERC20(order.payload.fromToken).safeTransferFrom(
+        IERC20(order.payload.fromToken).safeTransferFrom(
             order.payload.sender,
             msg.sender,
             order.payload.fromAmount
         );
         IResolver(msg.sender).hook(order.data);
-        ERC20(order.payload.toToken).safeTransferFrom(
+        IERC20(order.payload.toToken).safeTransferFrom(
             msg.sender,
             order.payload.recipient,
             order.payload.toAmount
