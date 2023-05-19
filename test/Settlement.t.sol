@@ -130,7 +130,7 @@ contract SettlementTest is Test {
             "User A should now have token B"
         );
 
-        // Expect revert if user solver to submit a duplicate order
+        // Expect revert if solver submits a duplicate order
         vm.expectRevert("Nonce already used");
         solver.executeOrder(order);
 
