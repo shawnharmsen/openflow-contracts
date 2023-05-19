@@ -74,7 +74,6 @@ contract Settlement {
     /*******************************************************
      *                       Types
      *******************************************************/
-
     struct Order {
         bytes signature;
         bytes data;
@@ -158,7 +157,6 @@ contract Settlement {
     /*******************************************************
      *                   Signature Logic
      *******************************************************/
-
     function recoverSigner(
         SigningScheme signingScheme,
         bytes calldata signature,
