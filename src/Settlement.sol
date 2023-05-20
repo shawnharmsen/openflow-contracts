@@ -139,20 +139,23 @@ contract Settlement {
     }
 
     function executeOrder(Order calldata order) public {
+        Payload memory payload = order.payload;
         _verify(order);
-        IERC20(order.payload.fromToken).safeTransferFrom(
-            order.payload.sender,
+        IERC20(payload.fromToken).safeTransferFrom(
+            payload.sender,
             msg.sender,
-            order.payload.fromAmount
+            payload.fromAmount
         );
-        uint256 outputTokenBalanceBefore = IERC20(order.payload.toToken)
-            .balanceOf(order.payload.recipient);
+        uint256 outputTokenBalanceBefore = IERC20(payload.toToken).balanceOf(
+            payload.recipient
+        );
         ISolver(msg.sender).hook(order.data);
-        uint256 outputTokenBalanceAfter = IERC20(order.payload.toToken)
-            .balanceOf(order.payload.recipient);
+        uint256 outputTokenBalanceAfter = IERC20(payload.toToken).balanceOf(
+            payload.recipient
+        );
         require(
             outputTokenBalanceAfter - outputTokenBalanceBefore >=
-                order.payload.toAmount,
+                payload.toAmount,
             "Order not filled"
         );
     }
