@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import {ERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import {Settlement} from "../src/Settlement.sol";
 import {ISettlement} from "../src/interfaces/ISettlement.sol";
-import {Solver} from "../src/Solver.sol";
+import {Solver, Swapper} from "../src/Solver.sol";
 import {SigUtils} from "../test/utils/SigUtils.sol";
 
 contract SettlementTest is Test {
@@ -19,6 +19,7 @@ contract SettlementTest is Test {
     // Storage
     Settlement public settlement;
     Solver public solver;
+    Swapper public swapper;
     ERC20 public tokenA;
     ERC20 public tokenB;
     SigUtils public sigUtils;
@@ -30,6 +31,7 @@ contract SettlementTest is Test {
         // Configuration
         settlement = new Settlement();
         solver = new Solver(address(settlement));
+        swapper = new Swapper();
         sigUtils = new SigUtils(
             settlement.domainSeparator(),
             settlement.TYPE_HASH()
@@ -41,7 +43,7 @@ contract SettlementTest is Test {
         deal(address(tokenA), userA, INITIAL_TOKEN_AMOUNT);
 
         // Solver gets 100 Token B
-        deal(address(tokenB), address(solver), INITIAL_TOKEN_AMOUNT);
+        deal(address(tokenB), address(swapper), INITIAL_TOKEN_AMOUNT);
 
         // Grant settlement infinite allowance
         tokenA.approve(address(settlement), type(uint256).max);
@@ -51,15 +53,15 @@ contract SettlementTest is Test {
         // Expectations
         uint256 userATokenABalanceBefore = tokenA.balanceOf(userA);
         uint256 userATokenBBalanceBefore = tokenB.balanceOf(userA);
-        uint256 solverTokenABalanceBefore = tokenA.balanceOf(address(solver));
-        uint256 solverTokenBBalanceBefore = tokenB.balanceOf(address(solver));
+        uint256 swapperTokenABalanceBefore = tokenA.balanceOf(address(swapper));
+        uint256 swapperTokenBBalanceBefore = tokenB.balanceOf(address(swapper));
         require(
-            solverTokenABalanceBefore == 0,
-            "Solver should not have token A"
+            swapperTokenABalanceBefore == 0,
+            "Swapper should not have token A"
         );
         require(
-            solverTokenBBalanceBefore == INITIAL_TOKEN_AMOUNT,
-            "Solver should have initial amount of tokens"
+            swapperTokenBBalanceBefore == INITIAL_TOKEN_AMOUNT,
+            "Swapper should have initial amount of tokens"
         );
 
         require(
@@ -72,16 +74,23 @@ contract SettlementTest is Test {
         );
 
         // Solver data (optional, up to Solver to implement)
-        uint256 swapAmount = 10 * 1e18;
+        uint256 fromAmount = 10 * 1e18;
+        uint256 toAmount = 10 * 1e18;
         bytes memory solverData = abi.encode(
             Solver.SolverData({
                 fromToken: tokenA,
                 toToken: tokenB,
-                fromAmount: swapAmount,
-                toAmount: swapAmount,
+                fromAmount: fromAmount,
+                toAmount: toAmount,
                 recipient: userA,
-                target: address(solver),
-                data: ""
+                target: address(swapper),
+                data: abi.encodeWithSignature(
+                    "swap(address,address,uint256,uint256)",
+                    tokenA,
+                    tokenB,
+                    fromAmount,
+                    toAmount
+                )
             })
         );
 
@@ -93,8 +102,8 @@ contract SettlementTest is Test {
                 signingScheme: ISettlement.SigningScheme.Eip712,
                 fromToken: address(tokenA),
                 toToken: address(tokenB),
-                fromAmount: swapAmount,
-                toAmount: swapAmount,
+                fromAmount: fromAmount,
+                toAmount: toAmount,
                 sender: userA,
                 recipient: userA,
                 nonce: 0,
@@ -113,23 +122,23 @@ contract SettlementTest is Test {
         // Expectations after swap
         userATokenABalanceBefore = tokenA.balanceOf(userA);
         userATokenBBalanceBefore = tokenB.balanceOf(userA);
-        solverTokenABalanceBefore = tokenA.balanceOf(address(solver));
-        solverTokenBBalanceBefore = tokenB.balanceOf(address(solver));
+        swapperTokenABalanceBefore = tokenA.balanceOf(address(swapper));
+        swapperTokenBBalanceBefore = tokenB.balanceOf(address(swapper));
         require(
-            solverTokenABalanceBefore == swapAmount,
-            "Solver should now have token A"
+            swapperTokenABalanceBefore == fromAmount,
+            "Swapper should now have token A"
         );
         require(
-            solverTokenBBalanceBefore == INITIAL_TOKEN_AMOUNT - swapAmount,
-            "Solver should now have less token B"
+            swapperTokenBBalanceBefore == INITIAL_TOKEN_AMOUNT - toAmount,
+            "Swapper should now have less token B"
         );
 
         require(
-            userATokenABalanceBefore == INITIAL_TOKEN_AMOUNT - swapAmount,
+            userATokenABalanceBefore == INITIAL_TOKEN_AMOUNT - fromAmount,
             "User A should now have less token A"
         );
         require(
-            userATokenBBalanceBefore == swapAmount,
+            userATokenBBalanceBefore == toAmount,
             "User A should now have token B"
         );
 

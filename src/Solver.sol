@@ -3,9 +3,21 @@ pragma solidity 0.8.19;
 import {ERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import {ISettlement} from "./interfaces/ISettlement.sol";
 
+contract Swapper {
+    function swap(
+        address tokenA,
+        address tokenB,
+        uint256 amountIn,
+        uint256 amountOut
+    ) external {
+        ERC20(tokenA).transferFrom(msg.sender, address(this), amountIn);
+        ERC20(tokenB).transfer(msg.sender, amountOut);
+    }
+}
+
 contract Solver {
     ISettlement public settlement;
-    address owner;
+    address public owner;
 
     struct SolverData {
         ERC20 fromToken;
@@ -40,7 +52,7 @@ contract Solver {
         // Perform swap
         solverData.target.call(solverData.data);
 
-        // Allow settlement to spend token B
+        // Send token B to recipient
         solverData.toToken.transfer(solverData.recipient, solverData.toAmount);
     }
 }
