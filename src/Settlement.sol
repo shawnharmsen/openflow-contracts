@@ -10,7 +10,7 @@ interface IERC20 {
     function balanceOf(address account) external view returns (uint256);
 }
 
-interface IResolver {
+interface ISolver {
     function hook(bytes calldata data) external;
 }
 
@@ -147,7 +147,7 @@ contract Settlement {
         );
         uint256 outputTokenBalanceBefore = IERC20(order.payload.toToken)
             .balanceOf(order.payload.recipient);
-        IResolver(msg.sender).hook(order.data);
+        ISolver(msg.sender).hook(order.data);
         uint256 outputTokenBalanceAfter = IERC20(order.payload.toToken)
             .balanceOf(order.payload.recipient);
         require(
