@@ -77,6 +77,7 @@ contract Settlement {
     struct Order {
         bytes signature;
         bytes data;
+        address solver;
         Payload payload;
     }
 
@@ -138,6 +139,15 @@ contract Settlement {
         );
     }
 
+    event OrderExecuted(
+        address solver,
+        address sender,
+        address fromToken,
+        address toToken,
+        uint256 fromAmount,
+        uint256 toAmount
+    );
+
     function executeOrder(Order calldata order) public {
         Payload memory payload = order.payload;
         _verify(order);
@@ -157,6 +167,14 @@ contract Settlement {
             outputTokenBalanceAfter - outputTokenBalanceBefore >=
                 payload.toAmount,
             "Order not filled"
+        );
+        emit OrderExecuted(
+            order.solver,
+            payload.sender,
+            payload.fromToken,
+            payload.toToken,
+            payload.fromAmount,
+            payload.toAmount
         );
     }
 
