@@ -116,6 +116,9 @@ contract SettlementTest is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(_USER_A_PRIVATE_KEY, digest);
         order.signature = abi.encodePacked(r, s, v);
 
+        // Change to user B
+        changePrank(userB);
+
         // Execute order
         executor.executeOrder(order);
 
