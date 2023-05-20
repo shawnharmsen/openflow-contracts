@@ -15,98 +15,34 @@ contract Swapper {
     }
 }
 
-contract Solver {
-    // Storage
-    address public owner;
+contract OrderExecutor {
     ISettlement public settlement;
 
-    // Types
-    struct SolverData {
+    struct Data {
         ERC20 fromToken;
         ERC20 toToken;
         uint256 fromAmount;
         uint256 toAmount;
         address recipient;
         address target;
-        bytes data;
+        bytes payload;
     }
 
-    enum Operation {
-        Call,
-        DelegateCall
-    }
-
-    // Initialization
     constructor(address _settlement) {
         settlement = ISettlement(_settlement);
-        owner = msg.sender;
     }
 
-    // Order execution
-    function executeOrder(ISettlement.Order calldata order) public onlyOwner {
-        require(owner == msg.sender, "Only owner");
+    function executeOrder(ISettlement.Order calldata order) public {
         settlement.executeOrder(order);
+        ERC20 toToken = ERC20(order.payload.toToken);
+        toToken.transfer(msg.sender, toToken.balanceOf(address(this)));
     }
 
-    // Generic hook for executing arbitrary calldata
     function hook(bytes memory data) external {
         require(msg.sender == address(settlement));
-
-        // Decode data
-        SolverData memory solverData = abi.decode(data, (SolverData));
-
-        // Allow target to spend input token
-        solverData.fromToken.approve(solverData.target, solverData.fromAmount);
-
-        // Perform swap
-        solverData.target.call(solverData.data);
-
-        // Send token B to recipient
-        solverData.toToken.transfer(solverData.recipient, solverData.toAmount);
-    }
-
-    // Allow arbitrary execution by owner
-    function execute(
-        address to,
-        uint256 value,
-        bytes calldata data,
-        Operation operation
-    ) external returns (bool success) {
-        require(owner == msg.sender, "Only owner");
-        if (operation == Operation.Call) {
-            assembly {
-                success := call(
-                    gas(),
-                    to,
-                    value,
-                    add(data.offset, 0x20),
-                    mload(data.offset),
-                    0,
-                    0
-                )
-            }
-        } else if (operation == Operation.DelegateCall) {
-            assembly {
-                success := delegatecall(
-                    gas(),
-                    to,
-                    add(data.offset, 0x20),
-                    mload(data.offset),
-                    0,
-                    0
-                )
-            }
-        }
-        assembly {
-            let returnDataSize := returndatasize()
-            returndatacopy(0, 0, returnDataSize)
-            switch success
-            case 0 {
-                revert(0, returnDataSize)
-            }
-            default {
-                return(0, returnDataSize)
-            }
-        }
+        Data memory data = abi.decode(data, (Data));
+        data.fromToken.approve(data.target, data.fromAmount);
+        data.target.call(data.payload);
+        data.toToken.transfer(data.recipient, data.toAmount);
     }
 }

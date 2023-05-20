@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import {ERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import {Settlement} from "../src/Settlement.sol";
 import {ISettlement} from "../src/interfaces/ISettlement.sol";
-import {Solver, Swapper} from "../src/Solver.sol";
+import {Swapper, OrderExecutor} from "../src/Solver.sol";
 import {SigUtils} from "../test/utils/SigUtils.sol";
 
 contract SettlementTest is Test {
@@ -18,8 +18,8 @@ contract SettlementTest is Test {
 
     // Storage
     Settlement public settlement;
-    Solver public solver;
     Swapper public swapper;
+    OrderExecutor public executor;
     ERC20 public tokenA;
     ERC20 public tokenB;
     SigUtils public sigUtils;
@@ -30,7 +30,7 @@ contract SettlementTest is Test {
 
         // Configuration
         settlement = new Settlement();
-        solver = new Solver(address(settlement));
+        executor = new OrderExecutor(address(settlement));
         swapper = new Swapper();
         sigUtils = new SigUtils(
             settlement.domainSeparator(),
@@ -42,10 +42,10 @@ contract SettlementTest is Test {
         // Alice gets 100 Token A
         deal(address(tokenA), userA, INITIAL_TOKEN_AMOUNT);
 
-        // Solver gets 100 Token B
+        // Swapper gets 100 Token B
         deal(address(tokenB), address(swapper), INITIAL_TOKEN_AMOUNT);
 
-        // Grant settlement infinite allowance
+        // Grant settlesment infinite allowance
         tokenA.approve(address(settlement), type(uint256).max);
     }
 
@@ -74,17 +74,17 @@ contract SettlementTest is Test {
         );
 
         // Solver data (optional, up to Solver to implement)
-        uint256 fromAmount = 10 * 1e18;
-        uint256 toAmount = 10 * 1e18;
+        uint256 fromAmount = 1 * 1e18;
+        uint256 toAmount = 1 * 1e18;
         bytes memory solverData = abi.encode(
-            Solver.SolverData({
+            OrderExecutor.Data({
                 fromToken: tokenA,
                 toToken: tokenB,
                 fromAmount: fromAmount,
                 toAmount: toAmount,
                 recipient: userA,
                 target: address(swapper),
-                data: abi.encodeWithSignature(
+                payload: abi.encodeWithSignature(
                     "swap(address,address,uint256,uint256)",
                     tokenA,
                     tokenB,
@@ -117,7 +117,7 @@ contract SettlementTest is Test {
         order.signature = abi.encodePacked(r, s, v);
 
         // Execute order
-        solver.executeOrder(order);
+        executor.executeOrder(order);
 
         // Expectations after swap
         userATokenABalanceBefore = tokenA.balanceOf(userA);
@@ -144,7 +144,7 @@ contract SettlementTest is Test {
 
         // Expect revert if solver submits a duplicate order
         vm.expectRevert("Nonce already used");
-        solver.executeOrder(order);
+        executor.executeOrder(order);
 
         // Increase nonce and try again
         order.payload.nonce++;
@@ -159,12 +159,12 @@ contract SettlementTest is Test {
 
         // Expect order to expire
         vm.expectRevert("Deadline expired");
-        solver.executeOrder(order);
+        executor.executeOrder(order);
 
         // Decrease timestamp
         vm.warp(block.timestamp - 1);
 
         // Order should execute now
-        solver.executeOrder(order);
+        executor.executeOrder(order);
     }
 }
