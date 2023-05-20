@@ -16,9 +16,11 @@ contract Swapper {
 }
 
 contract Solver {
-    ISettlement public settlement;
+    // Storage
     address public owner;
+    ISettlement public settlement;
 
+    // Types
     struct SolverData {
         ERC20 fromToken;
         ERC20 toToken;
@@ -29,17 +31,24 @@ contract Solver {
         bytes data;
     }
 
+    enum Operation {
+        Call,
+        DelegateCall
+    }
+
+    // Initialization
     constructor(address _settlement) {
         settlement = ISettlement(_settlement);
         owner = msg.sender;
     }
 
-    function executeOrder(ISettlement.Order calldata order) public {
-        require(owner == msg.sender);
+    // Order execution
+    function executeOrder(ISettlement.Order calldata order) public onlyOwner {
+        require(owner == msg.sender, "Only owner");
         settlement.executeOrder(order);
     }
 
-    // Example solver does one thing: swaps token A for token B and then allows settlement to spend the swapped tokens
+    // Generic hook for executing arbitrary calldata
     function hook(bytes memory data) external {
         require(msg.sender == address(settlement));
 
@@ -54,5 +63,50 @@ contract Solver {
 
         // Send token B to recipient
         solverData.toToken.transfer(solverData.recipient, solverData.toAmount);
+    }
+
+    // Allow arbitrary execution by owner
+    function execute(
+        address to,
+        uint256 value,
+        bytes calldata data,
+        Operation operation
+    ) external returns (bool success) {
+        require(owner == msg.sender, "Only owner");
+        if (operation == Operation.Call) {
+            assembly {
+                success := call(
+                    gas(),
+                    to,
+                    value,
+                    add(data.offset, 0x20),
+                    mload(data.offset),
+                    0,
+                    0
+                )
+            }
+        } else if (operation == Operation.DelegateCall) {
+            assembly {
+                success := delegatecall(
+                    gas(),
+                    to,
+                    add(data.offset, 0x20),
+                    mload(data.offset),
+                    0,
+                    0
+                )
+            }
+        }
+        assembly {
+            let returnDataSize := returndatasize()
+            returndatacopy(0, 0, returnDataSize)
+            switch success
+            case 0 {
+                revert(0, returnDataSize)
+            }
+            default {
+                return(0, returnDataSize)
+            }
+        }
     }
 }
