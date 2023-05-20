@@ -6,6 +6,8 @@ pragma solidity 0.8.19;
  *******************************************************/
 interface IERC20 {
     function transferFrom(address from, address to, uint256 amount) external;
+
+    function balanceOf(address account) external view returns (uint256);
 }
 
 interface IResolver {
@@ -143,11 +145,15 @@ contract Settlement {
             msg.sender,
             order.payload.fromAmount
         );
+        uint256 outputTokenBalanceBefore = IERC20(order.payload.toToken)
+            .balanceOf(order.payload.recipient);
         IResolver(msg.sender).hook(order.data);
-        IERC20(order.payload.toToken).safeTransferFrom(
-            msg.sender,
-            order.payload.recipient,
-            order.payload.toAmount
+        uint256 outputTokenBalanceAfter = IERC20(order.payload.toToken)
+            .balanceOf(order.payload.recipient);
+        require(
+            outputTokenBalanceAfter - outputTokenBalanceBefore >=
+                order.payload.toAmount,
+            "Order not filled"
         );
     }
 

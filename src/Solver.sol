@@ -8,9 +8,13 @@ contract Solver {
     address owner;
 
     struct SolverData {
-        ERC20 tokenA;
-        ERC20 tokenB;
-        uint256 swapAmount;
+        ERC20 fromToken;
+        ERC20 toToken;
+        uint256 fromAmount;
+        uint256 toAmount;
+        address recipient;
+        address target;
+        bytes data;
     }
 
     constructor(address _settlement) {
@@ -30,7 +34,13 @@ contract Solver {
         // Decode data
         SolverData memory solverData = abi.decode(data, (SolverData));
 
+        // Allow target to spend input token
+        solverData.fromToken.approve(solverData.target, solverData.fromAmount);
+
+        // Perform swap
+        solverData.target.call(solverData.data);
+
         // Allow settlement to spend token B
-        solverData.tokenB.approve(address(settlement), solverData.swapAmount);
+        solverData.toToken.transfer(solverData.recipient, solverData.toAmount);
     }
 }

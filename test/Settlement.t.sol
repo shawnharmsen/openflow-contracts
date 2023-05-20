@@ -75,15 +75,19 @@ contract SettlementTest is Test {
         uint256 swapAmount = 10 * 1e18;
         bytes memory solverData = abi.encode(
             Solver.SolverData({
-                tokenA: tokenA,
-                tokenB: tokenB,
-                swapAmount: swapAmount
+                fromToken: tokenA,
+                toToken: tokenB,
+                fromAmount: swapAmount,
+                toAmount: swapAmount,
+                recipient: userA,
+                target: address(solver),
+                data: ""
             })
         );
 
         // Build order
         ISettlement.Order memory order = ISettlement.Order({
-            signature: hex"00",
+            signature: hex"",
             data: solverData,
             payload: ISettlement.Payload({
                 signingScheme: ISettlement.SigningScheme.Eip712,
