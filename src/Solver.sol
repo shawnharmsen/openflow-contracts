@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 import {ERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
-import {ISettlement} from "./interfaces/ISettlement.sol";
+import {Settlement} from "./Settlement.sol";
 
 contract Swapper {
     function swap(
@@ -16,7 +16,7 @@ contract Swapper {
 }
 
 contract OrderExecutor {
-    ISettlement public settlement;
+    Settlement public settlement;
 
     struct Data {
         ERC20 fromToken;
@@ -29,10 +29,10 @@ contract OrderExecutor {
     }
 
     constructor(address _settlement) {
-        settlement = ISettlement(_settlement);
+        settlement = Settlement(_settlement);
     }
 
-    function executeOrder(ISettlement.Order calldata order) public {
+    function executeOrder(Settlement.Order calldata order) public {
         settlement.executeOrder(order);
         ERC20 toToken = ERC20(order.payload.toToken);
         toToken.transfer(msg.sender, toToken.balanceOf(address(this)));
