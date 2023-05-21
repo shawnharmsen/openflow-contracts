@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
-import "./interfaces/ISettlement.sol";
-import {ERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
-
 pragma solidity 0.8.19;
+
+import {ISettlement} from "./interfaces/ISettlement.sol";
+import {IERC20} from "./interfaces/IERC20.sol";
 
 contract OrderExecutor {
     ISettlement public settlement;
 
     struct Data {
-        ERC20 fromToken;
-        ERC20 toToken;
+        IERC20 fromToken;
+        IERC20 toToken;
         uint256 fromAmount;
         uint256 toAmount;
         address recipient;
@@ -23,7 +23,7 @@ contract OrderExecutor {
 
     function executeOrder(ISettlement.Order calldata order) public {
         settlement.executeOrder(order);
-        ERC20 toToken = ERC20(order.payload.toToken);
+        IERC20 toToken = IERC20(order.payload.toToken);
         toToken.transfer(msg.sender, toToken.balanceOf(address(this)));
     }
 

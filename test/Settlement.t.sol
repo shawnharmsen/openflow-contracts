@@ -4,10 +4,11 @@ pragma solidity ^0.8.19;
 import "forge-std/Test.sol";
 import {ERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import {Settlement} from "../src/Settlement.sol";
-import {ISettlement} from "../src/interfaces/ISettlement.sol";
 import {OrderExecutor} from "../src/OrderExecutor.sol";
 import {Swapper} from "../test/support/Swapper.sol";
 import {SigUtils} from "../test/utils/SigUtils.sol";
+import {ISettlement} from "../src/interfaces/ISettlement.sol";
+import {IERC20} from "../src/interfaces/IERC20.sol";
 
 contract SettlementTest is Test {
     // Constants
@@ -21,8 +22,8 @@ contract SettlementTest is Test {
     Settlement public settlement;
     Swapper public swapper;
     OrderExecutor public executor;
-    ERC20 public tokenA;
-    ERC20 public tokenB;
+    IERC20 public tokenA;
+    IERC20 public tokenB;
     SigUtils public sigUtils;
 
     function setUp() public {
@@ -37,8 +38,8 @@ contract SettlementTest is Test {
             settlement.domainSeparator(),
             settlement.TYPE_HASH()
         );
-        tokenA = new ERC20("Token A", "TOKEN_A");
-        tokenB = new ERC20("Token B", "TOKEN_B");
+        tokenA = IERC20(address(new ERC20("Token A", "TOKEN_A")));
+        tokenB = IERC20(address(new ERC20("Token B", "TOKEN_B")));
 
         // Alice gets 100 Token A
         deal(address(tokenA), userA, INITIAL_TOKEN_AMOUNT);

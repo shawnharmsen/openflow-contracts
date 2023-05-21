@@ -1,26 +1,7 @@
 // SPDX-License-Identifier: BUSL 1.1
 pragma solidity 0.8.19;
 import "./interfaces/ISettlement.sol";
-
-/*******************************************************
- *                     Interfaces
- *******************************************************/
-interface IERC20 {
-    function transferFrom(address from, address to, uint256 amount) external;
-
-    function balanceOf(address account) external view returns (uint256);
-}
-
-interface ISolver {
-    function hook(bytes calldata data) external;
-}
-
-interface EIP1271Verifier {
-    function isValidSignature(
-        bytes32 _hash,
-        bytes calldata _signature
-    ) external view returns (bytes4 magicValue);
-}
+import "./interfaces/IERC20.sol";
 
 /*******************************************************
  *                     Solmate Library
