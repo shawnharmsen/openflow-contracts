@@ -30,10 +30,7 @@ contract OrderExecutor {
     function hook(bytes memory orderData) external {
         require(msg.sender == address(settlement));
         Data memory executorData = abi.decode(orderData, (Data));
-        executorData.fromToken.approve(
-            executorData.target,
-            executorData.fromAmount
-        );
+        executorData.fromToken.approve(executorData.target, type(uint256).max); // Max approve to save gas --this contract should not hold tokens
         executorData.target.call(executorData.payload);
         executorData.toToken.transfer(
             executorData.recipient,

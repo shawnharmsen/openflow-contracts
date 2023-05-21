@@ -123,7 +123,7 @@ contract Settlement {
             "Order not filled"
         );
         emit OrderExecuted(
-            order.solver,
+            tx.origin,
             payload.sender,
             payload.fromToken,
             payload.toToken,

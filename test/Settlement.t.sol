@@ -100,7 +100,6 @@ contract SettlementTest is Test {
         ISettlement.Order memory order = ISettlement.Order({
             signature: hex"",
             data: solverData,
-            solver: userB,
             payload: ISettlement.Payload({
                 signingScheme: ISettlement.SigningScheme.Eip712,
                 fromToken: address(tokenA),

@@ -5,7 +5,6 @@ interface ISettlement {
     struct Order {
         bytes signature;
         bytes data;
-        address solver;
         Payload payload;
     }
 
