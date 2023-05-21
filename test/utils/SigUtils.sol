@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import "forge-std/Test.sol";
-import {Settlement} from "../../src/Settlement.sol";
+import {ISettlement} from "../../src/interfaces/ISettlement.sol";
 
 contract SigUtils {
     bytes32 public immutable domainSeparator;
@@ -15,7 +15,7 @@ contract SigUtils {
 
     // Build a digest using abi.encode instead of assembly to sanity check
     function buildDigest(
-        Settlement.Payload memory _payload
+        ISettlement.Payload memory _payload
     ) public view returns (bytes32 digest) {
         bytes32 structHash = keccak256(
             abi.encode(

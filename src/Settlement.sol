@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BUSL 1.1
 pragma solidity 0.8.19;
+import "./interfaces/ISettlement.sol";
 
 /*******************************************************
  *                     Interfaces
@@ -72,34 +73,6 @@ contract Settlement {
     bytes32 public immutable domainSeparator;
 
     /*******************************************************
-     *                       Types
-     *******************************************************/
-    struct Order {
-        bytes signature;
-        bytes data;
-        address solver;
-        Payload payload;
-    }
-
-    struct Payload {
-        SigningScheme signingScheme;
-        address fromToken;
-        address toToken;
-        uint256 fromAmount;
-        uint256 toAmount;
-        address sender;
-        address recipient;
-        uint256 nonce;
-        uint256 deadline;
-    }
-
-    enum SigningScheme {
-        Eip712,
-        Eip1271,
-        EthSign
-    }
-
-    /*******************************************************
      *                       Storage
      *******************************************************/
     mapping(address => uint256) public nonces;
@@ -124,7 +97,7 @@ contract Settlement {
     /*******************************************************
      *                   Settlement Logic
      *******************************************************/
-    function _verify(Order calldata order) internal {
+    function _verify(ISettlement.Order calldata order) internal {
         bytes32 digest = _buildDigest(order.payload);
         address signatory = recoverSigner(
             order.payload.signingScheme,
@@ -148,8 +121,8 @@ contract Settlement {
         uint256 toAmount
     );
 
-    function executeOrder(Order calldata order) public {
-        Payload memory payload = order.payload;
+    function executeOrder(ISettlement.Order calldata order) public {
+        ISettlement.Payload memory payload = order.payload;
         _verify(order);
         IERC20(payload.fromToken).safeTransferFrom(
             payload.sender,
@@ -182,13 +155,13 @@ contract Settlement {
      *                   Signature Logic
      *******************************************************/
     function recoverSigner(
-        SigningScheme signingScheme,
+        ISettlement.SigningScheme signingScheme,
         bytes calldata signature,
         bytes32 digest
     ) public view returns (address owner) {
-        if (signingScheme == SigningScheme.Eip712) {
+        if (signingScheme == ISettlement.SigningScheme.Eip712) {
             owner = _recoverEip712Signer(digest, signature);
-        } else if (signingScheme == SigningScheme.Eip1271) {
+        } else if (signingScheme == ISettlement.SigningScheme.Eip1271) {
             owner = _recoverEip1271Signer(digest, signature);
         } else {
             // signingScheme == Scheme.EthSign
@@ -250,7 +223,7 @@ contract Settlement {
     }
 
     function _buildDigest(
-        Payload memory payload
+        ISettlement.Payload memory payload
     ) internal view returns (bytes32 orderDigest) {
         bytes32 typeHash = TYPE_HASH;
         bytes32 structHash;
