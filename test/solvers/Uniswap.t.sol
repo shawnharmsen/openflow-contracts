@@ -13,15 +13,15 @@ import {UniswapV2Aggregator} from "../../src/solvers/UniswapV2Aggregator.sol";
 
 contract UniswapTest is Test {
     UniswapV2Aggregator public uniswapAggregator;
-    address public weth = 0x74b23882a30290451A17c44f4F05243b6b58C76d;
+
     address public router = 0xbE4fC72f8293F9D3512d58B969c98c3F676cB957;
     address public usdc = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
-    address public dai = 0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E;
+    address public weth = 0x74b23882a30290451A17c44f4F05243b6b58C76d;
     uint256 public amountIn = 1e6;
 
     function setUp() public {
         // Configuration
-        uniswapAggregator = new UniswapV2Aggregator(weth);
+        uniswapAggregator = new UniswapV2Aggregator();
 
         // Add dex
         uniswapAggregator.addDex(

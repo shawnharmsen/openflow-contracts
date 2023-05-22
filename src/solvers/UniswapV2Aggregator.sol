@@ -17,6 +17,8 @@ interface IUniswapV2Router {
         address to,
         uint deadline
     ) external;
+
+    function WETH() external view returns (address);
 }
 
 interface IERC20 {
@@ -32,8 +34,7 @@ contract UniswapV2Aggregator {
     /*******************************************************
      *                       Storage
      *******************************************************/
-    address public ownerAddress;
-    address public wethAddress;
+    address public ownerAddress = msg.sender;
     mapping(address => bool) public dexExists;
     Dex[] private _dexesList;
 
@@ -50,14 +51,6 @@ contract UniswapV2Aggregator {
         address routerAddress;
         uint256 quoteAmount;
         address[] path;
-    }
-
-    /*******************************************************
-     *                    Initialization
-     *******************************************************/
-    constructor(address _wethAddress) {
-        wethAddress = _wethAddress;
-        ownerAddress = msg.sender;
     }
 
     /*******************************************************
@@ -79,6 +72,8 @@ contract UniswapV2Aggregator {
         address token0Address,
         address token1Address
     ) public view returns (uint256 amountOut, address[] memory path) {
+        IUniswapV2Router router = IUniswapV2Router(routerAddress);
+        address wethAddress = router.WETH();
         bool inputTokenIsWeth = token0Address == wethAddress ||
             token1Address == wethAddress;
         if (inputTokenIsWeth) {
@@ -94,7 +89,6 @@ contract UniswapV2Aggregator {
             path[2] = token1Address;
         }
         uint256[] memory amountsOut;
-        IUniswapV2Router router = IUniswapV2Router(routerAddress);
         amountsOut = router.getAmountsOut(amountIn, path);
         amountOut = amountsOut[amountsOut.length - 1];
         return (amountOut, path);

@@ -55,7 +55,7 @@ contract SettlementTest is Test {
         tokenA.approve(address(settlement), type(uint256).max);
 
         // Set up aggregator
-        uniswapAggregator = new UniswapV2Aggregator(weth);
+        uniswapAggregator = new UniswapV2Aggregator();
         uniswapAggregator.addDex(
             UniswapV2Aggregator.Dex({
                 name: "Spookyswap",
