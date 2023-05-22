@@ -19,13 +19,6 @@ interface IUniswapV2Router {
     ) external;
 }
 
-interface IUniswapV2Factory {
-    function getPair(
-        address tokenA,
-        address tokenB
-    ) external view returns (address pair);
-}
-
 interface IERC20 {
     function transferFrom(address, address, uint256) external;
 
@@ -116,7 +109,6 @@ contract UniswapV2Aggregator {
         for (uint256 dexIdx; dexIdx < _dexesList.length; dexIdx++) {
             Dex memory dex = _dexesList[dexIdx];
             address routerAddress = dex.routerAddress;
-
             try
                 this.getAmountOutFromRouter(
                     routerAddress,
