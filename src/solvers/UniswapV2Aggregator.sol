@@ -36,7 +36,7 @@ contract UniswapV2Aggregator {
      *******************************************************/
     address public ownerAddress = msg.sender;
     mapping(address => bool) public dexExists;
-    Dex[] private _dexesList;
+    Dex[] public dexes;
 
     /*******************************************************
      *                       Types
@@ -60,7 +60,7 @@ contract UniswapV2Aggregator {
         require(msg.sender == ownerAddress, "Ownable: caller is not the owner");
         require(dexExists[dex.factoryAddress] == false, "Dex exists");
         dexExists[dex.factoryAddress] = true;
-        _dexesList.push(dex);
+        dexes.push(dex);
     }
 
     /*******************************************************
@@ -100,8 +100,8 @@ contract UniswapV2Aggregator {
         address token1Address
     ) external view returns (Quote memory bestQuote) {
         uint256 highestQuoteAmount;
-        for (uint256 dexIdx; dexIdx < _dexesList.length; dexIdx++) {
-            Dex memory dex = _dexesList[dexIdx];
+        for (uint256 dexIdx; dexIdx < dexes.length; dexIdx++) {
+            Dex memory dex = dexes[dexIdx];
             address routerAddress = dex.routerAddress;
             try
                 this.getAmountOutFromRouter(
