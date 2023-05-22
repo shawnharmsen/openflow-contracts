@@ -6,6 +6,7 @@ import {ERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import {Settlement} from "../src/Settlement.sol";
 import {OrderExecutor} from "../src/OrderExecutor.sol";
 import {Swapper} from "../test/support/Swapper.sol";
+import {UniswapV2Aggregator} from "../src/solvers/UniswapV2Aggregator.sol";
 import {SigUtils} from "../test/utils/SigUtils.sol";
 import {ISettlement} from "../src/interfaces/ISettlement.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
@@ -17,6 +18,8 @@ contract SettlementTest is Test {
     address public immutable userA = vm.addr(_USER_A_PRIVATE_KEY);
     address public immutable userB = vm.addr(_USER_B_PRIVATE_KEY);
     uint256 public constant INITIAL_TOKEN_AMOUNT = 100 * 1e18;
+    address public usdc = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
+    address public weth = 0x74b23882a30290451A17c44f4F05243b6b58C76d;
 
     // Storage
     Settlement public settlement;
@@ -25,6 +28,7 @@ contract SettlementTest is Test {
     IERC20 public tokenA;
     IERC20 public tokenB;
     SigUtils public sigUtils;
+    UniswapV2Aggregator public uniswapAggregator;
 
     function setUp() public {
         // Begin as User A
@@ -38,8 +42,8 @@ contract SettlementTest is Test {
             settlement.domainSeparator(),
             settlement.TYPE_HASH()
         );
-        tokenA = IERC20(address(new ERC20("Token A", "TOKEN_A")));
-        tokenB = IERC20(address(new ERC20("Token B", "TOKEN_B")));
+        tokenA = IERC20(usdc);
+        tokenB = IERC20(weth);
 
         // Alice gets 100 Token A
         deal(address(tokenA), userA, INITIAL_TOKEN_AMOUNT);
@@ -49,6 +53,16 @@ contract SettlementTest is Test {
 
         // Grant settlesment infinite allowance
         tokenA.approve(address(settlement), type(uint256).max);
+
+        // Set up aggregator
+        uniswapAggregator = new UniswapV2Aggregator(weth);
+        uniswapAggregator.addDex(
+            UniswapV2Aggregator.Dex({
+                name: "Spookyswap",
+                factoryAddress: 0x152eE697f2E276fA89E96742e9bB9aB1F2E61bE3,
+                routerAddress: 0xbE4fC72f8293F9D3512d58B969c98c3F676cB957
+            })
+        );
     }
 
     function testOrderExecutionEip712() external {
@@ -57,6 +71,7 @@ contract SettlementTest is Test {
         uint256 userATokenBBalanceBefore = tokenB.balanceOf(userA);
         uint256 swapperTokenABalanceBefore = tokenA.balanceOf(address(swapper));
         uint256 swapperTokenBBalanceBefore = tokenB.balanceOf(address(swapper));
+
         require(
             swapperTokenABalanceBefore == 0,
             "Swapper should not have token A"
@@ -75,21 +90,29 @@ contract SettlementTest is Test {
             "User B should not have token B"
         );
 
-        // Solver data (optional, up to Solver to implement)
-        uint256 fromAmount = 1 * 1e18;
-        uint256 toAmount = 1 * 1e18;
-        bytes memory solverData = abi.encode(
+        // Get quote
+        uint256 fromAmount = 1 * 1e6;
+        UniswapV2Aggregator.Quote memory quote = uniswapAggregator.quote(
+            fromAmount,
+            address(tokenA),
+            address(tokenB)
+        );
+        uint256 toAmount = (quote.quoteAmount * 95) / 100;
+
+        // Build executor data
+        bytes memory executorData = abi.encode(
             OrderExecutor.Data({
                 fromToken: tokenA,
                 toToken: tokenB,
                 fromAmount: fromAmount,
                 toAmount: toAmount,
                 recipient: userA,
-                target: address(swapper),
-                payload: abi.encodeWithSignature(
-                    "swap(address,address,uint256,uint256)",
+                target: address(uniswapAggregator),
+                payload: abi.encodeWithSelector(
+                    UniswapV2Aggregator.executeOrder.selector,
+                    quote.routerAddress,
+                    quote.path,
                     tokenA,
-                    tokenB,
                     fromAmount,
                     toAmount
                 )
@@ -99,7 +122,7 @@ contract SettlementTest is Test {
         // Build order
         ISettlement.Order memory order = ISettlement.Order({
             signature: hex"",
-            data: solverData,
+            data: executorData,
             payload: ISettlement.Payload({
                 signingScheme: ISettlement.SigningScheme.Eip712,
                 fromToken: address(tokenA),
@@ -127,17 +150,6 @@ contract SettlementTest is Test {
         // Expectations after swap
         userATokenABalanceBefore = tokenA.balanceOf(userA);
         userATokenBBalanceBefore = tokenB.balanceOf(userA);
-        swapperTokenABalanceBefore = tokenA.balanceOf(address(swapper));
-        swapperTokenBBalanceBefore = tokenB.balanceOf(address(swapper));
-        require(
-            swapperTokenABalanceBefore == fromAmount,
-            "Swapper should now have token A"
-        );
-        require(
-            swapperTokenBBalanceBefore == INITIAL_TOKEN_AMOUNT - toAmount,
-            "Swapper should now have less token B"
-        );
-
         require(
             userATokenABalanceBefore == INITIAL_TOKEN_AMOUNT - fromAmount,
             "User A should now have less token A"
