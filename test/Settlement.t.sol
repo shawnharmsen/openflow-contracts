@@ -5,7 +5,6 @@ import "forge-std/Test.sol";
 import {ERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import {Settlement} from "../src/Settlement.sol";
 import {OrderExecutor} from "../src/OrderExecutor.sol";
-import {Swapper} from "../test/support/Swapper.sol";
 import {UniswapV2Aggregator} from "../src/solvers/UniswapV2Aggregator.sol";
 import {SigUtils} from "../test/utils/SigUtils.sol";
 import {ISettlement} from "../src/interfaces/ISettlement.sol";
@@ -23,7 +22,6 @@ contract SettlementTest is Test {
 
     // Storage
     Settlement public settlement;
-    Swapper public swapper;
     OrderExecutor public executor;
     IERC20 public tokenA;
     IERC20 public tokenB;
@@ -37,7 +35,6 @@ contract SettlementTest is Test {
         // Configuration
         settlement = new Settlement();
         executor = new OrderExecutor(address(settlement));
-        swapper = new Swapper();
         sigUtils = new SigUtils(
             settlement.domainSeparator(),
             settlement.TYPE_HASH()
@@ -47,9 +44,6 @@ contract SettlementTest is Test {
 
         // Alice gets 100 Token A
         deal(address(tokenA), userA, INITIAL_TOKEN_AMOUNT);
-
-        // Swapper gets 100 Token B
-        deal(address(tokenB), address(swapper), INITIAL_TOKEN_AMOUNT);
 
         // Grant settlesment infinite allowance
         tokenA.approve(address(settlement), type(uint256).max);
@@ -69,17 +63,6 @@ contract SettlementTest is Test {
         // Expectations
         uint256 userATokenABalanceBefore = tokenA.balanceOf(userA);
         uint256 userATokenBBalanceBefore = tokenB.balanceOf(userA);
-        uint256 swapperTokenABalanceBefore = tokenA.balanceOf(address(swapper));
-        uint256 swapperTokenBBalanceBefore = tokenB.balanceOf(address(swapper));
-
-        require(
-            swapperTokenABalanceBefore == 0,
-            "Swapper should not have token A"
-        );
-        require(
-            swapperTokenBBalanceBefore == INITIAL_TOKEN_AMOUNT,
-            "Swapper should have initial amount of tokens"
-        );
 
         require(
             userATokenABalanceBefore == INITIAL_TOKEN_AMOUNT,
