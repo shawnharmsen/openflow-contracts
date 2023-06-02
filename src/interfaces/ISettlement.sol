@@ -31,13 +31,19 @@ interface ISettlement {
     function buildDigest(Payload memory) external view returns (bytes32);
 
     function nonces(address) external view returns (uint256);
+
+    function recoverSigner(
+        ISettlement.SigningScheme,
+        bytes memory,
+        bytes32
+    ) external returns (address);
 }
 
 interface EIP1271Verifier {
     function isValidSignature(
         bytes32 _hash,
         bytes calldata _signature
-    ) external view returns (bytes4 magicValue);
+    ) external returns (bytes4 magicValue);
 }
 
 interface ISolver {

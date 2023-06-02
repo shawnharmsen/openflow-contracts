@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
+import "forge-std/Test.sol";
 
 import {ISettlement} from "../../src/interfaces/ISettlement.sol";
 import {IERC20} from "../../src/interfaces/IERC20.sol";
 import {Strategy} from "./Strategy.sol";
 
 interface IStrategyProfitEscrow {
-    function approveSwap(
+    function generatePayload(
         uint256,
         uint256
     ) external returns (ISettlement.Payload memory payload);
@@ -33,7 +34,8 @@ contract StrategyOrderExecutor {
         Strategy strategy,
         uint256 fromAmount,
         uint256 toAmount,
-        bytes calldata data
+        bytes calldata data,
+        bytes calldata signatures
     ) public {
         /**
          * @notice Perform EIP-1271 signing
@@ -45,17 +47,18 @@ contract StrategyOrderExecutor {
         );
 
         // Sign and generate payload
-        ISettlement.Payload memory payload = strategyProfitEscrow.approveSwap(
-            fromAmount,
-            toAmount
-        );
+        ISettlement.Payload memory payload = strategyProfitEscrow
+            .generatePayload(fromAmount, toAmount);
 
         // Build order
         ISettlement.Order memory order = ISettlement.Order({
-            signature: abi.encodePacked(strategyProfitEscrow),
+            signature: abi.encodePacked(strategyProfitEscrow, signatures),
             data: data,
             payload: payload
         });
+
+        Data memory dat = abi.decode(data, (Data));
+
         // Perform the swap, sending toToken to the strategy
         settlement.executeOrder(order);
 
@@ -63,10 +66,14 @@ contract StrategyOrderExecutor {
         strategy.updateAccounting();
     }
 
+    event Test(address addy, uint256 amt);
+
     // Generic hook for executing an order
     function hook(bytes memory orderData) external {
         require(msg.sender == address(settlement));
         Data memory executorData = abi.decode(orderData, (Data));
+
+        emit Test(address(executorData.toToken), executorData.toAmount);
         executorData.fromToken.approve(executorData.target, type(uint256).max); // Max approve to save gas --this contract should not hold tokens
         executorData.target.call(executorData.payload);
         executorData.toToken.transfer(

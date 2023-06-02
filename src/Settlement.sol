@@ -137,7 +137,7 @@ contract Settlement {
         ISettlement.SigningScheme signingScheme,
         bytes calldata signature,
         bytes32 digest
-    ) public view returns (address owner) {
+    ) public returns (address owner) {
         if (signingScheme == ISettlement.SigningScheme.Eip712) {
             owner = _recoverEip712Signer(digest, signature);
         } else if (signingScheme == ISettlement.SigningScheme.Eip1271) {
@@ -151,14 +151,14 @@ contract Settlement {
     function _recoverEip712Signer(
         bytes32 orderDigest,
         bytes calldata encodedSignature
-    ) internal pure returns (address owner) {
+    ) internal returns (address owner) {
         owner = _ecdsaRecover(orderDigest, encodedSignature);
     }
 
     function _recoverEip1271Signer(
         bytes32 orderDigest,
         bytes calldata encodedSignature
-    ) internal view returns (address owner) {
+    ) internal returns (address owner) {
         assembly {
             owner := shr(96, calldataload(encodedSignature.offset))
         }

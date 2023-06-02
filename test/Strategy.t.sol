@@ -20,6 +20,10 @@ contract StrategyTest is Test {
     StrategyOrderExecutor public executor;
     SigUtils public sigUtils;
     UniswapV2Aggregator public uniswapAggregator;
+    uint256 internal constant _USER_A_PRIVATE_KEY = 0xB0B;
+    uint256 internal constant _USER_B_PRIVATE_KEY = 0xA11CE;
+    address public immutable userA = vm.addr(_USER_A_PRIVATE_KEY);
+    address public immutable userB = vm.addr(_USER_B_PRIVATE_KEY);
 
     function setUp() public {
         settlement = new Settlement();
@@ -44,7 +48,9 @@ contract StrategyTest is Test {
         IERC20 toToken = IERC20(strategy.asset());
 
         // Get quote
-        uint256 fromAmount = fromToken.balanceOf(address(strategy));
+        uint256 fromAmount = fromToken.balanceOf(
+            address(strategy.profitEscrow())
+        );
         UniswapV2Aggregator.Quote memory quote = uniswapAggregator.quote(
             fromAmount,
             address(fromToken),
@@ -71,7 +77,36 @@ contract StrategyTest is Test {
             })
         );
 
+        StrategyProfitEscrow profitEscrow = StrategyProfitEscrow(
+            strategy.profitEscrow()
+        );
+        address[] memory signers = new address[](2);
+        signers[0] = userA;
+        signers[1] = userB;
+        profitEscrow.addSigners(signers);
+        bytes32 digest = StrategyProfitEscrow(strategy.profitEscrow())
+            .buildDigest(fromAmount, toAmount);
+
         // Sign and execute order
-        executor.executeOrder(strategy, fromAmount, toAmount, executorData);
+        bytes memory signature1 = sign(_USER_A_PRIVATE_KEY, digest);
+        bytes memory signature2 = sign(_USER_B_PRIVATE_KEY, digest);
+        bytes memory signatures = abi.encodePacked(signature1, signature2);
+        executor.executeOrder(
+            strategy,
+            fromAmount,
+            toAmount,
+            executorData,
+            signatures
+        );
+    }
+
+    function getIt(bytes32 digest, bytes memory signatures) public {}
+
+    function sign(
+        uint256 privateKey,
+        bytes32 digest
+    ) internal view returns (bytes memory signature) {
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
+        signature = abi.encodePacked(r, s, v);
     }
 }

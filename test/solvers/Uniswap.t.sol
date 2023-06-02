@@ -38,8 +38,6 @@ contract UniswapTest is Test {
             usdc,
             weth
         );
-        console.log(quote.routerAddress);
-        console.log(quote.quoteAmount);
     }
 
     function testOrderFill() external {}

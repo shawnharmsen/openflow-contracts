@@ -36,11 +36,14 @@ contract Strategy {
         profitEscrow = address(
             new StrategyProfitEscrow(address(this), settlement, reward, asset)
         );
-        IERC20(reward).approve(profitEscrow, type(uint256).max);
     }
 
     function harvest() external {
         masterChef.getReward();
+        IERC20(reward).transfer(
+            profitEscrow,
+            IERC20(reward).balanceOf(address(this))
+        );
     }
 
     function updateAccounting() public {}
@@ -52,6 +55,7 @@ contract StrategyProfitEscrow {
     bytes4 private constant _EIP1271_NOTALLOWED = 0xffffffff;
     mapping(bytes32 => bool) public digestApproved;
     ISettlement public settlement; // TODO: Get from factory
+    mapping(address => bool) public signers;
 
     IERC20 fromToken; // reward
     IERC20 toToken; // asset
@@ -67,26 +71,62 @@ contract StrategyProfitEscrow {
         fromToken = IERC20(_fromToken);
         toToken = IERC20(_toToken);
         settlement = ISettlement(_settlement);
+        fromToken.approve(_settlement, type(uint256).max);
+    }
+
+    function addSigners(address[] memory _signers) external {
+        for (uint256 signerIdx; signerIdx < _signers.length; signerIdx++) {
+            signers[_signers[signerIdx]] = true;
+        }
+    }
+
+    function checkNSignatures(
+        bytes32 digest,
+        bytes memory signatures,
+        uint256 requiredSignatures
+    ) public {
+        require(
+            signatures.length >= requiredSignatures * 65,
+            "Invalid signature length"
+        );
+        address lastOwner;
+        address currentOwner;
+
+        for (uint256 i = 0; i < requiredSignatures; i++) {
+            bytes memory signature;
+            assembly {
+                let signaturePos := add(sub(signatures, 28), mul(0x41, i))
+                mstore(signature, 65)
+                calldatacopy(add(signature, 0x20), signaturePos, 65)
+            }
+            currentOwner = settlement.recoverSigner(
+                ISettlement.SigningScheme.Eip712,
+                signature,
+                digest
+            );
+            require(
+                currentOwner > lastOwner && signers[currentOwner],
+                "Invalid signature order"
+            );
+            lastOwner = currentOwner;
+        }
     }
 
     function isValidSignature(
         bytes32 digest,
-        bytes calldata signature
-    ) external view returns (bytes4) {
-        // Check if digest is approved
-        if (digestApproved[digest]) {
-            return _EIP1271_MAGICVALUE;
-        }
-        return _EIP1271_NOTALLOWED;
+        bytes calldata signatures
+    ) external returns (bytes4) {
+        uint256 requiredSignatures = 2;
+        checkNSignatures(digest, signatures, requiredSignatures);
+
+        // TODO: is important to return 0xffffffff on failure or is revert sufficient
+        return _EIP1271_MAGICVALUE;
     }
 
-    function approveSwap(
+    function generatePayload(
         uint256 fromAmount,
         uint256 toAmount
-    ) external returns (ISettlement.Payload memory payload) {
-        // Enforce any logic re: minAmountOut here
-        fromToken.transferFrom(address(strategy), address(this), fromAmount);
-        fromToken.approve(address(settlement), fromAmount);
+    ) public returns (ISettlement.Payload memory payload) {
         payload = ISettlement.Payload({
             signingScheme: ISettlement.SigningScheme.Eip1271,
             fromToken: address(fromToken),
@@ -98,7 +138,12 @@ contract StrategyProfitEscrow {
             nonce: settlement.nonces(address(this)),
             deadline: block.timestamp
         });
-        bytes32 digest = settlement.buildDigest(payload);
-        digestApproved[digest] = true;
+    }
+
+    function buildDigest(
+        uint256 fromAmount,
+        uint256 toAmount
+    ) external returns (bytes32 digest) {
+        digest = settlement.buildDigest(generatePayload(fromAmount, toAmount));
     }
 }
