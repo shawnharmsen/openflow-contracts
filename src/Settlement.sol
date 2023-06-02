@@ -79,7 +79,7 @@ contract Settlement {
      *                   Settlement Logic
      *******************************************************/
     function _verify(ISettlement.Order calldata order) internal {
-        bytes32 digest = _buildDigest(order.payload);
+        bytes32 digest = buildDigest(order.payload);
         address signatory = recoverSigner(
             order.payload.signingScheme,
             order.signature,
@@ -117,11 +117,9 @@ contract Settlement {
         uint256 outputTokenBalanceAfter = IERC20(payload.toToken).balanceOf(
             payload.recipient
         );
-        require(
-            outputTokenBalanceAfter - outputTokenBalanceBefore >=
-                payload.toAmount,
-            "Order not filled"
-        );
+        uint256 balanceDelta = outputTokenBalanceAfter -
+            outputTokenBalanceBefore;
+        require(balanceDelta >= payload.toAmount, "Order not filled");
         emit OrderExecuted(
             tx.origin,
             payload.sender,
@@ -203,9 +201,9 @@ contract Settlement {
         require(signer != address(0), "Invalid ECDSA signature");
     }
 
-    function _buildDigest(
+    function buildDigest(
         ISettlement.Payload memory payload
-    ) internal view returns (bytes32 orderDigest) {
+    ) public view returns (bytes32 orderDigest) {
         bytes32 typeHash = TYPE_HASH;
         bytes32 structHash;
         bytes32 _domainSeparator = domainSeparator;

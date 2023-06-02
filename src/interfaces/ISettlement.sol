@@ -27,6 +27,10 @@ interface ISettlement {
     }
 
     function executeOrder(Order memory) external;
+
+    function buildDigest(Payload memory) external view returns (bytes32);
+
+    function nonces(address) external view returns (uint256);
 }
 
 interface EIP1271Verifier {

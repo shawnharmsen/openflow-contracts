@@ -131,10 +131,10 @@ contract UniswapV2Aggregator {
     function executeOrder(
         IUniswapV2Router router,
         address[] memory path,
-        IERC20 fromToken,
         uint256 fromAmount,
         uint256 toAmount
     ) external {
+        IERC20 fromToken = IERC20(path[0]);
         fromToken.transferFrom(msg.sender, address(this), fromAmount);
         fromToken.approve(address(router), type(uint256).max); // Max approve to save gas --this contract should never hold tokens
         router.swapExactTokensForTokens(

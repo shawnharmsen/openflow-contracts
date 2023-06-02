@@ -45,7 +45,7 @@ contract SettlementTest is Test {
         // Alice gets 100 Token A
         deal(address(tokenA), userA, INITIAL_TOKEN_AMOUNT);
 
-        // Grant settlesment infinite allowance
+        // Grant settlement infinite allowance
         tokenA.approve(address(settlement), type(uint256).max);
 
         // Set up aggregator
@@ -95,7 +95,6 @@ contract SettlementTest is Test {
                     UniswapV2Aggregator.executeOrder.selector,
                     quote.routerAddress,
                     quote.path,
-                    tokenA,
                     fromAmount,
                     toAmount
                 )
