@@ -84,12 +84,16 @@ contract StrategyTest is Test {
         signers[0] = userA;
         signers[1] = userB;
         profitEscrow.addSigners(signers);
-        bytes32 digest = StrategyProfitEscrow(strategy.profitEscrow())
-            .buildDigest(fromAmount, toAmount);
+        bytes32 digest = executor.buildDigest(
+            fromAmount,
+            toAmount,
+            address(strategy),
+            address(profitEscrow)
+        );
 
         // Sign and execute order
-        bytes memory signature1 = sign(_USER_A_PRIVATE_KEY, digest);
-        bytes memory signature2 = sign(_USER_B_PRIVATE_KEY, digest);
+        bytes memory signature1 = _sign(_USER_A_PRIVATE_KEY, digest);
+        bytes memory signature2 = _sign(_USER_B_PRIVATE_KEY, digest);
         bytes memory signatures = abi.encodePacked(signature1, signature2);
         executor.executeOrder(
             strategy,
@@ -100,7 +104,7 @@ contract StrategyTest is Test {
         );
     }
 
-    function sign(
+    function _sign(
         uint256 privateKey,
         bytes32 digest
     ) internal pure returns (bytes memory signature) {

@@ -6,6 +6,8 @@ import "forge-std/Test.sol";
 
 contract StrategyProfitEscrowFactory {
     address public settlement;
+
+    // TODO: finish
 }
 
 // The only thing this contract can do is take reward from the strategy, sell them, and return profits
@@ -19,6 +21,7 @@ contract StrategyProfitEscrow {
     address public immutable toToken; // asset
 
     // Signatures
+    uint256 public requiredSignatures;
     mapping(address => bool) public signers;
     mapping(address => mapping(bytes32 => bool)) public approvedHashes;
 
@@ -33,13 +36,8 @@ contract StrategyProfitEscrow {
         settlement = _settlement;
         toToken = _toToken;
         fromToken = _fromToken;
+        requiredSignatures = 2; // TODO: support updating this
         IERC20(fromToken).approve(_settlement, type(uint256).max);
-    }
-
-    function addSigners(address[] memory _signers) external {
-        for (uint256 signerIdx; signerIdx < _signers.length; signerIdx++) {
-            signers[_signers[signerIdx]] = true;
-        }
     }
 
     function isValidSignature(
@@ -56,29 +54,10 @@ contract StrategyProfitEscrow {
         return _EIP1271_MAGICVALUE;
     }
 
-    function generatePayload(
-        uint256 fromAmount,
-        uint256 toAmount
-    ) public view returns (ISettlement.Payload memory payload) {
-        payload = ISettlement.Payload({
-            signingScheme: ISettlement.SigningScheme.Eip1271,
-            fromToken: fromToken,
-            toToken: toToken,
-            fromAmount: fromAmount,
-            toAmount: toAmount,
-            sender: address(this),
-            recipient: strategy,
-            nonce: ISettlement(settlement).nonces(address(this)),
-            deadline: block.timestamp
-        });
-    }
-
-    function buildDigest(
-        uint256 fromAmount,
-        uint256 toAmount
-    ) external view returns (bytes32 digest) {
-        digest = ISettlement(settlement).buildDigest(
-            generatePayload(fromAmount, toAmount)
-        );
+    // TODO: auth and removing signers
+    function addSigners(address[] memory _signers) external {
+        for (uint256 signerIdx; signerIdx < _signers.length; signerIdx++) {
+            signers[_signers[signerIdx]] = true;
+        }
     }
 }
