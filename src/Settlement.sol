@@ -43,25 +43,24 @@ contract Settlement {
         );
     }
 
-    function _verify(ISettlement.Order calldata order) internal {
-        bytes32 digest = buildDigest(order.payload);
-        address signatory = SigningLib.recoverSigner(
-            order.payload.signingScheme,
-            order.signature,
-            digest
-        );
-        require(signatory == order.payload.sender, "Invalid signer");
-        require(block.timestamp <= order.payload.deadline, "Deadline expired");
-        require(
-            order.payload.nonce == nonces[signatory]++,
-            "Nonce already used"
-        );
-    }
-
+    /**
+     * @notice Primary method for order execution
+     * @dev TODO: Add more comments
+     */
     function executeOrder(ISettlement.Order calldata order) public {
         ISettlement.Payload memory payload = order.payload;
+
+        /**
+         * @notice Step 1. Verify the integrity of the order
+         * @dev Only the order payload is signed
+         * @dev Once an order is signed anyone who has the signature can fufil the order
+         */
         _verify(order);
-        // TODO: We probably don't need safe transfer anymore here since we are checking balances now
+
+        /**
+         * @notice Step 2. Optimistically transfer funds from payload.sender to msg.sender (order executor)
+         * @dev TODO: We probably don't need safe transfer anymore here since we are checking balances now
+         */
         ERC20(payload.fromToken).safeTransferFrom(
             payload.sender,
             msg.sender,
@@ -70,7 +69,19 @@ contract Settlement {
         uint256 outputTokenBalanceBefore = ERC20(payload.toToken).balanceOf(
             payload.recipient
         );
+
+        /**
+         * @notice Step 3. Order executor executes the swap and is required to send funds to payload.recipient
+         * @dev Order executors can be completely custom, or the generic order executor can be used
+         * @dev Solver configurable metadata about the order is sent to the order executor hook
+         * @dev Settlement does not care how the solver executes the order, all Settlement cares about is that
+         *      the user receives the minimum amount of tokens the signer agreed to
+         */
         ISolver(msg.sender).hook(order.data); // TODO: Consider if there are any security implications based on ERC777 hooks
+
+        /**
+         * @notice Step 4. Make sure payload.recipient receives the agreed upon amount of tokens
+         */
         uint256 outputTokenBalanceAfter = ERC20(payload.toToken).balanceOf(
             payload.recipient
         );
@@ -87,8 +98,31 @@ contract Settlement {
         );
     }
 
-    // See SigUtils.sol for a less optimized and more readable version
-    // TODO: Compare gas savings of using this method
+    /**
+     * @notice Order verification
+     * @dev TODO: Add more comments
+     */
+    function _verify(ISettlement.Order calldata order) internal {
+        bytes32 digest = buildDigest(order.payload);
+        address signatory = SigningLib.recoverSigner(
+            order.payload.signingScheme,
+            order.signature,
+            digest
+        );
+        require(signatory == order.payload.sender, "Invalid signer");
+        require(block.timestamp <= order.payload.deadline, "Deadline expired");
+        require(
+            order.payload.nonce == nonces[signatory]++,
+            "Nonce already used"
+        );
+    }
+
+    /**
+     * @notice Building the digest hash
+     * @dev See SigUtils.sol for a less optimized and more readable version
+     * @dev TODO: Compare SigUtils implementation vs this impleemntation for gas savings analysis
+     * @dev TODO: Add more comments
+     */
     function buildDigest(
         ISettlement.Payload memory payload
     ) public view returns (bytes32 orderDigest) {
