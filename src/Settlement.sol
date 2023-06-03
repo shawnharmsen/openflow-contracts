@@ -52,13 +52,16 @@ contract Settlement {
 
         /**
          * @notice Step 1. Verify the integrity of the order
+         * @dev Verifies that payload.sender signed the order
          * @dev Only the order payload is signed
          * @dev Once an order is signed anyone who has the signature can fufil the order
+         * @dev In the case of smart contracts sender must implement EIP-1271 isVerified method
          */
         _verify(order);
 
         /**
          * @notice Step 2. Optimistically transfer funds from payload.sender to msg.sender (order executor)
+         * @dev Payload.sender must approve settlement
          * @dev TODO: We probably don't need safe transfer anymore here since we are checking balances now
          */
         ERC20(payload.fromToken).safeTransferFrom(
