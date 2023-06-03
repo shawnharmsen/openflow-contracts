@@ -22,6 +22,15 @@ contract Settlement {
     bytes32 public immutable domainSeparator;
     mapping(address => uint256) public nonces;
 
+    event OrderExecuted(
+        address solver,
+        address sender,
+        address fromToken,
+        address toToken,
+        uint256 fromAmount,
+        uint256 toAmount
+    );
+
     constructor() {
         domainSeparator = keccak256(
             abi.encode(
@@ -48,16 +57,6 @@ contract Settlement {
             "Nonce already used"
         );
     }
-
-    event OrderExecuted(
-        address solver,
-        address sender,
-        address fromToken,
-        address toToken,
-        uint256 fromAmount,
-        uint256 toAmount
-    );
-    bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;
 
     function executeOrder(ISettlement.Order calldata order) public {
         ISettlement.Payload memory payload = order.payload;
