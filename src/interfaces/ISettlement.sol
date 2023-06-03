@@ -46,13 +46,6 @@ interface ISettlement {
     ) external view returns (address);
 }
 
-interface EIP1271Verifier {
-    function isValidSignature(
-        bytes32 _hash,
-        bytes calldata _signature
-    ) external view returns (bytes4 magicValue);
-}
-
 interface ISolver {
     function hook(bytes calldata data) external;
 }

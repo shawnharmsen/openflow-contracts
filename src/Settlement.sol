@@ -3,50 +3,12 @@ pragma solidity 0.8.19;
 import "./interfaces/ISettlement.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ISignatureManager.sol";
-
-interface ISignatureValidator {
-    function isValidSignature(
-        bytes32,
-        bytes memory
-    ) external view returns (bytes4);
-}
-
-/*******************************************************
- *                     Solmate Library
- *******************************************************/
-library SafeTransferLib {
-    function safeTransferFrom(
-        IERC20 token,
-        address from,
-        address to,
-        uint256 amount
-    ) internal {
-        bool success;
-        assembly {
-            let freeMemoryPointer := mload(0x40)
-            mstore(
-                freeMemoryPointer,
-                0x23b872dd00000000000000000000000000000000000000000000000000000000
-            )
-            mstore(add(freeMemoryPointer, 4), from)
-            mstore(add(freeMemoryPointer, 36), to)
-            mstore(add(freeMemoryPointer, 68), amount)
-            success := and(
-                or(
-                    and(eq(mload(0), 1), gt(returndatasize(), 31)),
-                    iszero(returndatasize())
-                ),
-                call(gas(), token, 0, freeMemoryPointer, 100, 0, 32)
-            )
-        }
-        require(success, "TRANSFER_FROM_FAILED");
-    }
-}
+import "./interfaces/IEip1271SignatureValidator.sol";
+import {SafeTransferLib, ERC20} from "solmate/utils/SafeTransferLib.sol";
+import {SigningLib} from "./lib/Signing.sol";
 
 contract Settlement {
-    /*******************************************************
-     *                      Constants
-     *******************************************************/
+    using SafeTransferLib for ERC20;
     bytes32 private constant _DOMAIN_NAME = keccak256("Blockswap");
     bytes32 private constant _DOMAIN_VERSION = keccak256("v0.0.1");
     bytes32 private constant _DOMAIN_TYPE_HASH =
@@ -57,18 +19,9 @@ contract Settlement {
         keccak256(
             "Swap(uint8 signingScheme,address fromToken,address toToken,uint256 fromAmount,uint256 toAmount,address sender,address recipient,uint256 nonce,uint256 deadline)"
         );
-    uint256 private constant _ECDSA_SIGNATURE_LENGTH = 65;
-    bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;
     bytes32 public immutable domainSeparator;
-
-    /*******************************************************
-     *                       Storage
-     *******************************************************/
     mapping(address => uint256) public nonces;
 
-    /*******************************************************
-     *                     Initialization
-     *******************************************************/
     constructor() {
         domainSeparator = keccak256(
             abi.encode(
@@ -81,14 +34,9 @@ contract Settlement {
         );
     }
 
-    using SafeTransferLib for IERC20;
-
-    /*******************************************************
-     *                   Settlement Logic
-     *******************************************************/
     function _verify(ISettlement.Order calldata order) internal {
         bytes32 digest = buildDigest(order.payload);
-        address signatory = recoverSigner(
+        address signatory = SigningLib.recoverSigner(
             order.payload.signingScheme,
             order.signature,
             digest
@@ -109,20 +57,21 @@ contract Settlement {
         uint256 fromAmount,
         uint256 toAmount
     );
+    bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;
 
     function executeOrder(ISettlement.Order calldata order) public {
         ISettlement.Payload memory payload = order.payload;
         _verify(order);
-        IERC20(payload.fromToken).safeTransferFrom(
+        ERC20(payload.fromToken).safeTransferFrom(
             payload.sender,
             msg.sender,
             payload.fromAmount
         );
-        uint256 outputTokenBalanceBefore = IERC20(payload.toToken).balanceOf(
+        uint256 outputTokenBalanceBefore = ERC20(payload.toToken).balanceOf(
             payload.recipient
         );
         ISolver(msg.sender).hook(order.data);
-        uint256 outputTokenBalanceAfter = IERC20(payload.toToken).balanceOf(
+        uint256 outputTokenBalanceAfter = ERC20(payload.toToken).balanceOf(
             payload.recipient
         );
         uint256 balanceDelta = outputTokenBalanceAfter -
@@ -136,168 +85,6 @@ contract Settlement {
             payload.fromAmount,
             payload.toAmount
         );
-    }
-
-    /*******************************************************
-     *                   Signature Logic
-     *******************************************************/
-    function recoverSigner(
-        ISettlement.SigningScheme signingScheme,
-        bytes calldata signature,
-        bytes32 digest
-    ) public view returns (address owner) {
-        if (signingScheme == ISettlement.SigningScheme.Eip712) {
-            owner = _recoverEip712Signer(digest, signature);
-        } else if (signingScheme == ISettlement.SigningScheme.Eip1271) {
-            owner = _recoverEip1271Signer(digest, signature);
-        } else {
-            // signingScheme == Scheme.EthSign
-            owner = _recoverEthsignSigner(digest, signature);
-        }
-    }
-
-    function _recoverEip712Signer(
-        bytes32 orderDigest,
-        bytes calldata encodedSignature
-    ) internal pure returns (address owner) {
-        owner = _ecdsaRecover(orderDigest, encodedSignature);
-    }
-
-    function _recoverEip1271Signer(
-        bytes32 orderDigest,
-        bytes calldata encodedSignature
-    ) internal view returns (address owner) {
-        assembly {
-            owner := shr(96, calldataload(encodedSignature.offset))
-        }
-        bytes calldata signature = encodedSignature[20:];
-
-        require(
-            EIP1271Verifier(owner).isValidSignature(orderDigest, signature) ==
-                _EIP1271_MAGICVALUE,
-            "Invalid EIP-1271 signature"
-        );
-    }
-
-    function _recoverEthsignSigner(
-        bytes32 orderDigest,
-        bytes calldata encodedSignature
-    ) internal pure returns (address owner) {
-        bytes32 ethsignDigest = keccak256(
-            abi.encodePacked("\x19Ethereum Signed Message:\n32", orderDigest)
-        );
-        owner = _ecdsaRecover(ethsignDigest, encodedSignature);
-    }
-
-    function _ecdsaRecover(
-        bytes32 message,
-        bytes calldata encodedSignature
-    ) internal pure returns (address signer) {
-        require(
-            encodedSignature.length == _ECDSA_SIGNATURE_LENGTH,
-            "Malformed ECDSA signature"
-        );
-        bytes32 r;
-        bytes32 s;
-        uint8 v;
-        assembly {
-            r := calldataload(encodedSignature.offset)
-            s := calldataload(add(encodedSignature.offset, 32))
-            v := shr(248, calldataload(add(encodedSignature.offset, 64)))
-        }
-        signer = ecrecover(message, v, r, s);
-        require(signer != address(0), "Invalid ECDSA signature");
-    }
-
-    function signatureSplit(
-        bytes memory signatures,
-        uint256 pos
-    ) internal pure returns (uint8 v, bytes32 r, bytes32 s) {
-        assembly {
-            let signaturePos := mul(0x41, pos)
-            r := mload(add(signatures, add(signaturePos, 0x20)))
-            s := mload(add(signatures, add(signaturePos, 0x40)))
-            v := and(mload(add(signatures, add(signaturePos, 0x41))), 0xff)
-        }
-    }
-
-    function checkNSignatures(
-        address signatureManager,
-        bytes32 dataHash,
-        bytes memory signatures,
-        uint256 requiredSignatures
-    ) public view {
-        require(signatures.length >= requiredSignatures * 65, "GS020");
-        address lastOwner = address(0);
-        address currentOwner;
-        uint256 i;
-        for (i = 0; i < requiredSignatures; i++) {
-            uint8 v;
-            bytes32 r;
-            bytes32 s;
-            (v, r, s) = signatureSplit(signatures, i);
-            if (v == 0) {
-                // If v is 0 then it is a contract signature
-                currentOwner = address(uint160(uint256(r)));
-                require(uint256(s) >= requiredSignatures * 65, "GS021");
-                require(uint256(s) + 32 <= signatures.length, "GS022");
-                uint256 contractSignatureLen;
-                assembly {
-                    contractSignatureLen := mload(add(add(signatures, s), 0x20))
-                }
-                require(
-                    uint256(s) + 32 + contractSignatureLen <= signatures.length,
-                    "GS023"
-                );
-                bytes memory contractSignature;
-                assembly {
-                    contractSignature := add(add(signatures, s), 0x20)
-                }
-                require(
-                    ISignatureValidator(currentOwner).isValidSignature(
-                        dataHash,
-                        contractSignature
-                    ) == _EIP1271_MAGICVALUE,
-                    "GS024"
-                );
-            } else if (v == 1) {
-                // If v is 1 then it is an approved hash
-                currentOwner = address(uint160(uint256(r)));
-                require(
-                    msg.sender == currentOwner ||
-                        ISignatureManager(signatureManager).approvedHashes(
-                            currentOwner,
-                            dataHash
-                        ),
-                    "Hash is not approved"
-                );
-            } else if (v > 30) {
-                // If v > 30 then default va (27,28) has been adjusted for eth_sign flow
-                currentOwner = ecrecover(
-                    keccak256(
-                        abi.encodePacked(
-                            "\x19Ethereum Signed Message:\n32",
-                            dataHash
-                        )
-                    ),
-                    v - 4,
-                    r,
-                    s
-                );
-            } else {
-                // Default is the ecrecover flow with the provided data hash
-                currentOwner = ecrecover(dataHash, v, r, s);
-            }
-            require(
-                currentOwner > lastOwner,
-                "Invalid signature order or duplicate signature"
-            );
-            require(
-                ISignatureManager(signatureManager).signers(currentOwner),
-                "Signer is not approved"
-            );
-            lastOwner = currentOwner;
-        }
     }
 
     function buildDigest(

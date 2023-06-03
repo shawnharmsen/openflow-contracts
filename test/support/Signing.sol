@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 import {IERC20} from "../../src/interfaces/IERC20.sol";
 import {ISettlement} from "../../src/interfaces/ISettlement.sol";
+import {SigningLib} from "../../src/lib/Signing.sol";
 import "forge-std/Test.sol";
 
 contract StrategyProfitEscrowFactory {
@@ -44,8 +45,7 @@ contract StrategyProfitEscrow {
         bytes32 digest,
         bytes calldata signatures
     ) external view returns (bytes4) {
-        uint256 requiredSignatures = 2;
-        ISettlement(settlement).checkNSignatures(
+        SigningLib.checkNSignatures(
             address(this),
             digest,
             signatures,

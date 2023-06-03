@@ -42,7 +42,6 @@ contract Strategy {
                 address(asset)
             )
         );
-        reward.approve(profitEscrow, type(uint256).max);
     }
 
     function harvest() external {
