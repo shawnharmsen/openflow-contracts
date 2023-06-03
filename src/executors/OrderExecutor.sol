@@ -21,10 +21,32 @@ contract OrderExecutor {
         settlement = ISettlement(_settlement);
     }
 
+    struct Interaction {
+        address target;
+        uint256 value;
+        bytes callData;
+    }
+
     function executeOrder(ISettlement.Order calldata order) public {
         settlement.executeOrder(order);
-        IERC20 toToken = IERC20(order.payload.toToken);
-        toToken.transfer(msg.sender, toToken.balanceOf(address(this)));
+    }
+
+    function executeOrder(
+        ISettlement.Order calldata order,
+        Interaction[][2] memory interactions
+    ) public {
+        // Before swap hook
+        _executeInteractions(interactions[0]);
+
+        // Execute swap
+        settlement.executeOrder(order);
+
+        // After swap hook
+        _executeInteractions(interactions[1]);
+    }
+
+    function sweep(IERC20 token, address recipient) external {
+        token.transfer(recipient, token.balanceOf(address(this)));
     }
 
     function hook(bytes memory orderData) external {
@@ -36,5 +58,15 @@ contract OrderExecutor {
             executorData.recipient,
             executorData.toAmount
         );
+    }
+
+    function _executeInteractions(Interaction[] memory interactions) internal {
+        for (uint256 i; i < interactions.length; i++) {
+            Interaction memory interaction = interactions[i];
+            (bool success, ) = interaction.target.call{
+                value: interaction.value
+            }(interaction.callData);
+            require(success, "Interaction failed");
+        }
     }
 }

@@ -25,23 +25,24 @@ contract MasterChef {
 }
 
 contract Strategy {
-    MasterChef masterChef;
+    MasterChef public masterChef;
     IERC20 public asset = IERC20(0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E); // Underlying want token is DAI
     IERC20 public reward; // Reward is USDC
     address public profitEscrow;
 
-    constructor(MasterChef _masterChef, address settlement) {
+    constructor(MasterChef _masterChef, address _settlement) {
         masterChef = _masterChef;
         masterChef.accrueReward();
         reward = masterChef.rewardToken();
         profitEscrow = address(
             new StrategyProfitEscrow(
                 address(this),
-                settlement,
+                _settlement,
                 address(reward),
                 address(asset)
             )
         );
+        reward.approve(profitEscrow, type(uint256).max);
     }
 
     function harvest() external {

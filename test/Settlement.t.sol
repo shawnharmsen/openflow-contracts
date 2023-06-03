@@ -23,8 +23,8 @@ contract SettlementTest is Test {
     // Storage
     Settlement public settlement;
     OrderExecutor public executor;
-    IERC20 public tokenA;
-    IERC20 public tokenB;
+    IERC20 public fromToken;
+    IERC20 public toToken;
     SigUtils public sigUtils;
     UniswapV2Aggregator public uniswapAggregator;
 
@@ -39,14 +39,14 @@ contract SettlementTest is Test {
             settlement.domainSeparator(),
             settlement.TYPE_HASH()
         );
-        tokenA = IERC20(usdc);
-        tokenB = IERC20(weth);
+        fromToken = IERC20(usdc);
+        toToken = IERC20(weth);
 
         // User A gets 100 Token A
-        deal(address(tokenA), userA, INITIAL_TOKEN_AMOUNT);
+        deal(address(fromToken), userA, INITIAL_TOKEN_AMOUNT);
 
         // Grant settlement infinite allowance
-        tokenA.approve(address(settlement), type(uint256).max);
+        fromToken.approve(address(settlement), type(uint256).max);
 
         // Set up aggregator
         uniswapAggregator = new UniswapV2Aggregator();
@@ -60,33 +60,20 @@ contract SettlementTest is Test {
     }
 
     function testOrderExecutionEip712() external {
-        // Expectations
-        uint256 userATokenABalanceBefore = tokenA.balanceOf(userA);
-        uint256 userATokenBBalanceBefore = tokenB.balanceOf(userA);
-
-        require(
-            userATokenABalanceBefore == INITIAL_TOKEN_AMOUNT,
-            "User A should have initial amount of tokens"
-        );
-        require(
-            userATokenBBalanceBefore == 0,
-            "User B should not have token B"
-        );
-
         // Get quote
         uint256 fromAmount = 1 * 1e6;
         UniswapV2Aggregator.Quote memory quote = uniswapAggregator.quote(
             fromAmount,
-            address(tokenA),
-            address(tokenB)
+            address(fromToken),
+            address(toToken)
         );
         uint256 toAmount = (quote.quoteAmount * 95) / 100;
 
         // Build executor data
         bytes memory executorData = abi.encode(
             OrderExecutor.Data({
-                fromToken: tokenA,
-                toToken: tokenB,
+                fromToken: fromToken,
+                toToken: toToken,
                 fromAmount: fromAmount,
                 toAmount: toAmount,
                 recipient: userA,
@@ -107,8 +94,8 @@ contract SettlementTest is Test {
             data: executorData,
             payload: ISettlement.Payload({
                 signingScheme: ISettlement.SigningScheme.Eip712,
-                fromToken: address(tokenA),
-                toToken: address(tokenB),
+                fromToken: address(fromToken),
+                toToken: address(toToken),
                 fromAmount: fromAmount,
                 toAmount: toAmount,
                 sender: userA,
@@ -126,18 +113,47 @@ contract SettlementTest is Test {
         // Change to user B
         changePrank(userB);
 
+        // Track solver balance before
+        address solver = userB;
+        uint256 solverBalanceBefore = toToken.balanceOf(solver);
+
+        // Expectations before swap
+        uint256 userAFromTokenBalanceBefore = fromToken.balanceOf(userA);
+        require(
+            userAFromTokenBalanceBefore == INITIAL_TOKEN_AMOUNT,
+            "User A should have initial amount of tokens"
+        );
+
+        // Build after swap hook
+        OrderExecutor.Interaction[][2] memory interactions;
+        interactions[1] = new OrderExecutor.Interaction[](1);
+        interactions[1][0] = OrderExecutor.Interaction({
+            target: address(executor),
+            value: 0,
+            callData: abi.encodeWithSelector(
+                OrderExecutor.sweep.selector,
+                address(toToken),
+                solver
+            )
+        });
+
         // Execute order
-        executor.executeOrder(order);
+        executor.executeOrder(order, interactions);
+
+        // Make sure solver is capable of receiving profit
+        uint256 solverBalanceAfter = toToken.balanceOf(solver);
+        uint256 solverProfit = solverBalanceAfter - solverBalanceBefore;
+        require(solverProfit > 0, "Solver had zero profit");
 
         // Expectations after swap
-        userATokenABalanceBefore = tokenA.balanceOf(userA);
-        userATokenBBalanceBefore = tokenB.balanceOf(userA);
+        userAFromTokenBalanceBefore = fromToken.balanceOf(userA);
+        uint256 userAToTokenBalanceBefore = toToken.balanceOf(userA);
         require(
-            userATokenABalanceBefore == INITIAL_TOKEN_AMOUNT - fromAmount,
+            userAFromTokenBalanceBefore == INITIAL_TOKEN_AMOUNT - fromAmount,
             "User A should now have less token A"
         );
         require(
-            userATokenBBalanceBefore == toAmount,
+            userAToTokenBalanceBefore == toAmount,
             "User A should now have token B"
         );
 

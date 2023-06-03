@@ -38,6 +38,7 @@ contract UniswapTest is Test {
             usdc,
             weth
         );
+        require(quote.quoteAmount > 0, "Invalid to amount");
     }
 
     function testOrderFill() external {}

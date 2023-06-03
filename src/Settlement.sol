@@ -4,6 +4,13 @@ import "./interfaces/ISettlement.sol";
 import "./interfaces/IERC20.sol";
 import "./interfaces/ISignatureManager.sol";
 
+interface ISignatureValidator {
+    function isValidSignature(
+        bytes32,
+        bytes memory
+    ) external view returns (bytes4);
+}
+
 /*******************************************************
  *                     Solmate Library
  *******************************************************/
@@ -202,40 +209,96 @@ contract Settlement {
         require(signer != address(0), "Invalid ECDSA signature");
     }
 
-    event Test(bytes);
+    function signatureSplit(
+        bytes memory signatures,
+        uint256 pos
+    ) internal pure returns (uint8 v, bytes32 r, bytes32 s) {
+        assembly {
+            let signaturePos := mul(0x41, pos)
+            r := mload(add(signatures, add(signaturePos, 0x20)))
+            s := mload(add(signatures, add(signaturePos, 0x40)))
+            v := and(mload(add(signatures, add(signaturePos, 0x41))), 0xff)
+        }
+    }
 
-    // function checkNSignatures(
-    //     address signatureManager,
-    //     bytes32 digest,
-    //     bytes memory signatures,
-    //     uint256 requiredSignatures
-    // ) public view {
-    //     require(
-    //         signatures.length >= requiredSignatures * 65,
-    //         "Invalid signature length"
-    //     );
-    //     address lastOwner;
-    //     address currentOwner;
-    //     for (uint256 i = 0; i < requiredSignatures; i++) {
-    //         bytes memory signature;
-    //         assembly {
-    //             let signaturePos := add(sub(signatures, 28), mul(0x41, i))
-    //             mstore(signature, 65)
-    //             calldatacopy(add(signature, 0x20), signaturePos, 65)
-    //         }
-    //         currentOwner = recoverSigner(
-    //             ISettlement.SigningScheme.Eip712,
-    //             signature,
-    //             digest
-    //         );
-    //         require(
-    //             currentOwner > lastOwner &&
-    //                 ISignatureManager(signatureManager).signers(currentOwner),
-    //             "Invalid signature order"
-    //         );
-    //         lastOwner = currentOwner;
-    //     }
-    // }
+    function checkNSignatures(
+        address signatureManager,
+        bytes32 dataHash,
+        bytes memory signatures,
+        uint256 requiredSignatures
+    ) public view {
+        require(signatures.length >= requiredSignatures * 65, "GS020");
+        address lastOwner = address(0);
+        address currentOwner;
+        uint256 i;
+        for (i = 0; i < requiredSignatures; i++) {
+            uint8 v;
+            bytes32 r;
+            bytes32 s;
+            (v, r, s) = signatureSplit(signatures, i);
+            if (v == 0) {
+                // If v is 0 then it is a contract signature
+                currentOwner = address(uint160(uint256(r)));
+                require(uint256(s) >= requiredSignatures * 65, "GS021");
+                require(uint256(s) + 32 <= signatures.length, "GS022");
+                uint256 contractSignatureLen;
+                assembly {
+                    contractSignatureLen := mload(add(add(signatures, s), 0x20))
+                }
+                require(
+                    uint256(s) + 32 + contractSignatureLen <= signatures.length,
+                    "GS023"
+                );
+                bytes memory contractSignature;
+                assembly {
+                    contractSignature := add(add(signatures, s), 0x20)
+                }
+                require(
+                    ISignatureValidator(currentOwner).isValidSignature(
+                        dataHash,
+                        contractSignature
+                    ) == _EIP1271_MAGICVALUE,
+                    "GS024"
+                );
+            } else if (v == 1) {
+                // If v is 1 then it is an approved hash
+                currentOwner = address(uint160(uint256(r)));
+                require(
+                    msg.sender == currentOwner ||
+                        ISignatureManager(signatureManager).approvedHashes(
+                            currentOwner,
+                            dataHash
+                        ),
+                    "Hash is not approved"
+                );
+            } else if (v > 30) {
+                // If v > 30 then default va (27,28) has been adjusted for eth_sign flow
+                currentOwner = ecrecover(
+                    keccak256(
+                        abi.encodePacked(
+                            "\x19Ethereum Signed Message:\n32",
+                            dataHash
+                        )
+                    ),
+                    v - 4,
+                    r,
+                    s
+                );
+            } else {
+                // Default is the ecrecover flow with the provided data hash
+                currentOwner = ecrecover(dataHash, v, r, s);
+            }
+            require(
+                currentOwner > lastOwner,
+                "Invalid signature order or duplicate signature"
+            );
+            require(
+                ISignatureManager(signatureManager).signers(currentOwner),
+                "Signer is not approved"
+            );
+            lastOwner = currentOwner;
+        }
+    }
 
     function buildDigest(
         ISettlement.Payload memory payload
