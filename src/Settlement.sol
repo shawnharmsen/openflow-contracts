@@ -61,6 +61,7 @@ contract Settlement {
     function executeOrder(ISettlement.Order calldata order) public {
         ISettlement.Payload memory payload = order.payload;
         _verify(order);
+        // TODO: We probably don't need safe transfer anymore here since we are checking balances now
         ERC20(payload.fromToken).safeTransferFrom(
             payload.sender,
             msg.sender,
@@ -69,7 +70,7 @@ contract Settlement {
         uint256 outputTokenBalanceBefore = ERC20(payload.toToken).balanceOf(
             payload.recipient
         );
-        ISolver(msg.sender).hook(order.data);
+        ISolver(msg.sender).hook(order.data); // TODO: Consider if there are any security implications based on ERC777 hooks
         uint256 outputTokenBalanceAfter = ERC20(payload.toToken).balanceOf(
             payload.recipient
         );
