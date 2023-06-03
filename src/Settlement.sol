@@ -87,6 +87,8 @@ contract Settlement {
         );
     }
 
+    // See SigUtils.sol for a less optimized and more readable version
+    // TODO: Compare gas savings of using this method
     function buildDigest(
         ISettlement.Payload memory payload
     ) public view returns (bytes32 orderDigest) {
