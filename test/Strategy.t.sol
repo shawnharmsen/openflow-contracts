@@ -6,7 +6,7 @@ import {IERC20} from "../src/interfaces/IERC20.sol";
 import {Settlement} from "../src/Settlement.sol";
 import {ISettlement} from "../src/interfaces/ISettlement.sol";
 import {Strategy, MasterChef, StrategyProfitEscrow} from "./support/Strategy.sol";
-import {StrategyOrderExecutor} from "./support/StrategyOrderExecutor.sol";
+import {StrategyOrderExecutor} from "../src/executors/StrategyOrderExecutor.sol";
 import {SigUtils} from "../test/utils/SigUtils.sol";
 import {UniswapV2Aggregator} from "../src/solvers/UniswapV2Aggregator.sol";
 
@@ -100,12 +100,10 @@ contract StrategyTest is Test {
         );
     }
 
-    function getIt(bytes32 digest, bytes memory signatures) public {}
-
     function sign(
         uint256 privateKey,
         bytes32 digest
-    ) internal view returns (bytes memory signature) {
+    ) internal pure returns (bytes memory signature) {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
         signature = abi.encodePacked(r, s, v);
     }

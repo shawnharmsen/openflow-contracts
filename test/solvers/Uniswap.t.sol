@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import "forge-std/Test.sol";
 import {ERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import {Settlement} from "../../src/Settlement.sol";
-import {OrderExecutor} from "../../src/OrderExecutor.sol";
+import {OrderExecutor} from "../../src/executors/OrderExecutor.sol";
 import {SigUtils} from "../../test/utils/SigUtils.sol";
 import {ISettlement} from "../../src/interfaces/ISettlement.sol";
 import {IERC20} from "../../src/interfaces/IERC20.sol";

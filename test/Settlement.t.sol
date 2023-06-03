@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import "forge-std/Test.sol";
 import {ERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import {Settlement} from "../src/Settlement.sol";
-import {OrderExecutor} from "../src/OrderExecutor.sol";
+import {OrderExecutor} from "../src/executors/OrderExecutor.sol";
 import {UniswapV2Aggregator} from "../src/solvers/UniswapV2Aggregator.sol";
 import {SigUtils} from "../test/utils/SigUtils.sol";
 import {ISettlement} from "../src/interfaces/ISettlement.sol";
@@ -42,7 +42,7 @@ contract SettlementTest is Test {
         tokenA = IERC20(usdc);
         tokenB = IERC20(weth);
 
-        // Alice gets 100 Token A
+        // User A gets 100 Token A
         deal(address(tokenA), userA, INITIAL_TOKEN_AMOUNT);
 
         // Grant settlement infinite allowance

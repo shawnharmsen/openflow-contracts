@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 import "./interfaces/ISettlement.sol";
 import "./interfaces/IERC20.sol";
+import "./interfaces/ISignatureManager.sol";
 
 /*******************************************************
  *                     Solmate Library
@@ -137,7 +138,7 @@ contract Settlement {
         ISettlement.SigningScheme signingScheme,
         bytes calldata signature,
         bytes32 digest
-    ) public returns (address owner) {
+    ) public view returns (address owner) {
         if (signingScheme == ISettlement.SigningScheme.Eip712) {
             owner = _recoverEip712Signer(digest, signature);
         } else if (signingScheme == ISettlement.SigningScheme.Eip1271) {
@@ -151,14 +152,14 @@ contract Settlement {
     function _recoverEip712Signer(
         bytes32 orderDigest,
         bytes calldata encodedSignature
-    ) internal returns (address owner) {
+    ) internal pure returns (address owner) {
         owner = _ecdsaRecover(orderDigest, encodedSignature);
     }
 
     function _recoverEip1271Signer(
         bytes32 orderDigest,
         bytes calldata encodedSignature
-    ) internal returns (address owner) {
+    ) internal view returns (address owner) {
         assembly {
             owner := shr(96, calldataload(encodedSignature.offset))
         }
@@ -200,6 +201,41 @@ contract Settlement {
         signer = ecrecover(message, v, r, s);
         require(signer != address(0), "Invalid ECDSA signature");
     }
+
+    event Test(bytes);
+
+    // function checkNSignatures(
+    //     address signatureManager,
+    //     bytes32 digest,
+    //     bytes memory signatures,
+    //     uint256 requiredSignatures
+    // ) public view {
+    //     require(
+    //         signatures.length >= requiredSignatures * 65,
+    //         "Invalid signature length"
+    //     );
+    //     address lastOwner;
+    //     address currentOwner;
+    //     for (uint256 i = 0; i < requiredSignatures; i++) {
+    //         bytes memory signature;
+    //         assembly {
+    //             let signaturePos := add(sub(signatures, 28), mul(0x41, i))
+    //             mstore(signature, 65)
+    //             calldatacopy(add(signature, 0x20), signaturePos, 65)
+    //         }
+    //         currentOwner = recoverSigner(
+    //             ISettlement.SigningScheme.Eip712,
+    //             signature,
+    //             digest
+    //         );
+    //         require(
+    //             currentOwner > lastOwner &&
+    //                 ISignatureManager(signatureManager).signers(currentOwner),
+    //             "Invalid signature order"
+    //         );
+    //         lastOwner = currentOwner;
+    //     }
+    // }
 
     function buildDigest(
         ISettlement.Payload memory payload

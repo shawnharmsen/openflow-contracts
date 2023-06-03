@@ -4,7 +4,7 @@ import "forge-std/Test.sol";
 
 import {ISettlement} from "../../src/interfaces/ISettlement.sol";
 import {IERC20} from "../../src/interfaces/IERC20.sol";
-import {Strategy} from "./Strategy.sol";
+import {Strategy} from "../../test/support/Strategy.sol";
 
 interface IStrategyProfitEscrow {
     function generatePayload(
@@ -57,8 +57,6 @@ contract StrategyOrderExecutor {
             payload: payload
         });
 
-        Data memory dat = abi.decode(data, (Data));
-
         // Perform the swap, sending toToken to the strategy
         settlement.executeOrder(order);
 
@@ -66,14 +64,10 @@ contract StrategyOrderExecutor {
         strategy.updateAccounting();
     }
 
-    event Test(address addy, uint256 amt);
-
     // Generic hook for executing an order
     function hook(bytes memory orderData) external {
         require(msg.sender == address(settlement));
         Data memory executorData = abi.decode(orderData, (Data));
-
-        emit Test(address(executorData.toToken), executorData.toAmount);
         executorData.fromToken.approve(executorData.target, type(uint256).max); // Max approve to save gas --this contract should not hold tokens
         executorData.target.call(executorData.payload);
         executorData.toToken.transfer(

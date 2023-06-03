@@ -26,6 +26,13 @@ interface ISettlement {
         EthSign
     }
 
+    function checkNSignatures(
+        address signatureManager,
+        bytes32 digest,
+        bytes memory signatures,
+        uint256 requiredSignatures
+    ) external view;
+
     function executeOrder(Order memory) external;
 
     function buildDigest(Payload memory) external view returns (bytes32);
@@ -36,14 +43,14 @@ interface ISettlement {
         ISettlement.SigningScheme,
         bytes memory,
         bytes32
-    ) external returns (address);
+    ) external view returns (address);
 }
 
 interface EIP1271Verifier {
     function isValidSignature(
         bytes32 _hash,
         bytes calldata _signature
-    ) external returns (bytes4 magicValue);
+    ) external view returns (bytes4 magicValue);
 }
 
 interface ISolver {

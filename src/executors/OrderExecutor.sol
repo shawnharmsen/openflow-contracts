@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import {ISettlement} from "./interfaces/ISettlement.sol";
-import {IERC20} from "./interfaces/IERC20.sol";
+import {ISettlement} from "../interfaces/ISettlement.sol";
+import {IERC20} from "../interfaces/IERC20.sol";
 
 contract OrderExecutor {
     ISettlement public settlement;
