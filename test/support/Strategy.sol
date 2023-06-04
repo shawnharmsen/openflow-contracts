@@ -57,8 +57,18 @@ contract Strategy {
 
     function harvest() external {
         masterChef.getReward();
+
+        // Create posthook
+        ISettlement.Interaction[][2] memory contractInteractions;
+        contractInteractions[1] = new ISettlement.Interaction[](1);
+        contractInteractions[1][0] = ISettlement.Interaction({
+            target: address(this),
+            value: 0,
+            callData: abi.encodeWithSelector(this.updateAccounting.selector)
+        });
+
         // TODO: IStrategyProfitEscrow
-        StrategyProfitEscrow(profitEscrow).initiateSwap();
+        StrategyProfitEscrow(profitEscrow).initiateSwap(contractInteractions);
     }
 
     function updateAccounting() public {}

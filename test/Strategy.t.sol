@@ -48,6 +48,19 @@ contract StrategyTest is Test {
     }
 
     function testHarvestAndDump() external {
+        vm.recordLogs();
+        strategy.harvest();
+        Vm.Log[] memory harvestLogs = vm.getRecordedLogs();
+
+        assertEq(harvestLogs.length, 3);
+        // TODO: Figure out exact keccak256 string: submitOrder(tuple(...))
+        bytes32 submitOrderHash = hex"d2978d27e147f9cf872075fc3f4fa6377f73be6d46cf62fa04dbc1285a8f887d";
+        assertEq(harvestLogs[2].topics[0], submitOrderHash);
+        ISettlement.Payload memory decodedPayload = abi.decode(
+            harvestLogs[2].data,
+            (ISettlement.Payload)
+        );
+
         IERC20 fromToken = IERC20(strategy.reward());
         IERC20 toToken = IERC20(strategy.asset());
 
@@ -85,34 +98,8 @@ contract StrategyTest is Test {
             strategy.profitEscrow()
         );
 
-        // Contract hooks
-        ISettlement.Interaction[][2] memory contractInteractions;
-
-        // Prehooks
-        contractInteractions[0] = new ISettlement.Interaction[](1);
-        contractInteractions[0][0] = ISettlement.Interaction({
-            target: address(strategy),
-            value: 0,
-            callData: abi.encodeWithSelector(Strategy.harvest.selector)
-        });
-
-        // Posthooks
-        contractInteractions[1] = new ISettlement.Interaction[](1);
-        contractInteractions[1][0] = ISettlement.Interaction({
-            target: address(strategy),
-            value: 0,
-            callData: abi.encodeWithSelector(Strategy.updateAccounting.selector)
-        });
-
-        // Payload
-        ISettlement.Payload memory payload = profitEscrow.buildPayload(
-            fromAmount,
-            toAmount,
-            contractInteractions
-        );
-
         // Build digest
-        bytes32 digest = settlement.buildDigest(payload);
+        bytes32 digest = settlement.buildDigest(decodedPayload);
 
         // Sign and execute order
         bytes memory signature1 = _sign(_USER_A_PRIVATE_KEY, digest);
@@ -130,7 +117,7 @@ contract StrategyTest is Test {
         ISettlement.Order memory order = ISettlement.Order({
             signature: encodedSignatures,
             data: executorData,
-            payload: payload
+            payload: decodedPayload
         });
 
         address[] memory signers = new address[](2);

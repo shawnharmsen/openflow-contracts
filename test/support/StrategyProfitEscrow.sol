@@ -33,7 +33,7 @@ contract StrategyProfitEscrow {
     // Signatures
     uint256 public signatureThresold;
     mapping(address => bool) public signers;
-    mapping(address => mapping(bytes32 => bool)) public approvedHashes;
+    mapping(bytes32 => bool) public approvedHashes;
 
     constructor(
         address _orderBookNotifier,
@@ -54,19 +54,20 @@ contract StrategyProfitEscrow {
 
     // This should call out to the generic solution for swapping tokens in auction form from a contract
     // Maybe call to registry, etc.. WIP
-    function initiateSwap() external {
+    function initiateSwap(
+        ISettlement.Interaction[][2] memory contractInteractions
+    ) external {
         uint256 fromAmount = IERC20(fromToken).balanceOf(msg.sender);
 
-        // TODO: SafeTransfer
-        IERC20(fromToken).transferFrom(msg.sender, address(this), fromAmount);
-
-        // TODO: Build pre and post hooks here
-        ISettlement.Interaction[][2] memory contractInteractions;
+        IERC20(fromToken).transferFrom(msg.sender, address(this), fromAmount); // TODO: SafeTransfer
+        uint256 toAmount = 100; // TODO: Build min amount
         ISettlement.Payload memory payload = buildPayload(
             fromAmount,
-            100,
+            toAmount,
             contractInteractions
         );
+        bytes32 digest = ISettlement(settlement).buildDigest(payload);
+        approvedHashes[digest] = true;
 
         OrderBookNotifier(orderBookNotifier).submitOrder(payload);
     }
@@ -77,8 +78,6 @@ contract StrategyProfitEscrow {
         ISettlement(settlement).cancelOrders();
         OrderBookNotifier(orderBookNotifier).cancelOrders();
     }
-
-    event Payload(ISettlement.Payload payload);
 
     function buildPayload(
         uint256 fromAmount,
@@ -96,7 +95,6 @@ contract StrategyProfitEscrow {
             deadline: block.timestamp,
             interactions: interactions
         });
-        emit Payload(payload);
     }
 
     function isValidSignature(
@@ -109,6 +107,7 @@ contract StrategyProfitEscrow {
             signatures,
             signatureThresold
         );
+        require(approvedHashes[digest], "Digest not approved");
         return _EIP1271_MAGICVALUE;
     }
 
