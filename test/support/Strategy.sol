@@ -51,6 +51,10 @@ contract Strategy {
         reward.approve(profitEscrow, type(uint256).max);
     }
 
+    function estimatedEarnings() external view returns (uint256) {
+        return masterChef.rewardOwedByAccount(address(this));
+    }
+
     function harvest() external {
         masterChef.getReward();
         // TODO: IStrategyProfitEscrow

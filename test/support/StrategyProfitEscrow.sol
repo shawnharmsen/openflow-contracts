@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 import {IERC20} from "../../src/interfaces/IERC20.sol";
 import {ISettlement} from "../../src/interfaces/ISettlement.sol";
 import {SigningLib} from "../../src/lib/Signing.sol";
+import {Strategy} from "../../test/support/Strategy.sol";
 import {OrderBookNotifier} from "../../src/OrderBookNotifier.sol"; // TODO: IOrderBook
 import "forge-std/Test.sol";
 
@@ -59,7 +60,13 @@ contract StrategyProfitEscrow {
         // TODO: SafeTransfer
         IERC20(fromToken).transferFrom(msg.sender, address(this), fromAmount);
 
-        ISettlement.Payload memory payload = buildPayload(fromAmount, 100);
+        // TODO: Build pre and post hooks here
+        ISettlement.Interaction[][2] memory contractInteractions;
+        ISettlement.Payload memory payload = buildPayload(
+            fromAmount,
+            100,
+            contractInteractions
+        );
 
         OrderBookNotifier(orderBookNotifier).submitOrder(payload);
     }
@@ -75,9 +82,9 @@ contract StrategyProfitEscrow {
 
     function buildPayload(
         uint256 fromAmount,
-        uint256 toAmount
+        uint256 toAmount,
+        ISettlement.Interaction[][2] memory interactions
     ) public returns (ISettlement.Payload memory payload) {
-        ISettlement.Interaction[][2] memory interactions;
         payload = ISettlement.Payload({
             fromToken: fromToken,
             toToken: toToken,

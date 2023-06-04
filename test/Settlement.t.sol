@@ -83,7 +83,7 @@ contract SettlementTest is Test {
         );
 
         // Build order
-        ISettlement.Interaction[][2] memory interactions0;
+        ISettlement.Interaction[][2] memory contractInteractions;
         ISettlement.Order memory order = ISettlement.Order({
             signature: hex"",
             data: executorData,
@@ -96,7 +96,7 @@ contract SettlementTest is Test {
                 recipient: userA,
                 nonce: 0,
                 deadline: block.timestamp,
-                interactions: interactions0
+                interactions: contractInteractions
             })
         });
 
@@ -120,9 +120,9 @@ contract SettlementTest is Test {
         );
 
         // Build after swap solver hook
-        ISettlement.Interaction[][2] memory interactions;
-        interactions[1] = new ISettlement.Interaction[](1);
-        interactions[1][0] = ISettlement.Interaction({
+        ISettlement.Interaction[][2] memory solverInteractions;
+        solverInteractions[1] = new ISettlement.Interaction[](1);
+        solverInteractions[1][0] = ISettlement.Interaction({
             target: address(executor),
             value: 0,
             callData: abi.encodeWithSelector(
@@ -133,7 +133,7 @@ contract SettlementTest is Test {
         });
 
         // Execute order
-        executor.executeOrder(order, interactions);
+        executor.executeOrder(order, solverInteractions);
 
         // Make sure solver is capable of receiving profit
         uint256 solverBalanceAfter = toToken.balanceOf(solver);

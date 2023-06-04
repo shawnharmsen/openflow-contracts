@@ -62,7 +62,12 @@ contract Settlement {
         _verify(order);
 
         /**
-         * @notice Step 2. Optimistically transfer funds from payload.sender to msg.sender (order executor)
+         * @notice Step 2. Execute optional contract preswap hooks
+         * */
+        _executeInteractions(order.payload.interactions[0]);
+
+        /**
+         * @notice Step 3. Optimistically transfer funds from payload.sender to msg.sender (order executor)
          * @dev Payload.sender must approve settlement
          * @dev TODO: We probably don't need safe transfer anymore here since we are checking balances now
          */
@@ -76,7 +81,7 @@ contract Settlement {
         );
 
         /**
-         * @notice Step 3. Order executor executes the swap and is required to send funds to payload.recipient
+         * @notice Step 4. Order executor executes the swap and is required to send funds to payload.recipient
          * @dev Order executors can be completely custom, or the generic order executor can be used
          * @dev Solver configurable metadata about the order is sent to the order executor hook
          * @dev Settlement does not care how the solver executes the order, all Settlement cares about is that
@@ -85,7 +90,12 @@ contract Settlement {
         ISolver(msg.sender).hook(order.data); // TODO: Consider if there are any security implications based on ERC777 hooks
 
         /**
-         * @notice Step 4. Make sure payload.recipient receives the agreed upon amount of tokens
+         * @notice Step 5. Execute optional contract postswap hooks
+         */
+        _executeInteractions(order.payload.interactions[1]);
+
+        /**
+         * @notice Step 6. Make sure payload.recipient receives the agreed upon amount of tokens
          */
         uint256 outputTokenBalanceAfter = ERC20(payload.toToken).balanceOf(
             payload.recipient
@@ -122,24 +132,6 @@ contract Settlement {
      * @notice Building the digest hash
      * @dev TODO: Compare more readable implementation (below) to assembly implementation for gas savings analysis
      * @dev TODO: Add more comments
-     *
-     * @dev Equivalent to:
-     *   bytes32 structHash = keccak256(
-     *       abi.encode(
-     *           typeHash,
-     *           _payload.fromToken,
-     *           _payload.toToken,
-     *           _payload.fromAmount,
-     *           _payload.toAmount,
-     *           _payload.sender,
-     *           _payload.recipient,
-     *           _payload.nonce,
-     *           _payload.deadline
-     *       )
-     *   );
-     *   digest = keccak256(
-     *       abi.encodePacked("\x19\x01", domainSeparator, structHash)
-     *   );
      */
     function buildDigest(
         ISettlement.Payload memory _payload
@@ -155,5 +147,20 @@ contract Settlement {
 
     function cancelOrders() external {
         nonces[msg.sender]++;
+    }
+
+    /**
+     * @notice Contract interaction hooks
+     */
+    function _executeInteractions(
+        ISettlement.Interaction[] memory interactions
+    ) internal {
+        for (uint256 i; i < interactions.length; i++) {
+            ISettlement.Interaction memory interaction = interactions[i];
+            (bool success, ) = interaction.target.call{
+                value: interaction.value
+            }(interaction.callData);
+            require(success, "Interaction failed");
+        }
     }
 }

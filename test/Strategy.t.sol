@@ -48,14 +48,11 @@ contract StrategyTest is Test {
     }
 
     function testHarvestAndDump() external {
-        strategy.harvest();
         IERC20 fromToken = IERC20(strategy.reward());
         IERC20 toToken = IERC20(strategy.asset());
 
         // Get quote
-        uint256 fromAmount = fromToken.balanceOf(
-            address(strategy.profitEscrow())
-        );
+        uint256 fromAmount = strategy.estimatedEarnings();
         require(fromAmount > 0, "Invalid fromAmount");
         UniswapV2Aggregator.Quote memory quote = uniswapAggregator.quote(
             fromAmount,
@@ -88,10 +85,30 @@ contract StrategyTest is Test {
             strategy.profitEscrow()
         );
 
+        // Contract hooks
+        ISettlement.Interaction[][2] memory contractInteractions;
+
+        // Prehook
+        contractInteractions[0] = new ISettlement.Interaction[](1);
+        contractInteractions[0][0] = ISettlement.Interaction({
+            target: address(strategy),
+            value: 0,
+            callData: abi.encodeWithSelector(Strategy.harvest.selector)
+        });
+
+        // Posthook
+        contractInteractions[1] = new ISettlement.Interaction[](1);
+        contractInteractions[1][0] = ISettlement.Interaction({
+            target: address(strategy),
+            value: 0,
+            callData: abi.encodeWithSelector(Strategy.updateAccounting.selector)
+        });
+
         // Payload
         ISettlement.Payload memory payload = profitEscrow.buildPayload(
             fromAmount,
-            toAmount
+            toAmount,
+            contractInteractions
         );
 
         bytes32 digest = settlement.buildDigest(payload);
@@ -121,10 +138,10 @@ contract StrategyTest is Test {
         profitEscrow.addSigners(signers);
 
         // Build after swap hook
-        ISettlement.Interaction[][2] memory interactions;
+        ISettlement.Interaction[][2] memory solverInteractions;
 
         // Execute order
-        executor.executeOrder(order, interactions);
+        executor.executeOrder(order, solverInteractions);
     }
 
     function _sign(

@@ -60,6 +60,7 @@ contract OrderExecutor {
         );
     }
 
+    // Solver hooks
     function _executeInteractions(
         ISettlement.Interaction[] memory interactions
     ) internal {
