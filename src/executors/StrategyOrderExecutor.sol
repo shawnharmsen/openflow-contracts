@@ -85,8 +85,15 @@ contract StrategyOrderExecutor {
         );
 
         // Build order
+        // See "Contract Signature" section of https://docs.safe.global/learn/safe-core/safe-core-protocol/signatures
+        bytes32 s = bytes32(uint256(96)); // offset - 96
+        bytes32 v = bytes32(uint256(0)); // type
+        bytes memory encodedSignatures = abi.encodePacked(
+            abi.encode(strategyProfitEscrow, s, v, signatures.length),
+            signatures
+        );
         ISettlement.Order memory order = ISettlement.Order({
-            signature: abi.encodePacked(strategyProfitEscrow, signatures),
+            signature: encodedSignatures,
             data: data,
             payload: payload
         });
