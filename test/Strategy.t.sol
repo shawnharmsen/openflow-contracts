@@ -10,9 +10,9 @@ import {StrategyOrderExecutor} from "../src/executors/StrategyOrderExecutor.sol"
 import {UniswapV2Aggregator} from "../src/solvers/UniswapV2Aggregator.sol";
 
 contract StrategyTest is Test {
-    Strategy strategy;
-    IERC20 rewardToken;
-    MasterChef masterChef;
+    Strategy public strategy;
+    IERC20 public rewardToken;
+    MasterChef public masterChef;
     address public usdc = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
     address public weth = 0x74b23882a30290451A17c44f4F05243b6b58C76d;
     Settlement public settlement;
