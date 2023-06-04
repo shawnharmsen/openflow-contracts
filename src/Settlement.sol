@@ -17,7 +17,7 @@ contract Settlement {
         );
     bytes32 public constant TYPE_HASH =
         keccak256(
-            "Swap(uint8 signingScheme,address fromToken,address toToken,uint256 fromAmount,uint256 toAmount,address sender,address recipient,uint256 nonce,uint256 deadline)"
+            "Swap(address fromToken,address toToken,uint256 fromAmount,uint256 toAmount,address sender,address recipient,uint256 nonce,uint256 deadline)"
         );
     bytes32 public immutable domainSeparator;
     mapping(address => uint256) public nonces;
