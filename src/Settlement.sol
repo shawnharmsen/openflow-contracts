@@ -118,7 +118,7 @@ contract Settlement {
 
     /**
      * @notice Building the digest hash
-     * @dev TODO: Compare SigUtils implementation vs this impleemntation for gas savings analysis
+     * @dev TODO: Compare more readable implementation (below) to assembly implementation for gas savings analysis
      * @dev TODO: Add more comments
      *
      * @dev Equivalent to:
