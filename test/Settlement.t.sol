@@ -6,7 +6,6 @@ import {ERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import {Settlement} from "../src/Settlement.sol";
 import {OrderExecutor} from "../src/executors/OrderExecutor.sol";
 import {UniswapV2Aggregator} from "../src/solvers/UniswapV2Aggregator.sol";
-import {SigUtils} from "../test/utils/SigUtils.sol";
 import {ISettlement} from "../src/interfaces/ISettlement.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
 
@@ -25,7 +24,6 @@ contract SettlementTest is Test {
     OrderExecutor public executor;
     IERC20 public fromToken;
     IERC20 public toToken;
-    SigUtils public sigUtils;
     UniswapV2Aggregator public uniswapAggregator;
 
     function setUp() public {
@@ -35,10 +33,6 @@ contract SettlementTest is Test {
         // Configuration
         settlement = new Settlement();
         executor = new OrderExecutor(address(settlement));
-        sigUtils = new SigUtils(
-            settlement.domainSeparator(),
-            settlement.TYPE_HASH()
-        );
         fromToken = IERC20(usdc);
         toToken = IERC20(weth);
 
@@ -105,7 +99,7 @@ contract SettlementTest is Test {
         });
 
         // Sign order
-        bytes32 digest = sigUtils.buildDigest(order.payload);
+        bytes32 digest = settlement.buildDigest(order.payload);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(_USER_A_PRIVATE_KEY, digest);
         order.signature = abi.encodePacked(r, s, v);
 
@@ -164,7 +158,7 @@ contract SettlementTest is Test {
         order.payload.nonce++;
 
         // Sign order
-        digest = sigUtils.buildDigest(order.payload);
+        digest = settlement.buildDigest(order.payload);
         (v, r, s) = vm.sign(_USER_A_PRIVATE_KEY, digest);
         order.signature = abi.encodePacked(r, s, v);
 

@@ -118,9 +118,23 @@ contract Settlement {
 
     /**
      * @notice Building the digest hash
-     * @dev See SigUtils.sol for a less optimized and more readable version
      * @dev TODO: Compare SigUtils implementation vs this impleemntation for gas savings analysis
      * @dev TODO: Add more comments
+     *
+     * @dev Equivalent to:
+     *   bytes32 structHash = keccak256(
+     *       abi.encode(
+     *           typeHash,
+     *           _payload.fromToken,
+     *           _payload.toToken,
+     *           _payload.fromAmount,
+     *           _payload.toAmount,
+     *           _payload.sender,
+     *           _payload.recipient,
+     *           _payload.nonce,
+     *           _payload.deadline
+     *       )
+     *   );
      */
     function buildDigest(
         ISettlement.Payload memory payload

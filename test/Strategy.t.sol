@@ -7,7 +7,6 @@ import {Settlement} from "../src/Settlement.sol";
 import {ISettlement} from "../src/interfaces/ISettlement.sol";
 import {Strategy, MasterChef, StrategyProfitEscrow} from "./support/Strategy.sol";
 import {StrategyOrderExecutor} from "../src/executors/StrategyOrderExecutor.sol";
-import {SigUtils} from "../test/utils/SigUtils.sol";
 import {UniswapV2Aggregator} from "../src/solvers/UniswapV2Aggregator.sol";
 
 contract StrategyTest is Test {
@@ -18,7 +17,6 @@ contract StrategyTest is Test {
     address public weth = 0x74b23882a30290451A17c44f4F05243b6b58C76d;
     Settlement public settlement;
     StrategyOrderExecutor public executor;
-    SigUtils public sigUtils;
     UniswapV2Aggregator public uniswapAggregator;
     uint256 internal constant _USER_A_PRIVATE_KEY = 0xB0B;
     uint256 internal constant _USER_B_PRIVATE_KEY = 0xA11CE;
