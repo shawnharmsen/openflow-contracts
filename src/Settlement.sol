@@ -135,6 +135,9 @@ contract Settlement {
      *           _payload.deadline
      *       )
      *   );
+     *   digest = keccak256(
+     *       abi.encodePacked("\x19\x01", domainSeparator, structHash)
+     *   );
      */
     function buildDigest(
         ISettlement.Payload memory payload
