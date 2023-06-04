@@ -121,7 +121,7 @@ contract StrategyTest is Test {
         profitEscrow.addSigners(signers);
 
         // Build after swap hook
-        OrderExecutor.Interaction[][2] memory interactions;
+        ISettlement.Interaction[][2] memory interactions;
 
         // Execute order
         executor.executeOrder(order, interactions);

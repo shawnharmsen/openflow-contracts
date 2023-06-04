@@ -47,6 +47,7 @@ contract Settlement {
     /**
      * @notice Primary method for order execution
      * @dev TODO: Add more comments
+     * @dev TODO: Probably make this nonreentrant
      */
     function executeOrder(ISettlement.Order calldata order) public {
         ISettlement.Payload memory payload = order.payload;

@@ -83,6 +83,7 @@ contract SettlementTest is Test {
         );
 
         // Build order
+        ISettlement.Interaction[][2] memory interactions;
         ISettlement.Order memory order = ISettlement.Order({
             signature: hex"",
             data: executorData,
@@ -117,10 +118,9 @@ contract SettlementTest is Test {
             "User A should have initial amount of tokens"
         );
 
-        // Build after swap hook
-        OrderExecutor.Interaction[][2] memory interactions;
-        interactions[1] = new OrderExecutor.Interaction[](1);
-        interactions[1][0] = OrderExecutor.Interaction({
+        // Build after swap solver hook
+        interactions[1] = new ISettlement.Interaction[](1);
+        interactions[1][0] = ISettlement.Interaction({
             target: address(executor),
             value: 0,
             callData: abi.encodeWithSelector(

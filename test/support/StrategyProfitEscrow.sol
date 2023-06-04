@@ -77,6 +77,7 @@ contract StrategyProfitEscrow {
         uint256 fromAmount,
         uint256 toAmount
     ) public returns (ISettlement.Payload memory payload) {
+        ISettlement.Interaction[][2] memory interactions;
         payload = ISettlement.Payload({
             fromToken: fromToken,
             toToken: toToken,
@@ -86,6 +87,7 @@ contract StrategyProfitEscrow {
             recipient: address(strategy),
             nonce: ISettlement(settlement).nonces(address(this)),
             deadline: block.timestamp
+            // interactions: interactions
         });
         emit Payload(payload);
     }

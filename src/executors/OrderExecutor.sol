@@ -33,7 +33,7 @@ contract OrderExecutor {
 
     function executeOrder(
         ISettlement.Order calldata order,
-        Interaction[][2] memory interactions
+        ISettlement.Interaction[][2] memory interactions
     ) public {
         // Before swap hook
         _executeInteractions(interactions[0]);
@@ -60,9 +60,11 @@ contract OrderExecutor {
         );
     }
 
-    function _executeInteractions(Interaction[] memory interactions) internal {
+    function _executeInteractions(
+        ISettlement.Interaction[] memory interactions
+    ) internal {
         for (uint256 i; i < interactions.length; i++) {
-            Interaction memory interaction = interactions[i];
+            ISettlement.Interaction memory interaction = interactions[i];
             (bool success, ) = interaction.target.call{
                 value: interaction.value
             }(interaction.callData);
