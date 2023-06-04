@@ -15,12 +15,13 @@ contract Settlement {
         keccak256(
             "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
         );
+    // TODO: Verify typehash is still valid
     bytes32 public constant TYPE_HASH =
         keccak256(
             "Swap(address fromToken,address toToken,uint256 fromAmount,uint256 toAmount,address sender,address recipient,uint256 nonce,uint256 deadline)"
         );
     bytes32 public immutable domainSeparator;
-    mapping(address => uint256) public nonces;
+    mapping(address => uint256) public nonces; // TODO: Rethink nonces. We may want to allow multiple orders at a time
 
     event OrderExecuted(
         address solver,
@@ -160,5 +161,9 @@ contract Settlement {
             mstore(add(freeMemoryPointer, 34), structHash)
             orderDigest := keccak256(freeMemoryPointer, 66)
         }
+    }
+
+    function cancelOrders() external {
+        nonces[msg.sender]++;
     }
 }

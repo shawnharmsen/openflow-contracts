@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 import {IERC20} from "../../src/interfaces/IERC20.sol";
 import {ISettlement} from "../../src/interfaces/ISettlement.sol";
-import {StrategyProfitEscrow} from "./Signing.sol";
+import {StrategyProfitEscrow} from "./StrategyProfitEscrow.sol";
 import "forge-std/Test.sol";
 
 contract MasterChef {
@@ -30,23 +30,31 @@ contract Strategy {
     IERC20 public reward; // Reward is USDC
     address public profitEscrow;
 
-    constructor(MasterChef _masterChef, address _settlement) {
+    constructor(
+        address _orderBook,
+        MasterChef _masterChef,
+        address _settlement
+    ) {
         masterChef = _masterChef;
         masterChef.accrueReward();
         reward = masterChef.rewardToken();
         profitEscrow = address(
             new StrategyProfitEscrow(
+                _orderBook,
                 address(this),
                 _settlement,
                 address(reward),
                 address(asset)
             )
         );
+        // TODO: SafeApprove??
+        reward.approve(profitEscrow, type(uint256).max);
     }
 
     function harvest() external {
         masterChef.getReward();
-        reward.transfer(profitEscrow, reward.balanceOf(address(this)));
+        // TODO: IStrategyProfitEscrow
+        StrategyProfitEscrow(profitEscrow).initiateSwap();
     }
 
     function updateAccounting() public {}

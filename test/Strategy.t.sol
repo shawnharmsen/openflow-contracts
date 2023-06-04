@@ -6,7 +6,8 @@ import {IERC20} from "../src/interfaces/IERC20.sol";
 import {Settlement} from "../src/Settlement.sol";
 import {ISettlement} from "../src/interfaces/ISettlement.sol";
 import {Strategy, MasterChef, StrategyProfitEscrow} from "./support/Strategy.sol";
-import {StrategyOrderExecutor} from "../src/executors/StrategyOrderExecutor.sol";
+import {OrderBookNotifier} from "../src/OrderBookNotifier.sol";
+import {OrderExecutor} from "../src/executors/OrderExecutor.sol";
 import {UniswapV2Aggregator} from "../src/solvers/UniswapV2Aggregator.sol";
 
 contract StrategyTest is Test {
@@ -16,8 +17,9 @@ contract StrategyTest is Test {
     address public usdc = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
     address public weth = 0x74b23882a30290451A17c44f4F05243b6b58C76d;
     Settlement public settlement;
-    StrategyOrderExecutor public executor;
+    OrderExecutor public executor;
     UniswapV2Aggregator public uniswapAggregator;
+    OrderBookNotifier public orderBookNotifier;
     uint256 internal constant _USER_A_PRIVATE_KEY = 0xB0B;
     uint256 internal constant _USER_B_PRIVATE_KEY = 0xA11CE;
     address public immutable userA = vm.addr(_USER_A_PRIVATE_KEY);
@@ -26,9 +28,14 @@ contract StrategyTest is Test {
     function setUp() public {
         settlement = new Settlement();
         masterChef = new MasterChef();
-        strategy = new Strategy(masterChef, address(settlement));
+        orderBookNotifier = new OrderBookNotifier();
+        strategy = new Strategy(
+            address(orderBookNotifier),
+            masterChef,
+            address(settlement)
+        );
         rewardToken = IERC20(masterChef.rewardToken());
-        executor = new StrategyOrderExecutor(address(settlement));
+        executor = new OrderExecutor(address(settlement));
         uniswapAggregator = new UniswapV2Aggregator();
         uniswapAggregator.addDex(
             UniswapV2Aggregator.Dex({
@@ -49,16 +56,18 @@ contract StrategyTest is Test {
         uint256 fromAmount = fromToken.balanceOf(
             address(strategy.profitEscrow())
         );
+        require(fromAmount > 0, "Invalid fromAmount");
         UniswapV2Aggregator.Quote memory quote = uniswapAggregator.quote(
             fromAmount,
             address(fromToken),
             address(toToken)
         );
         uint256 toAmount = (quote.quoteAmount * 95) / 100;
+        toAmount = 100;
 
         // Build executor data
         bytes memory executorData = abi.encode(
-            StrategyOrderExecutor.Data({
+            OrderExecutor.Data({
                 fromToken: fromToken,
                 toToken: toToken,
                 fromAmount: fromAmount,
@@ -78,28 +87,44 @@ contract StrategyTest is Test {
         StrategyProfitEscrow profitEscrow = StrategyProfitEscrow(
             strategy.profitEscrow()
         );
-        address[] memory signers = new address[](2);
-        signers[0] = userA;
-        signers[1] = userB;
-        profitEscrow.addSigners(signers);
-        bytes32 digest = executor.buildDigest(
+
+        // Payload
+        ISettlement.Payload memory payload = profitEscrow.buildPayload(
             fromAmount,
-            toAmount,
-            address(strategy),
-            address(profitEscrow)
+            toAmount
         );
+
+        bytes32 digest = settlement.buildDigest(payload);
 
         // Sign and execute order
         bytes memory signature1 = _sign(_USER_A_PRIVATE_KEY, digest);
         bytes memory signature2 = _sign(_USER_B_PRIVATE_KEY, digest);
         bytes memory signatures = abi.encodePacked(signature1, signature2);
-        executor.executeOrder(
-            strategy,
-            fromAmount,
-            toAmount,
-            executorData,
+
+        // Build order
+        // See "Contract Signature" section of https://docs.safe.global/learn/safe-core/safe-core-protocol/signatures
+        bytes32 s = bytes32(uint256(96)); // offset - 96
+        bytes32 v = bytes32(uint256(0)); // type
+        bytes memory encodedSignatures = abi.encodePacked(
+            abi.encode(profitEscrow, s, v, signatures.length),
             signatures
         );
+        ISettlement.Order memory order = ISettlement.Order({
+            signature: encodedSignatures,
+            data: executorData,
+            payload: payload
+        });
+
+        address[] memory signers = new address[](2);
+        signers[0] = userA;
+        signers[1] = userB;
+        profitEscrow.addSigners(signers);
+
+        // Build after swap hook
+        OrderExecutor.Interaction[][2] memory interactions;
+
+        // Execute order
+        executor.executeOrder(order, interactions);
     }
 
     function _sign(
