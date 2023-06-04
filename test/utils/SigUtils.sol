@@ -20,7 +20,6 @@ contract SigUtils {
         bytes32 structHash = keccak256(
             abi.encode(
                 typeHash,
-                _payload.signingScheme,
                 _payload.fromToken,
                 _payload.toToken,
                 _payload.fromAmount,

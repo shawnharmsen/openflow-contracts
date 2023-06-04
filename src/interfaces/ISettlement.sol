@@ -9,7 +9,6 @@ interface ISettlement {
     }
 
     struct Payload {
-        SigningScheme signingScheme;
         address fromToken;
         address toToken;
         uint256 fromAmount;
@@ -18,12 +17,6 @@ interface ISettlement {
         address recipient;
         uint256 nonce;
         uint256 deadline;
-    }
-
-    enum SigningScheme {
-        Eip712,
-        Eip1271,
-        EthSign
     }
 
     function checkNSignatures(
@@ -40,7 +33,6 @@ interface ISettlement {
     function nonces(address) external view returns (uint256);
 
     function recoverSigner(
-        ISettlement.SigningScheme,
         bytes memory,
         bytes32
     ) external view returns (address);

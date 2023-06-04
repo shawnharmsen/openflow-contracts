@@ -93,7 +93,6 @@ contract SettlementTest is Test {
             signature: hex"",
             data: executorData,
             payload: ISettlement.Payload({
-                signingScheme: ISettlement.SigningScheme.Eip712,
                 fromToken: address(fromToken),
                 toToken: address(toToken),
                 fromAmount: fromAmount,

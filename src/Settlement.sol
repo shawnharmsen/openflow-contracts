@@ -107,11 +107,7 @@ contract Settlement {
      */
     function _verify(ISettlement.Order calldata order) internal {
         bytes32 digest = buildDigest(order.payload);
-        address signatory = SigningLib.recoverSigner(
-            order.payload.signingScheme,
-            order.signature,
-            digest
-        );
+        address signatory = SigningLib.recoverSigner(order.signature, digest);
         require(signatory == order.payload.sender, "Invalid signer");
         require(block.timestamp <= order.payload.deadline, "Deadline expired");
         require(

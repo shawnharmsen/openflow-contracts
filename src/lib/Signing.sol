@@ -17,7 +17,6 @@ library SigningLib {
     bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;
 
     function recoverSigner(
-        ISettlement.SigningScheme signingScheme,
         bytes memory signature,
         bytes32 digest
     ) public view returns (address owner) {
@@ -26,6 +25,7 @@ library SigningLib {
             v := and(mload(add(signature, 0x41)), 0xff)
         }
         if (v == 0) {
+            // Contract signature
             owner = recoverEip1271Signer(digest, signature);
         } else if (v == 1) {
             // currentOwner = recoverPresignedOwner(digest, signature);
@@ -65,7 +65,7 @@ library SigningLib {
             mstore(signature, signatureLength)
             calldatacopy(
                 add(signature, 0x20),
-                add(add(signature, signatureOffset), 0x44), // digest + free memory + 4byte
+                add(add(signature, signatureOffset), 0x24), // digest + free memory + 4byte
                 signatureLength
             )
         }
@@ -148,11 +148,7 @@ library SigningLib {
                 mstore(signature, 65)
                 calldatacopy(add(signature, 0x20), signaturePos, 65)
             }
-            currentOwner = recoverSigner(
-                ISettlement.SigningScheme.Eip1271,
-                signature,
-                digest
-            );
+            currentOwner = recoverSigner(signature, digest);
 
             require(
                 currentOwner > lastOwner,

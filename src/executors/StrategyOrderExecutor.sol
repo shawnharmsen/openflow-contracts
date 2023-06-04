@@ -48,7 +48,6 @@ contract StrategyOrderExecutor {
         address strategyProfitEscrow
     ) public view returns (ISettlement.Payload memory payload) {
         payload = ISettlement.Payload({
-            signingScheme: ISettlement.SigningScheme.Eip1271,
             fromToken: address(Strategy(strategy).reward()),
             toToken: address(Strategy(strategy).asset()),
             fromAmount: fromAmount,
