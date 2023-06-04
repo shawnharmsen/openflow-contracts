@@ -88,7 +88,7 @@ contract StrategyTest is Test {
         // Contract hooks
         ISettlement.Interaction[][2] memory contractInteractions;
 
-        // Prehook
+        // Prehooks
         contractInteractions[0] = new ISettlement.Interaction[](1);
         contractInteractions[0][0] = ISettlement.Interaction({
             target: address(strategy),
@@ -96,7 +96,7 @@ contract StrategyTest is Test {
             callData: abi.encodeWithSelector(Strategy.harvest.selector)
         });
 
-        // Posthook
+        // Posthooks
         contractInteractions[1] = new ISettlement.Interaction[](1);
         contractInteractions[1][0] = ISettlement.Interaction({
             target: address(strategy),
@@ -111,6 +111,7 @@ contract StrategyTest is Test {
             contractInteractions
         );
 
+        // Build digest
         bytes32 digest = settlement.buildDigest(payload);
 
         // Sign and execute order

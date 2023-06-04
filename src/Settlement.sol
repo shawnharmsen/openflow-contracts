@@ -23,6 +23,8 @@ contract Settlement {
     bytes32 public immutable domainSeparator;
     mapping(address => uint256) public nonces; // TODO: Rethink nonces. We may want to allow multiple orders at a time
 
+    ExecutionProxy _executionProxy;
+
     event OrderExecuted(
         address solver,
         address sender,
@@ -42,6 +44,7 @@ contract Settlement {
                 address(this)
             )
         );
+        _executionProxy = new ExecutionProxy();
     }
 
     /**
@@ -64,7 +67,7 @@ contract Settlement {
         /**
          * @notice Step 2. Execute optional contract preswap hooks
          * */
-        _executeInteractions(order.payload.interactions[0]);
+        _executionProxy.execute(order.payload.interactions[0]);
 
         /**
          * @notice Step 3. Optimistically transfer funds from payload.sender to msg.sender (order executor)
@@ -92,7 +95,7 @@ contract Settlement {
         /**
          * @notice Step 5. Execute optional contract postswap hooks
          */
-        _executeInteractions(order.payload.interactions[1]);
+        _executionProxy.execute(order.payload.interactions[1]);
 
         /**
          * @notice Step 6. Make sure payload.recipient receives the agreed upon amount of tokens
@@ -148,13 +151,10 @@ contract Settlement {
     function cancelOrders() external {
         nonces[msg.sender]++;
     }
+}
 
-    /**
-     * @notice Contract interaction hooks
-     */
-    function _executeInteractions(
-        ISettlement.Interaction[] memory interactions
-    ) internal {
+contract ExecutionProxy {
+    function execute(ISettlement.Interaction[] memory interactions) external {
         for (uint256 i; i < interactions.length; i++) {
             ISettlement.Interaction memory interaction = interactions[i];
             (bool success, ) = interaction.target.call{
