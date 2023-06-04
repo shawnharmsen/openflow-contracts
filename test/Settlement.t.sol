@@ -83,7 +83,7 @@ contract SettlementTest is Test {
         );
 
         // Build order
-        ISettlement.Interaction[][2] memory interactions;
+        ISettlement.Interaction[][2] memory interactions0;
         ISettlement.Order memory order = ISettlement.Order({
             signature: hex"",
             data: executorData,
@@ -95,7 +95,8 @@ contract SettlementTest is Test {
                 sender: userA,
                 recipient: userA,
                 nonce: 0,
-                deadline: block.timestamp
+                deadline: block.timestamp,
+                interactions: interactions0
             })
         });
 
@@ -119,6 +120,7 @@ contract SettlementTest is Test {
         );
 
         // Build after swap solver hook
+        ISettlement.Interaction[][2] memory interactions;
         interactions[1] = new ISettlement.Interaction[](1);
         interactions[1][0] = ISettlement.Interaction({
             target: address(executor),

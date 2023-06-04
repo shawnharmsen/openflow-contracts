@@ -142,26 +142,15 @@ contract Settlement {
      *   );
      */
     function buildDigest(
-        ISettlement.Payload memory payload
+        ISettlement.Payload memory _payload
     ) public view returns (bytes32 orderDigest) {
         bytes32 typeHash = TYPE_HASH;
-        bytes32 structHash;
-        bytes32 _domainSeparator = domainSeparator;
-        uint256 structLength = bytes(abi.encode(payload)).length;
-        assembly {
-            let dataStart := sub(payload, 32)
-            let temp := mload(dataStart)
-            mstore(dataStart, typeHash)
-            structHash := keccak256(dataStart, add(structLength, 0x20))
-            mstore(dataStart, temp)
-        }
-        assembly {
-            let freeMemoryPointer := mload(0x40)
-            mstore(freeMemoryPointer, "\x19\x01")
-            mstore(add(freeMemoryPointer, 2), _domainSeparator)
-            mstore(add(freeMemoryPointer, 34), structHash)
-            orderDigest := keccak256(freeMemoryPointer, 66)
-        }
+        bytes32 structHash = keccak256(
+            abi.encodePacked(typeHash, abi.encode(_payload))
+        );
+        orderDigest = keccak256(
+            abi.encodePacked("\x19\x01", domainSeparator, structHash)
+        );
     }
 
     function cancelOrders() external {

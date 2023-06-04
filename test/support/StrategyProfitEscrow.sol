@@ -86,8 +86,8 @@ contract StrategyProfitEscrow {
             sender: address(this),
             recipient: address(strategy),
             nonce: ISettlement(settlement).nonces(address(this)),
-            deadline: block.timestamp
-            // interactions: interactions
+            deadline: block.timestamp,
+            interactions: interactions
         });
         emit Payload(payload);
     }
