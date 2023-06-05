@@ -14,6 +14,7 @@ interface IMultisigAuction {
         uint256 amountIn;
         uint256 minAmountOut;
         address recipient;
+        bool allowAutoRefund;
         ISettlement.Hooks hooks;
     }
 }
@@ -45,18 +46,16 @@ contract MultisigAuction {
         signatureThresold = 2;
     }
 
-    function initiateSwap(
-        IMultisigAuction.SwapOrder memory swapOrder
-    ) external {
-        if (!_tokenApproved[swapOrder.fromToken]) {
-            IERC20(swapOrder.fromToken).approve(settlement, type(uint256).max);
+    function initiateSwap(ISettlement.Payload memory payload) external {
+        if (!_tokenApproved[payload.fromToken]) {
+            IERC20(payload.fromToken).approve(settlement, type(uint256).max);
         }
-        IERC20(swapOrder.fromToken).transferFrom(
+        IERC20(payload.fromToken).transferFrom(
             msg.sender,
             address(this),
-            swapOrder.amountIn
+            payload.fromAmount
         ); // TODO: SafeTransfer
-        ISettlement.Payload memory payload = buildPayload(swapOrder);
+
         bytes32 digest = ISettlement(settlement).buildDigest(payload);
         approvedHashes[digest] = true;
 
@@ -65,25 +64,8 @@ contract MultisigAuction {
 
         emit SubmitOrder(payload, orderUid);
 
-        amountStoredByAccountByToken[msg.sender][
-            swapOrder.fromToken
-        ] += swapOrder.amountIn;
-    }
-
-    function buildPayload(
-        IMultisigAuction.SwapOrder memory swapOrder
-    ) public returns (ISettlement.Payload memory payload) {
-        payload = ISettlement.Payload({
-            fromToken: swapOrder.fromToken,
-            toToken: swapOrder.toToken,
-            fromAmount: swapOrder.amountIn,
-            toAmount: swapOrder.minAmountOut,
-            sender: address(this),
-            recipient: swapOrder.recipient,
-            nonce: ISettlement(settlement).nonces(address(this)),
-            deadline: uint32(block.timestamp),
-            hooks: swapOrder.hooks
-        });
+        amountStoredByAccountByToken[msg.sender][payload.fromToken] += payload
+            .fromAmount;
     }
 
     function isValidSignature(
@@ -106,6 +88,8 @@ contract MultisigAuction {
         approvedHashes[digest] = false;
         require(msg.sender == owner, "Only owner of order can invalidate");
         emit InvalidateOrder(orderUid);
+
+        // TODO: Refunds
     }
 
     // TODO: Auth and removing signers

@@ -26,12 +26,12 @@ contract OpenFlowSwapper {
 
     function _swap() internal {
         // Determine swap amounts
-        uint256 amountIn = IERC20(_fromToken).balanceOf(address(this));
+        uint256 fromAmount = IERC20(_fromToken).balanceOf(address(this));
         uint256 slippageBips = 30; // 0.3%
         uint256 minAmountOut = _oracle.calculateEquivalentAmountAfterSlippage(
             _fromToken,
             _toToken,
-            amountIn,
+            fromAmount,
             slippageBips
         );
 
@@ -51,12 +51,15 @@ contract OpenFlowSwapper {
 
         // Swap
         _multisigAuction.initiateSwap(
-            IMultisigAuction.SwapOrder({
+            ISettlement.Payload({
                 fromToken: address(_fromToken),
                 toToken: address(_toToken),
-                amountIn: amountIn,
-                minAmountOut: minAmountOut,
+                fromAmount: fromAmount,
+                toAmount: minAmountOut,
+                sender: address(_multisigAuction),
                 recipient: address(this),
+                nonce: 0,
+                deadline: uint32(block.timestamp),
                 hooks: hooks
             })
         );
