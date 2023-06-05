@@ -20,7 +20,7 @@ contract MultisigOrderManager {
     mapping(address => bool) public signers;
     mapping(address => mapping(uint256 => mapping(bytes32 => bool)))
         public approvedHashes;
-    mapping(address => uint256) sessionNonceByAddress;
+    mapping(address => uint256) public sessionNonceByAddress;
 
     event SubmitOrder(ISettlement.Payload payload, bytes orderUid);
     event InvalidateOrder(bytes orderUid);
