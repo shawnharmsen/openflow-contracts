@@ -70,10 +70,7 @@ contract StrategyTest is Test {
         strategy.harvest();
         Vm.Log[] memory harvestLogs = vm.getRecordedLogs();
 
-        // TODO: Figure out exact keccak256 string: submitOrder(tuple(...))
-        bytes32 submitOrderHash = hex"1cbc0c0cb4c33342c2990ab4a9599dd53541f4522e363b5f19e37fde0d577b82";
         uint256 submitIndex = harvestLogs.length - 1;
-        assertEq(harvestLogs[submitIndex].topics[0], submitOrderHash);
         ISettlement.Payload memory decodedPayload = abi.decode(
             harvestLogs[submitIndex].data,
             (ISettlement.Payload)

@@ -95,7 +95,7 @@ contract SettlementTest is Test {
                 sender: userA,
                 recipient: userA,
                 nonce: 0,
-                deadline: block.timestamp,
+                deadline: uint32(block.timestamp),
                 hooks: hooks
             })
         });

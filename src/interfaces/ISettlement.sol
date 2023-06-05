@@ -16,7 +16,7 @@ interface ISettlement {
         address sender;
         address recipient;
         uint256 nonce;
-        uint256 deadline;
+        uint32 deadline;
         Hooks hooks;
     }
 

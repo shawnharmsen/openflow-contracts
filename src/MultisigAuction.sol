@@ -5,7 +5,7 @@ pragma solidity ^0.8.19;
 import {IERC20} from "../src/interfaces/IERC20.sol";
 import {ISettlement} from "../src/interfaces/ISettlement.sol";
 import {SigningLib} from "../src/lib/Signing.sol";
-import {OrderBookNotifier} from "../src/OrderBookNotifier.sol"; // TODO: IOrderBook
+import {OrderLib} from "../src/lib/Order.sol";
 
 interface IMultisigAuction {
     struct SwapOrder {
@@ -25,6 +25,7 @@ interface IMultisigAuction {
  * @dev TODO: More/better comments
  */
 contract MultisigAuction {
+    using OrderLib for bytes;
     bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;
     address public immutable settlement;
     address public immutable orderBookNotifier;
@@ -32,6 +33,11 @@ contract MultisigAuction {
     mapping(address => bool) public signers;
     mapping(bytes32 => bool) public approvedHashes;
     mapping(address => bool) internal _tokenApproved;
+    mapping(address => mapping(address => uint256))
+        public amountStoredByAccountByToken;
+
+    event SubmitOrder(ISettlement.Payload payload, bytes orderUid);
+    event InvalidateOrder(bytes orderUid);
 
     constructor(address _orderBookNotifier, address _settlement) {
         orderBookNotifier = _orderBookNotifier;
@@ -45,7 +51,6 @@ contract MultisigAuction {
         if (!_tokenApproved[swapOrder.fromToken]) {
             IERC20(swapOrder.fromToken).approve(settlement, type(uint256).max);
         }
-        // TOODO: Determine if it's better to do transferFrom or require users to transfer their tokens first
         IERC20(swapOrder.fromToken).transferFrom(
             msg.sender,
             address(this),
@@ -54,7 +59,15 @@ contract MultisigAuction {
         ISettlement.Payload memory payload = buildPayload(swapOrder);
         bytes32 digest = ISettlement(settlement).buildDigest(payload);
         approvedHashes[digest] = true;
-        OrderBookNotifier(orderBookNotifier).submitOrder(payload);
+
+        bytes memory orderUid = new bytes(OrderLib._UID_LENGTH);
+        orderUid.packOrderUidParams(digest, msg.sender, payload.deadline);
+
+        emit SubmitOrder(payload, orderUid);
+
+        amountStoredByAccountByToken[msg.sender][
+            swapOrder.fromToken
+        ] += swapOrder.amountIn;
     }
 
     function buildPayload(
@@ -68,7 +81,7 @@ contract MultisigAuction {
             sender: address(this),
             recipient: swapOrder.recipient,
             nonce: ISettlement(settlement).nonces(address(this)),
-            deadline: block.timestamp,
+            deadline: uint32(block.timestamp),
             hooks: swapOrder.hooks
         });
     }
@@ -83,11 +96,19 @@ contract MultisigAuction {
             signatures,
             signatureThresold
         );
+        // TODO: Instead of approvedHashes use UID (includes digest, owner and deadline)
         require(approvedHashes[digest], "Digest not approved");
         return _EIP1271_MAGICVALUE;
     }
 
-    // TODO: auth and removing signers
+    function invalidateOrder(bytes memory orderUid) external {
+        (bytes32 digest, address owner, ) = orderUid.extractOrderUidParams();
+        approvedHashes[digest] = false;
+        require(msg.sender == owner, "Only owner of order can invalidate");
+        emit InvalidateOrder(orderUid);
+    }
+
+    // TODO: Auth and removing signers
     function addSigners(address[] memory _signers) external {
         for (uint256 signerIdx; signerIdx < _signers.length; signerIdx++) {
             signers[_signers[signerIdx]] = true;
