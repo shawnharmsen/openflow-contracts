@@ -7,14 +7,14 @@ import {Settlement} from "../src/Settlement.sol";
 import {ISettlement} from "../src/interfaces/ISettlement.sol";
 import {Strategy} from "./support/Strategy.sol";
 import {MasterChef} from "./support/MasterChef.sol";
-import {SimpleChainlinkOracle} from "./support/SimpleChainlinkOracle.sol";
+import {Oracle} from "./support/Oracle.sol";
 import {MultisigOrderManager} from "../src/MultisigOrderManager.sol";
 import {OrderExecutor} from "../src/executors/OrderExecutor.sol";
 import {UniswapV2Aggregator} from "../src/solvers/UniswapV2Aggregator.sol";
 
 contract StrategyTest is Test {
     Strategy public strategy;
-    SimpleChainlinkOracle public oracle;
+    Oracle public oracle;
     IERC20 public rewardToken;
     MasterChef public masterChef;
     address public usdc = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
@@ -31,19 +31,21 @@ contract StrategyTest is Test {
 
     function setUp() public {
         masterChef = new MasterChef();
-        oracle = new SimpleChainlinkOracle();
+        oracle = new Oracle();
         settlement = new Settlement();
         multisigOrderManager = new MultisigOrderManager(address(settlement));
         address[] memory signers = new address[](2);
         signers[0] = userA;
         signers[1] = userB;
-        multisigOrderManager.addSigners(signers);
+        multisigOrderManager.setSigners(signers, true);
+        uint256 slippageBips = 30; // 0.3 %
         strategy = new Strategy(
             dai,
             usdc,
             masterChef,
             multisigOrderManager,
             oracle,
+            slippageBips,
             settlement
         );
         rewardToken = IERC20(masterChef.rewardToken());

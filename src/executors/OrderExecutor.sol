@@ -4,18 +4,20 @@ pragma solidity 0.8.19;
 import {ISettlement} from "../interfaces/ISettlement.sol";
 import {IERC20} from "../interfaces/IERC20.sol";
 
-/**
- * @notice Generic order executor
- * @dev Settlement is agnostic to who executes each order
- * @dev A solver may wish to create their own custom order executor
- * @dev This is a generic sample order executor that supports:
- *      - Generic target/calldata execution flow in hook
- *          - The expectation is that at the end of the target calldata call
- *            this contract will end up with all swapped tokens
- *          - At this point the hook must send all agreed upon funds to the order recipient
- *      - Custom solver pre-swap and post-swap hooks
- *          - Allows the solver to perform custom setup/teardown logic, such as sweeping solver fee after a swap
- */
+/// @title Order Executor
+/// @notice Generic order executor
+/// @dev Settlement is agnostic to who executes each order. This contract is
+/// just an example of a generic order executor. Though this contract can be used for
+/// order submission actual implementation is left to the solver
+/// @dev This is a generic sample order executor that supports:
+/// - Generic target/calldata execution flow in hook
+///   - The expectation is that at the end of the target calldata call
+///     this contract will end up with all swapped tokens
+///   - At this point the hook must send all agreed upon funds to the order recipient
+/// - Custom solver pre-swap and post-swap hooks
+///   - Allows the solver to perform custom setup/teardown logic, such as sweeping
+///     solver fee after a swap
+///
 contract OrderExecutor {
     ISettlement public settlement;
 
@@ -29,14 +31,14 @@ contract OrderExecutor {
         bytes payload;
     }
 
-    constructor(address _settlement) {
-        settlement = ISettlement(_settlement);
-    }
-
     struct Interaction {
         address target;
         uint256 value;
         bytes callData;
+    }
+
+    constructor(address _settlement) {
+        settlement = ISettlement(_settlement);
     }
 
     function executeOrder(ISettlement.Order calldata order) public {

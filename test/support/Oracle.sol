@@ -6,7 +6,9 @@ interface IChainklinkAggregator {
     function latestAnswer() external view returns (uint256);
 }
 
-contract SimpleChainlinkOracle {
+/// @title Sample Chainlink Oracle
+/// @dev Not to be used in production
+contract Oracle {
     address public usdc = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
     address public dai = 0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E;
     address public usdcOracle = 0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c; // Chainlink decimals is 8 --in practice need to account for decimals difference
@@ -43,7 +45,6 @@ contract SimpleChainlinkOracle {
         } else {
             decimalsAdjustment = toTokenDecimals - fromTokenDecimals;
         }
-        uint256 amountOut;
         if (decimalsAdjustment > 0) {
             amountOut =
                 (_amountIn * priceRatio * (10 ** decimalsAdjustment)) /

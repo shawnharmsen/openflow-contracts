@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 import {IERC20} from "../../src/interfaces/IERC20.sol";
 import {Settlement} from "../../src/Settlement.sol";
 import {MultisigOrderManager} from "../../src/MultisigOrderManager.sol";
-import {SimpleChainlinkOracle} from "./SimpleChainlinkOracle.sol";
+import {Oracle} from "./Oracle.sol";
 import {OpenFlowSwapper} from "./OpenFlowSwapper.sol";
 import {MasterChef} from "./MasterChef.sol";
 import "forge-std/Test.sol";
@@ -19,9 +19,18 @@ contract Strategy is OpenFlowSwapper {
         address _reward,
         MasterChef _masterChef,
         MultisigOrderManager _multisigOrderManager,
-        SimpleChainlinkOracle _oracle,
+        Oracle _oracle,
+        uint256 _slippageBips,
         Settlement _settlement
-    ) OpenFlowSwapper(_multisigOrderManager, _oracle, _reward, _asset) {
+    )
+        OpenFlowSwapper(
+            _multisigOrderManager,
+            _oracle,
+            _slippageBips,
+            _reward,
+            _asset
+        )
+    {
         asset = _asset;
         reward = _reward;
         masterChef = _masterChef;
