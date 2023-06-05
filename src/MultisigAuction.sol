@@ -43,6 +43,18 @@ contract MultisigAuction {
         emit InvalidateOrder(orderUid);
     }
 
+    function checkNSignatures(
+        bytes32 digest,
+        bytes memory signatures
+    ) external {
+        SigningLib.checkNSignatures(
+            address(this),
+            digest,
+            signatures,
+            signatureThreshold
+        );
+    }
+
     // TODO: Auth and removing signers
     function addSigners(address[] memory _signers) external {
         for (uint256 signerIdx; signerIdx < _signers.length; signerIdx++) {

@@ -29,15 +29,10 @@ contract OpenFlowSwapper {
     function isValidSignature(
         bytes32 digest,
         bytes calldata signatures
-    ) external view returns (bytes4) {
+    ) external returns (bytes4) {
         uint256 signatureThreshold = _multisigAuction.signatureThreshold();
         require(signatureThreshold >= 2);
-        SigningLib.checkNSignatures(
-            address(_multisigAuction),
-            digest,
-            signatures,
-            signatureThreshold
-        );
+        _multisigAuction.checkNSignatures(digest, signatures);
         require(_multisigAuction.approvedHashes(digest), "Digest not approved");
         return _EIP1271_MAGICVALUE;
     }
