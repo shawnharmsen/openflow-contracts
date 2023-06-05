@@ -5,7 +5,6 @@ import {ISettlement} from "../../src/interfaces/ISettlement.sol";
 import {MultisigAuction} from "../../src/MultisigAuction.sol";
 import {SimpleChainlinkOracle} from "./SimpleChainlinkOracle.sol";
 import {Strategy} from "./Strategy.sol";
-import {SigningLib} from "../../src/lib/Signing.sol";
 
 contract OpenFlowSwapper {
     bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;
@@ -30,8 +29,6 @@ contract OpenFlowSwapper {
         bytes32 digest,
         bytes calldata signatures
     ) external returns (bytes4) {
-        uint256 signatureThreshold = _multisigAuction.signatureThreshold();
-        require(signatureThreshold >= 2);
         _multisigAuction.checkNSignatures(digest, signatures);
         require(_multisigAuction.approvedHashes(digest), "Digest not approved");
         return _EIP1271_MAGICVALUE;
