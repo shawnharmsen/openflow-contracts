@@ -7,18 +7,6 @@ import {ISettlement} from "../src/interfaces/ISettlement.sol";
 import {SigningLib} from "../src/lib/Signing.sol";
 import {OrderLib} from "../src/lib/Order.sol";
 
-interface IMultisigAuction {
-    struct SwapOrder {
-        address fromToken;
-        address toToken;
-        uint256 amountIn;
-        uint256 minAmountOut;
-        address recipient;
-        bool allowAutoRefund;
-        ISettlement.Hooks hooks;
-    }
-}
-
 /**
  * @notice This contract is responsible for all signature logic regarding trading profits for want token
  * @dev The only thing this contract can do is take reward from the strategy, sell them, and return profits to strategy
@@ -27,60 +15,25 @@ interface IMultisigAuction {
  */
 contract MultisigAuction {
     using OrderLib for bytes;
-    bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;
     address public immutable settlement;
-    address public immutable orderBookNotifier;
-    uint256 public signatureThresold;
+    uint256 public signatureThreshold;
     mapping(address => bool) public signers;
     mapping(bytes32 => bool) public approvedHashes;
-    mapping(address => bool) internal _tokenApproved;
-    mapping(address => mapping(address => uint256))
-        public amountStoredByAccountByToken;
 
     event SubmitOrder(ISettlement.Payload payload, bytes orderUid);
     event InvalidateOrder(bytes orderUid);
 
-    constructor(address _orderBookNotifier, address _settlement) {
-        orderBookNotifier = _orderBookNotifier;
+    constructor(address _settlement) {
         settlement = _settlement;
-        signatureThresold = 2;
+        signatureThreshold = 2;
     }
 
     function initiateSwap(ISettlement.Payload memory payload) external {
-        if (!_tokenApproved[payload.fromToken]) {
-            IERC20(payload.fromToken).approve(settlement, type(uint256).max);
-        }
-        IERC20(payload.fromToken).transferFrom(
-            msg.sender,
-            address(this),
-            payload.fromAmount
-        ); // TODO: SafeTransfer
-
         bytes32 digest = ISettlement(settlement).buildDigest(payload);
         approvedHashes[digest] = true;
-
         bytes memory orderUid = new bytes(OrderLib._UID_LENGTH);
         orderUid.packOrderUidParams(digest, msg.sender, payload.deadline);
-
         emit SubmitOrder(payload, orderUid);
-
-        amountStoredByAccountByToken[msg.sender][payload.fromToken] += payload
-            .fromAmount;
-    }
-
-    function isValidSignature(
-        bytes32 digest,
-        bytes calldata signatures
-    ) external view returns (bytes4) {
-        SigningLib.checkNSignatures(
-            address(this),
-            digest,
-            signatures,
-            signatureThresold
-        );
-        // TODO: Instead of approvedHashes use UID (includes digest, owner and deadline)
-        require(approvedHashes[digest], "Digest not approved");
-        return _EIP1271_MAGICVALUE;
     }
 
     function invalidateOrder(bytes memory orderUid) external {
@@ -88,8 +41,6 @@ contract MultisigAuction {
         approvedHashes[digest] = false;
         require(msg.sender == owner, "Only owner of order can invalidate");
         emit InvalidateOrder(orderUid);
-
-        // TODO: Refunds
     }
 
     // TODO: Auth and removing signers

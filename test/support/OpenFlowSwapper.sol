@@ -2,11 +2,13 @@
 pragma solidity ^0.8.19;
 import {IERC20} from "../../src/interfaces/IERC20.sol";
 import {ISettlement} from "../../src/interfaces/ISettlement.sol";
-import {MultisigAuction, IMultisigAuction} from "../../src/MultisigAuction.sol";
+import {MultisigAuction} from "../../src/MultisigAuction.sol";
 import {SimpleChainlinkOracle} from "./SimpleChainlinkOracle.sol";
 import {Strategy} from "./Strategy.sol";
+import {SigningLib} from "../../src/lib/Signing.sol";
 
 contract OpenFlowSwapper {
+    bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;
     MultisigAuction _multisigAuction;
     SimpleChainlinkOracle _oracle;
     address internal _fromToken;
@@ -22,6 +24,22 @@ contract OpenFlowSwapper {
         _fromToken = fromToken;
         _toToken = toToken;
         _oracle = oracle;
+    }
+
+    function isValidSignature(
+        bytes32 digest,
+        bytes calldata signatures
+    ) external view returns (bytes4) {
+        uint256 signatureThreshold = _multisigAuction.signatureThreshold();
+        require(signatureThreshold >= 2);
+        SigningLib.checkNSignatures(
+            address(_multisigAuction),
+            digest,
+            signatures,
+            signatureThreshold
+        );
+        require(_multisigAuction.approvedHashes(digest), "Digest not approved");
+        return _EIP1271_MAGICVALUE;
     }
 
     function _swap() internal {
@@ -56,7 +74,7 @@ contract OpenFlowSwapper {
                 toToken: address(_toToken),
                 fromAmount: fromAmount,
                 toAmount: minAmountOut,
-                sender: address(_multisigAuction),
+                sender: address(this),
                 recipient: address(this),
                 nonce: 0,
                 deadline: uint32(block.timestamp),

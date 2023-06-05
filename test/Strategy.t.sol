@@ -8,7 +8,6 @@ import {ISettlement} from "../src/interfaces/ISettlement.sol";
 import {Strategy, MasterChef} from "./support/Strategy.sol";
 import {SimpleChainlinkOracle} from "./support/SimpleChainlinkOracle.sol";
 import {MultisigAuction} from "../src/MultisigAuction.sol";
-import {OrderBookNotifier} from "../src/OrderBookNotifier.sol";
 import {OrderExecutor} from "../src/executors/OrderExecutor.sol";
 import {UniswapV2Aggregator} from "../src/solvers/UniswapV2Aggregator.sol";
 
@@ -23,7 +22,6 @@ contract StrategyTest is Test {
     Settlement public settlement;
     OrderExecutor public executor;
     UniswapV2Aggregator public uniswapAggregator;
-    OrderBookNotifier public orderBookNotifier;
     MultisigAuction public multisigAuction;
     uint256 internal constant _USER_A_PRIVATE_KEY = 0xB0B;
     uint256 internal constant _USER_B_PRIVATE_KEY = 0xA11CE;
@@ -34,12 +32,15 @@ contract StrategyTest is Test {
         masterChef = new MasterChef();
         oracle = new SimpleChainlinkOracle();
         settlement = new Settlement();
-        orderBookNotifier = new OrderBookNotifier();
-        multisigAuction = new MultisigAuction(
-            address(orderBookNotifier),
-            address(settlement)
+        multisigAuction = new MultisigAuction(address(settlement));
+        strategy = new Strategy(
+            dai,
+            usdc,
+            masterChef,
+            multisigAuction,
+            oracle,
+            settlement
         );
-        strategy = new Strategy(dai, usdc, masterChef, multisigAuction, oracle);
         rewardToken = IERC20(masterChef.rewardToken());
         executor = new OrderExecutor(address(settlement));
         uniswapAggregator = new UniswapV2Aggregator();
@@ -112,7 +113,7 @@ contract StrategyTest is Test {
         bytes32 s = bytes32(uint256(96)); // offset - 96
         bytes32 v = bytes32(uint256(0)); // type
         bytes memory encodedSignatures = abi.encodePacked(
-            abi.encode(multisigAuction, s, v, signatures.length),
+            abi.encode(strategy, s, v, signatures.length),
             signatures
         );
         ISettlement.Order memory order = ISettlement.Order({
