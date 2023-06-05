@@ -73,7 +73,6 @@ contract StrategyTest is Test {
             address(toToken)
         );
         uint256 toAmount = (quote.quoteAmount * 95) / 100;
-        toAmount = 100;
 
         // Build executor data
         bytes memory executorData = abi.encode(

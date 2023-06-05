@@ -28,7 +28,9 @@ contract Settlement {
 
     event OrderExecuted(
         address solver,
+        address executor,
         address sender,
+        address recipient,
         address fromToken,
         address toToken,
         uint256 fromAmount,
@@ -109,11 +111,13 @@ contract Settlement {
         require(balanceDelta >= payload.toAmount, "Order not filled");
         emit OrderExecuted(
             tx.origin,
+            msg.sender,
             payload.sender,
+            payload.recipient,
             payload.fromToken,
             payload.toToken,
             payload.fromAmount,
-            payload.toAmount
+            balanceDelta
         );
     }
 
