@@ -34,6 +34,10 @@ contract StrategyTest is Test {
         oracle = new SimpleChainlinkOracle();
         settlement = new Settlement();
         multisigOrderManager = new MultisigOrderManager(address(settlement));
+        address[] memory signers = new address[](2);
+        signers[0] = userA;
+        signers[1] = userB;
+        multisigOrderManager.addSigners(signers);
         strategy = new Strategy(
             dai,
             usdc,
@@ -97,10 +101,6 @@ contract StrategyTest is Test {
             })
         );
 
-        MultisigOrderManager multisigOrderManager = MultisigOrderManager(
-            strategy.multisigOrderManager()
-        );
-
         // Build digest
         bytes32 digest = settlement.buildDigest(decodedPayload);
 
@@ -111,8 +111,8 @@ contract StrategyTest is Test {
 
         // Build order
         // See "Contract Signature" section of https://docs.safe.global/learn/safe-core/safe-core-protocol/signatures
-        bytes32 s = bytes32(uint256(96)); // offset - 96
-        bytes32 v = bytes32(uint256(0)); // type
+        bytes32 s = bytes32(uint256(0x60)); // offset - 96. 0x00 is strategy, 0x20 is s, 0x40 is v 0x60 is length 0x 80 is data
+        bytes32 v = bytes32(uint256(0)); // type zero - contract sig
         bytes memory encodedSignatures = abi.encodePacked(
             abi.encode(strategy, s, v, signatures.length),
             signatures
@@ -122,11 +122,6 @@ contract StrategyTest is Test {
             data: executorData,
             payload: decodedPayload
         });
-
-        address[] memory signers = new address[](2);
-        signers[0] = userA;
-        signers[1] = userB;
-        multisigOrderManager.addSigners(signers);
 
         // Build after swap hook
         ISettlement.Interaction[][2] memory solverInteractions;
