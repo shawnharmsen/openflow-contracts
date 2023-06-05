@@ -18,19 +18,25 @@ contract MultisigOrderManager {
     address public immutable settlement;
     uint256 public signatureThreshold;
     mapping(address => bool) public signers;
-    mapping(bytes32 => bool) public approvedHashes;
+    mapping(address => mapping(uint256 => mapping(bytes32 => bool)))
+        public approvedHashes;
+    mapping(address => uint256) sessionNonceByAddress;
 
     event SubmitOrder(ISettlement.Payload payload, bytes orderUid);
     event InvalidateOrder(bytes orderUid);
+    event InvalidateAllOrders(address account);
 
     constructor(address _settlement) {
         settlement = _settlement;
         signatureThreshold = 2;
     }
 
-    function submitOrder(ISettlement.Payload memory payload) external {
+    function submitOrder(
+        ISettlement.Payload memory payload
+    ) external returns (bytes memory orderUid) {
         bytes32 digest = ISettlement(settlement).buildDigest(payload);
-        approvedHashes[digest] = true;
+        uint256 sessionNonce = sessionNonceByAddress[msg.sender];
+        approvedHashes[msg.sender][sessionNonce][digest] = true;
         bytes memory orderUid = new bytes(OrderLib._UID_LENGTH);
         orderUid.packOrderUidParams(digest, msg.sender, payload.deadline);
         emit SubmitOrder(payload, orderUid);
@@ -38,9 +44,20 @@ contract MultisigOrderManager {
 
     function invalidateOrder(bytes memory orderUid) external {
         (bytes32 digest, address owner, ) = orderUid.extractOrderUidParams();
-        approvedHashes[digest] = false;
+        uint256 sessionNonce = sessionNonceByAddress[msg.sender];
+        approvedHashes[msg.sender][sessionNonce][digest] = false;
         require(msg.sender == owner, "Only owner of order can invalidate");
         emit InvalidateOrder(orderUid);
+    }
+
+    function invalidateAllOrders() external {
+        sessionNonceByAddress[msg.sender]++;
+        emit InvalidateAllOrders(msg.sender);
+    }
+
+    function digestApproved(bytes32 digest) external view returns (bool) {
+        uint256 sessionNonce = sessionNonceByAddress[msg.sender];
+        return approvedHashes[msg.sender][sessionNonce][digest];
     }
 
     function checkNSignatures(

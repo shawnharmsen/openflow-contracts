@@ -31,7 +31,7 @@ contract OpenFlowSwapper {
     ) external returns (bytes4) {
         _multisigOrderManager.checkNSignatures(digest, signatures);
         require(
-            _multisigOrderManager.approvedHashes(digest),
+            _multisigOrderManager.digestApproved(digest),
             "Digest not approved"
         );
         return _EIP1271_MAGICVALUE;
