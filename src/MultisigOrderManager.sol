@@ -8,9 +8,6 @@ import {SigningLib} from "../src/lib/Signing.sol";
 import {OrderLib} from "../src/lib/Order.sol";
 
 /**
- * @notice This contract is responsible for all signature logic regarding trading profits for want token
- * @dev The only thing this contract can do is take reward from the strategy, sell them, and return profits to strategy
- * @dev The intention is to isolate all profit swapping from the core strategy
  * @dev TODO: More/better comments
  */
 contract MultisigOrderManager {
