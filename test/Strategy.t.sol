@@ -5,7 +5,8 @@ import "forge-std/Test.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
 import {Settlement} from "../src/Settlement.sol";
 import {ISettlement} from "../src/interfaces/ISettlement.sol";
-import {Strategy, Oracle, MasterChef} from "./support/Strategy.sol";
+import {Strategy, MasterChef} from "./support/Strategy.sol";
+import {SimpleChainlinkOracle} from "./support/SimpleChainlinkOracle.sol";
 import {MultisigAuction} from "../src/MultisigAuction.sol";
 import {OrderBookNotifier} from "../src/OrderBookNotifier.sol";
 import {OrderExecutor} from "../src/executors/OrderExecutor.sol";
@@ -13,7 +14,7 @@ import {UniswapV2Aggregator} from "../src/solvers/UniswapV2Aggregator.sol";
 
 contract StrategyTest is Test {
     Strategy public strategy;
-    Oracle public oracle;
+    SimpleChainlinkOracle public oracle;
     IERC20 public rewardToken;
     MasterChef public masterChef;
     address public usdc = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
@@ -31,7 +32,7 @@ contract StrategyTest is Test {
 
     function setUp() public {
         masterChef = new MasterChef();
-        oracle = new Oracle();
+        oracle = new SimpleChainlinkOracle();
         settlement = new Settlement();
         orderBookNotifier = new OrderBookNotifier();
         multisigAuction = new MultisigAuction(
