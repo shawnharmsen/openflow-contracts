@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 import {IERC20} from "../../src/interfaces/IERC20.sol";
 import {ISettlement} from "../../src/interfaces/ISettlement.sol";
-import {MultisigAuction} from "./MultisigAuction.sol";
+import {MultisigAuction, IMultisigAuction} from "../../src/MultisigAuction.sol";
 import "forge-std/Test.sol";
 
 contract MasterChef {
@@ -28,7 +28,7 @@ contract Strategy {
     MasterChef public masterChef;
     IERC20 public asset = IERC20(0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E); // Underlying want token is DAI
     IERC20 public reward; // Reward is USDC
-    address public profitEscrow;
+    MultisigAuction public multisigAuction;
 
     constructor(
         address _orderBook,
@@ -38,9 +38,9 @@ contract Strategy {
         masterChef = _masterChef;
         masterChef.accrueReward();
         reward = masterChef.rewardToken();
-        profitEscrow = address(new MultisigAuction(_orderBook, _settlement));
+        multisigAuction = new MultisigAuction(_orderBook, _settlement);
         // TODO: SafeApprove??
-        reward.approve(profitEscrow, type(uint256).max);
+        reward.approve(address(multisigAuction), type(uint256).max);
     }
 
     function estimatedEarnings() external view returns (uint256) {
@@ -58,15 +58,17 @@ contract Strategy {
             value: 0,
             callData: abi.encodeWithSelector(this.updateAccounting.selector)
         });
-        uint256 fromAmount = reward.balanceOf(address(this));
-        uint256 toAmount = 100;
-        MultisigAuction(profitEscrow).initiateSwap(
-            address(reward),
-            address(asset),
-            fromAmount,
-            toAmount,
-            address(this),
-            contractInteractions
+        uint256 amountIn = reward.balanceOf(address(this));
+        uint256 minAmountOut = 100;
+        multisigAuction.initiateSwap(
+            IMultisigAuction.SwapOrder({
+                fromToken: address(reward),
+                toToken: address(asset),
+                amountIn: amountIn,
+                minAmountOut: minAmountOut,
+                recipient: address(this),
+                interactions: contractInteractions
+            })
         );
     }
 

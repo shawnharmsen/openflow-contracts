@@ -5,7 +5,8 @@ import "forge-std/Test.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
 import {Settlement} from "../src/Settlement.sol";
 import {ISettlement} from "../src/interfaces/ISettlement.sol";
-import {Strategy, MasterChef, MultisigAuction} from "./support/Strategy.sol";
+import {Strategy, MasterChef} from "./support/Strategy.sol";
+import {MultisigAuction} from "../src/MultisigAuction.sol";
 import {OrderBookNotifier} from "../src/OrderBookNotifier.sol";
 import {OrderExecutor} from "../src/executors/OrderExecutor.sol";
 import {UniswapV2Aggregator} from "../src/solvers/UniswapV2Aggregator.sol";
@@ -93,7 +94,9 @@ contract StrategyTest is Test {
             })
         );
 
-        MultisigAuction profitEscrow = MultisigAuction(strategy.profitEscrow());
+        MultisigAuction multisigAuction = MultisigAuction(
+            strategy.multisigAuction()
+        );
 
         // Build digest
         bytes32 digest = settlement.buildDigest(decodedPayload);
@@ -108,7 +111,7 @@ contract StrategyTest is Test {
         bytes32 s = bytes32(uint256(96)); // offset - 96
         bytes32 v = bytes32(uint256(0)); // type
         bytes memory encodedSignatures = abi.encodePacked(
-            abi.encode(profitEscrow, s, v, signatures.length),
+            abi.encode(multisigAuction, s, v, signatures.length),
             signatures
         );
         ISettlement.Order memory order = ISettlement.Order({
@@ -120,7 +123,7 @@ contract StrategyTest is Test {
         address[] memory signers = new address[](2);
         signers[0] = userA;
         signers[1] = userB;
-        profitEscrow.addSigners(signers);
+        multisigAuction.addSigners(signers);
 
         // Build after swap hook
         ISettlement.Interaction[][2] memory solverInteractions;

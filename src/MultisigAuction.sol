@@ -1,16 +1,21 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: BUSL 1.1
+import "forge-std/Test.sol";
+
 pragma solidity ^0.8.19;
 import {IERC20} from "../../src/interfaces/IERC20.sol";
 import {ISettlement} from "../../src/interfaces/ISettlement.sol";
 import {SigningLib} from "../../src/lib/Signing.sol";
 import {OrderBookNotifier} from "../../src/OrderBookNotifier.sol"; // TODO: IOrderBook
-import "forge-std/Test.sol";
 
-contract StrategyProfitEscrowFactory {
-    address public settlement;
-    uint256 public signatureThreshold;
-
-    // TODO: finish
+interface IMultisigAuction {
+    struct SwapOrder {
+        address fromToken;
+        address toToken;
+        uint256 amountIn;
+        uint256 minAmountOut;
+        address recipient;
+        ISettlement.Interaction[][2] interactions;
+    }
 }
 
 /**
@@ -20,70 +25,50 @@ contract StrategyProfitEscrowFactory {
  * @dev TODO: More/better comments
  */
 contract MultisigAuction {
-    // Constants and immutables
     bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;
-    address public immutable factory;
     address public immutable settlement;
     address public immutable orderBookNotifier;
-
-    // Signatures
     uint256 public signatureThresold;
     mapping(address => bool) public signers;
     mapping(bytes32 => bool) public approvedHashes;
-
     mapping(address => bool) internal _tokenApproved;
 
     constructor(address _orderBookNotifier, address _settlement) {
-        factory = msg.sender;
         orderBookNotifier = _orderBookNotifier;
         settlement = _settlement;
         signatureThresold = 2;
     }
 
     function initiateSwap(
-        address fromToken,
-        address toToken,
-        uint256 fromAmount,
-        uint256 toAmount,
-        address recipient,
-        ISettlement.Interaction[][2] memory contractInteractions
+        IMultisigAuction.SwapOrder memory swapOrder
     ) external {
-        if (!_tokenApproved[fromToken]) {
+        if (!_tokenApproved[swapOrder.fromToken]) {
             IERC20(fromToken).approve(settlement, type(uint256).max);
         }
-
-        IERC20(fromToken).transferFrom(msg.sender, address(this), fromAmount); // TODO: SafeTransfer
-        ISettlement.Payload memory payload = buildPayload(
-            fromToken,
-            toToken,
-            fromAmount,
-            toAmount,
-            recipient,
-            contractInteractions
-        );
+        IERC20(swapOrder.fromToken).transferFrom(
+            msg.sender,
+            address(this),
+            swapOrder.amountIn
+        ); // TODO: SafeTransfer
+        ISettlement.Payload memory payload = buildPayload(swapOrder);
         bytes32 digest = ISettlement(settlement).buildDigest(payload);
         approvedHashes[digest] = true;
         OrderBookNotifier(orderBookNotifier).submitOrder(payload);
     }
 
     function buildPayload(
-        address fromToken,
-        address toToken,
-        uint256 fromAmount,
-        uint256 toAmount,
-        address recipient,
-        ISettlement.Interaction[][2] memory interactions
+        IMultisigAuction.SwapOrder memory swapOrder
     ) public returns (ISettlement.Payload memory payload) {
         payload = ISettlement.Payload({
-            fromToken: fromToken,
-            toToken: toToken,
-            fromAmount: fromAmount,
-            toAmount: toAmount,
+            fromToken: swapOrder.fromToken,
+            toToken: swapOrder.toToken,
+            fromAmount: swapOrder.amountIn,
+            toAmount: swapOrder.minAmountOut,
             sender: address(this),
-            recipient: recipient,
+            recipient: swapOrder.recipient,
             nonce: ISettlement(settlement).nonces(address(this)),
             deadline: block.timestamp,
-            interactions: interactions
+            interactions: swapOrder.interactions
         });
     }
 
