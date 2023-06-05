@@ -13,7 +13,7 @@ import {OrderLib} from "../src/lib/Order.sol";
  * @dev The intention is to isolate all profit swapping from the core strategy
  * @dev TODO: More/better comments
  */
-contract MultisigAuction {
+contract MultisigOrderManager {
     using OrderLib for bytes;
     address public immutable settlement;
     uint256 public signatureThreshold;
@@ -28,7 +28,7 @@ contract MultisigAuction {
         signatureThreshold = 2;
     }
 
-    function initiateSwap(ISettlement.Payload memory payload) external {
+    function submitOrder(ISettlement.Payload memory payload) external {
         bytes32 digest = ISettlement(settlement).buildDigest(payload);
         approvedHashes[digest] = true;
         bytes memory orderUid = new bytes(OrderLib._UID_LENGTH);

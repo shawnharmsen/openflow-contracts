@@ -2,24 +2,24 @@
 pragma solidity ^0.8.19;
 import {IERC20} from "../../src/interfaces/IERC20.sol";
 import {ISettlement} from "../../src/interfaces/ISettlement.sol";
-import {MultisigAuction} from "../../src/MultisigAuction.sol";
+import {MultisigOrderManager} from "../../src/MultisigOrderManager.sol";
 import {SimpleChainlinkOracle} from "./SimpleChainlinkOracle.sol";
 import {Strategy} from "./Strategy.sol";
 
 contract OpenFlowSwapper {
     bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;
-    MultisigAuction _multisigAuction;
+    MultisigOrderManager _multisigOrderManager;
     SimpleChainlinkOracle _oracle;
     address internal _fromToken;
     address internal _toToken;
 
     constructor(
-        MultisigAuction multisigAuction,
+        MultisigOrderManager multisigOrderManager,
         SimpleChainlinkOracle oracle,
         address fromToken,
         address toToken
     ) {
-        _multisigAuction = multisigAuction;
+        _multisigOrderManager = multisigOrderManager;
         _fromToken = fromToken;
         _toToken = toToken;
         _oracle = oracle;
@@ -29,8 +29,11 @@ contract OpenFlowSwapper {
         bytes32 digest,
         bytes calldata signatures
     ) external returns (bytes4) {
-        _multisigAuction.checkNSignatures(digest, signatures);
-        require(_multisigAuction.approvedHashes(digest), "Digest not approved");
+        _multisigOrderManager.checkNSignatures(digest, signatures);
+        require(
+            _multisigOrderManager.approvedHashes(digest),
+            "Digest not approved"
+        );
         return _EIP1271_MAGICVALUE;
     }
 
@@ -60,7 +63,7 @@ contract OpenFlowSwapper {
         });
 
         // Swap
-        _multisigAuction.initiateSwap(
+        _multisigOrderManager.submitOrder(
             ISettlement.Payload({
                 fromToken: address(_fromToken),
                 toToken: address(_toToken),

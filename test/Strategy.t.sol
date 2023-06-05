@@ -8,7 +8,7 @@ import {ISettlement} from "../src/interfaces/ISettlement.sol";
 import {Strategy} from "./support/Strategy.sol";
 import {MasterChef} from "./support/MasterChef.sol";
 import {SimpleChainlinkOracle} from "./support/SimpleChainlinkOracle.sol";
-import {MultisigAuction} from "../src/MultisigAuction.sol";
+import {MultisigOrderManager} from "../src/MultisigOrderManager.sol";
 import {OrderExecutor} from "../src/executors/OrderExecutor.sol";
 import {UniswapV2Aggregator} from "../src/solvers/UniswapV2Aggregator.sol";
 
@@ -23,7 +23,7 @@ contract StrategyTest is Test {
     Settlement public settlement;
     OrderExecutor public executor;
     UniswapV2Aggregator public uniswapAggregator;
-    MultisigAuction public multisigAuction;
+    MultisigOrderManager public multisigOrderManager;
     uint256 internal constant _USER_A_PRIVATE_KEY = 0xB0B;
     uint256 internal constant _USER_B_PRIVATE_KEY = 0xA11CE;
     address public immutable userA = vm.addr(_USER_A_PRIVATE_KEY);
@@ -33,12 +33,12 @@ contract StrategyTest is Test {
         masterChef = new MasterChef();
         oracle = new SimpleChainlinkOracle();
         settlement = new Settlement();
-        multisigAuction = new MultisigAuction(address(settlement));
+        multisigOrderManager = new MultisigOrderManager(address(settlement));
         strategy = new Strategy(
             dai,
             usdc,
             masterChef,
-            multisigAuction,
+            multisigOrderManager,
             oracle,
             settlement
         );
@@ -97,8 +97,8 @@ contract StrategyTest is Test {
             })
         );
 
-        MultisigAuction multisigAuction = MultisigAuction(
-            strategy.multisigAuction()
+        MultisigOrderManager multisigOrderManager = MultisigOrderManager(
+            strategy.multisigOrderManager()
         );
 
         // Build digest
@@ -126,7 +126,7 @@ contract StrategyTest is Test {
         address[] memory signers = new address[](2);
         signers[0] = userA;
         signers[1] = userB;
-        multisigAuction.addSigners(signers);
+        multisigOrderManager.addSigners(signers);
 
         // Build after swap hook
         ISettlement.Interaction[][2] memory solverInteractions;
