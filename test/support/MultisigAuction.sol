@@ -3,7 +3,6 @@ pragma solidity ^0.8.19;
 import {IERC20} from "../../src/interfaces/IERC20.sol";
 import {ISettlement} from "../../src/interfaces/ISettlement.sol";
 import {SigningLib} from "../../src/lib/Signing.sol";
-import {Strategy} from "../../test/support/Strategy.sol";
 import {OrderBookNotifier} from "../../src/OrderBookNotifier.sol"; // TODO: IOrderBook
 import "forge-std/Test.sol";
 
@@ -20,47 +19,46 @@ contract StrategyProfitEscrowFactory {
  * @dev The intention is to isolate all profit swapping from the core strategy
  * @dev TODO: More/better comments
  */
-contract StrategyProfitEscrow {
+contract MultisigAuction {
     // Constants and immutables
     bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;
     address public immutable factory;
     address public immutable settlement;
     address public immutable orderBookNotifier;
-    address public immutable strategy;
-    address public immutable fromToken; // reward
-    address public immutable toToken; // asset
 
     // Signatures
     uint256 public signatureThresold;
     mapping(address => bool) public signers;
     mapping(bytes32 => bool) public approvedHashes;
 
-    constructor(
-        address _orderBookNotifier,
-        address _strategy,
-        address _settlement,
-        address _fromToken,
-        address _toToken
-    ) {
+    mapping(address => bool) internal _tokenApproved;
+
+    constructor(address _orderBookNotifier, address _settlement) {
         factory = msg.sender;
-        strategy = _strategy;
         orderBookNotifier = _orderBookNotifier;
         settlement = _settlement;
-        toToken = _toToken;
-        fromToken = _fromToken;
-        signatureThresold = 2; // TODO: get from factory
-        IERC20(fromToken).approve(_settlement, type(uint256).max);
+        signatureThresold = 2;
     }
 
     function initiateSwap(
+        address fromToken,
+        address toToken,
+        uint256 fromAmount,
+        uint256 toAmount,
+        address recipient,
         ISettlement.Interaction[][2] memory contractInteractions
     ) external {
-        uint256 fromAmount = IERC20(fromToken).balanceOf(msg.sender);
+        if (!_tokenApproved[fromToken]) {
+            IERC20(fromToken).approve(settlement, type(uint256).max);
+        }
+
         IERC20(fromToken).transferFrom(msg.sender, address(this), fromAmount); // TODO: SafeTransfer
-        uint256 toAmount = 100; // TODO: Build min amount
         ISettlement.Payload memory payload = buildPayload(
+            fromToken,
+            toToken,
             fromAmount,
             toAmount,
+            recipient,
             contractInteractions
         );
         bytes32 digest = ISettlement(settlement).buildDigest(payload);
@@ -69,8 +67,11 @@ contract StrategyProfitEscrow {
     }
 
     function buildPayload(
+        address fromToken,
+        address toToken,
         uint256 fromAmount,
         uint256 toAmount,
+        address recipient,
         ISettlement.Interaction[][2] memory interactions
     ) public returns (ISettlement.Payload memory payload) {
         payload = ISettlement.Payload({
@@ -79,7 +80,7 @@ contract StrategyProfitEscrow {
             fromAmount: fromAmount,
             toAmount: toAmount,
             sender: address(this),
-            recipient: address(strategy),
+            recipient: recipient,
             nonce: ISettlement(settlement).nonces(address(this)),
             deadline: block.timestamp,
             interactions: interactions

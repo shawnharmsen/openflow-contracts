@@ -43,8 +43,6 @@ interface ISettlement {
         bytes memory,
         bytes32
     ) external view returns (address);
-
-    function cancelOrders() external; // TODO: Refactor, this is a placeholder
 }
 
 interface ISolver {

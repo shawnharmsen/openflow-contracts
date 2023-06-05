@@ -11,6 +11,7 @@ contract Settlement {
     using SafeTransferLib for ERC20;
     bytes32 private constant _DOMAIN_NAME = keccak256("Blockswap");
     bytes32 private constant _DOMAIN_VERSION = keccak256("v0.0.1");
+    uint256 internal constant UID_LENGTH = 56;
     bytes32 private constant _DOMAIN_TYPE_HASH =
         keccak256(
             "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
@@ -67,7 +68,7 @@ contract Settlement {
         /**
          * @notice Step 2. Execute optional contract preswap hooks
          * */
-        _executionProxy.execute(order.payload.interactions[0]);
+        _execute(order.payload.interactions[0]);
 
         /**
          * @notice Step 3. Optimistically transfer funds from payload.sender to msg.sender (order executor)
@@ -95,7 +96,7 @@ contract Settlement {
         /**
          * @notice Step 5. Execute optional contract postswap hooks
          */
-        _executionProxy.execute(order.payload.interactions[1]);
+        _execute(order.payload.interactions[1]);
 
         /**
          * @notice Step 6. Make sure payload.recipient receives the agreed upon amount of tokens
@@ -114,6 +115,12 @@ contract Settlement {
             payload.fromAmount,
             payload.toAmount
         );
+    }
+
+    function _execute(ISettlement.Interaction[] memory interactions) internal {
+        if (interactions.length > 0) {
+            _executionProxy.execute(interactions);
+        }
     }
 
     /**
@@ -146,10 +153,6 @@ contract Settlement {
         orderDigest = keccak256(
             abi.encodePacked("\x19\x01", domainSeparator, structHash)
         );
-    }
-
-    function cancelOrders() external {
-        nonces[msg.sender]++;
     }
 }
 

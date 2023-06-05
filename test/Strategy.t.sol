@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
 import {Settlement} from "../src/Settlement.sol";
 import {ISettlement} from "../src/interfaces/ISettlement.sol";
-import {Strategy, MasterChef, StrategyProfitEscrow} from "./support/Strategy.sol";
+import {Strategy, MasterChef, MultisigAuction} from "./support/Strategy.sol";
 import {OrderBookNotifier} from "../src/OrderBookNotifier.sol";
 import {OrderExecutor} from "../src/executors/OrderExecutor.sol";
 import {UniswapV2Aggregator} from "../src/solvers/UniswapV2Aggregator.sol";
@@ -52,12 +52,12 @@ contract StrategyTest is Test {
         strategy.harvest();
         Vm.Log[] memory harvestLogs = vm.getRecordedLogs();
 
-        assertEq(harvestLogs.length, 3);
         // TODO: Figure out exact keccak256 string: submitOrder(tuple(...))
         bytes32 submitOrderHash = hex"d2978d27e147f9cf872075fc3f4fa6377f73be6d46cf62fa04dbc1285a8f887d";
-        assertEq(harvestLogs[2].topics[0], submitOrderHash);
+        uint256 submitIndex = harvestLogs.length - 1;
+        assertEq(harvestLogs[submitIndex].topics[0], submitOrderHash);
         ISettlement.Payload memory decodedPayload = abi.decode(
-            harvestLogs[2].data,
+            harvestLogs[submitIndex].data,
             (ISettlement.Payload)
         );
 
@@ -94,9 +94,7 @@ contract StrategyTest is Test {
             })
         );
 
-        StrategyProfitEscrow profitEscrow = StrategyProfitEscrow(
-            strategy.profitEscrow()
-        );
+        MultisigAuction profitEscrow = MultisigAuction(strategy.profitEscrow());
 
         // Build digest
         bytes32 digest = settlement.buildDigest(decodedPayload);

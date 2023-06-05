@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 import {IERC20} from "../../src/interfaces/IERC20.sol";
 import {ISettlement} from "../../src/interfaces/ISettlement.sol";
-import {StrategyProfitEscrow} from "./StrategyProfitEscrow.sol";
+import {MultisigAuction} from "./MultisigAuction.sol";
 import "forge-std/Test.sol";
 
 contract MasterChef {
@@ -38,15 +38,7 @@ contract Strategy {
         masterChef = _masterChef;
         masterChef.accrueReward();
         reward = masterChef.rewardToken();
-        profitEscrow = address(
-            new StrategyProfitEscrow(
-                _orderBook,
-                address(this),
-                _settlement,
-                address(reward),
-                address(asset)
-            )
-        );
+        profitEscrow = address(new MultisigAuction(_orderBook, _settlement));
         // TODO: SafeApprove??
         reward.approve(profitEscrow, type(uint256).max);
     }
@@ -66,9 +58,16 @@ contract Strategy {
             value: 0,
             callData: abi.encodeWithSelector(this.updateAccounting.selector)
         });
-
-        // TODO: IStrategyProfitEscrow
-        StrategyProfitEscrow(profitEscrow).initiateSwap(contractInteractions);
+        uint256 fromAmount = reward.balanceOf(address(this));
+        uint256 toAmount = 100;
+        MultisigAuction(profitEscrow).initiateSwap(
+            address(reward),
+            address(asset),
+            fromAmount,
+            toAmount,
+            address(this),
+            contractInteractions
+        );
     }
 
     function updateAccounting() public {}
