@@ -17,13 +17,18 @@ interface ISettlement {
         address recipient;
         uint256 nonce;
         uint256 deadline;
-        Interaction[][2] interactions; // Optional interactions to be executed against recipient during setup and teardown
+        Hooks hooks;
     }
 
     struct Interaction {
         address target;
         uint256 value;
         bytes callData;
+    }
+
+    struct Hooks {
+        Interaction[] preHooks;
+        Interaction[] postHooks;
     }
 
     function checkNSignatures(

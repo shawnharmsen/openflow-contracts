@@ -70,7 +70,7 @@ contract Settlement {
         /**
          * @notice Step 2. Execute optional contract preswap hooks
          * */
-        _execute(order.payload.interactions[0]);
+        _execute(order.payload.hooks.preHooks);
 
         /**
          * @notice Step 3. Optimistically transfer funds from payload.sender to msg.sender (order executor)
@@ -98,7 +98,7 @@ contract Settlement {
         /**
          * @notice Step 5. Execute optional contract postswap hooks
          */
-        _execute(order.payload.interactions[1]);
+        _execute(order.payload.hooks.postHooks);
 
         /**
          * @notice Step 6. Make sure payload.recipient receives the agreed upon amount of tokens

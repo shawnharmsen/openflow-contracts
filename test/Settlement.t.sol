@@ -83,7 +83,7 @@ contract SettlementTest is Test {
         );
 
         // Build order
-        ISettlement.Interaction[][2] memory contractInteractions;
+        ISettlement.Hooks memory hooks;
         ISettlement.Order memory order = ISettlement.Order({
             signature: hex"",
             data: executorData,
@@ -96,7 +96,7 @@ contract SettlementTest is Test {
                 recipient: userA,
                 nonce: 0,
                 deadline: block.timestamp,
-                interactions: contractInteractions
+                hooks: hooks
             })
         });
 

@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
 import {Settlement} from "../src/Settlement.sol";
 import {ISettlement} from "../src/interfaces/ISettlement.sol";
-import {Strategy, MasterChef} from "./support/Strategy.sol";
+import {Strategy, Oracle, MasterChef} from "./support/Strategy.sol";
 import {MultisigAuction} from "../src/MultisigAuction.sol";
 import {OrderBookNotifier} from "../src/OrderBookNotifier.sol";
 import {OrderExecutor} from "../src/executors/OrderExecutor.sol";
@@ -13,28 +13,32 @@ import {UniswapV2Aggregator} from "../src/solvers/UniswapV2Aggregator.sol";
 
 contract StrategyTest is Test {
     Strategy public strategy;
+    Oracle public oracle;
     IERC20 public rewardToken;
     MasterChef public masterChef;
     address public usdc = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
+    address public dai = 0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E;
     address public weth = 0x74b23882a30290451A17c44f4F05243b6b58C76d;
     Settlement public settlement;
     OrderExecutor public executor;
     UniswapV2Aggregator public uniswapAggregator;
     OrderBookNotifier public orderBookNotifier;
+    MultisigAuction public multisigAuction;
     uint256 internal constant _USER_A_PRIVATE_KEY = 0xB0B;
     uint256 internal constant _USER_B_PRIVATE_KEY = 0xA11CE;
     address public immutable userA = vm.addr(_USER_A_PRIVATE_KEY);
     address public immutable userB = vm.addr(_USER_B_PRIVATE_KEY);
 
     function setUp() public {
-        settlement = new Settlement();
         masterChef = new MasterChef();
+        oracle = new Oracle();
+        settlement = new Settlement();
         orderBookNotifier = new OrderBookNotifier();
-        strategy = new Strategy(
+        multisigAuction = new MultisigAuction(
             address(orderBookNotifier),
-            masterChef,
             address(settlement)
         );
+        strategy = new Strategy(dai, usdc, masterChef, multisigAuction, oracle);
         rewardToken = IERC20(masterChef.rewardToken());
         executor = new OrderExecutor(address(settlement));
         uniswapAggregator = new UniswapV2Aggregator();
@@ -49,23 +53,9 @@ contract StrategyTest is Test {
     }
 
     function testHarvestAndDump() external {
-        vm.recordLogs();
-        strategy.harvest();
-        Vm.Log[] memory harvestLogs = vm.getRecordedLogs();
-
-        // TODO: Figure out exact keccak256 string: submitOrder(tuple(...))
-        bytes32 submitOrderHash = hex"d2978d27e147f9cf872075fc3f4fa6377f73be6d46cf62fa04dbc1285a8f887d";
-        uint256 submitIndex = harvestLogs.length - 1;
-        assertEq(harvestLogs[submitIndex].topics[0], submitOrderHash);
-        ISettlement.Payload memory decodedPayload = abi.decode(
-            harvestLogs[submitIndex].data,
-            (ISettlement.Payload)
-        );
-
+        // Get quote
         IERC20 fromToken = IERC20(strategy.reward());
         IERC20 toToken = IERC20(strategy.asset());
-
-        // Get quote
         uint256 fromAmount = strategy.estimatedEarnings();
         require(fromAmount > 0, "Invalid fromAmount");
         UniswapV2Aggregator.Quote memory quote = uniswapAggregator.quote(
@@ -74,6 +64,19 @@ contract StrategyTest is Test {
             address(toToken)
         );
         uint256 toAmount = (quote.quoteAmount * 95) / 100;
+
+        vm.recordLogs();
+        strategy.harvest();
+        Vm.Log[] memory harvestLogs = vm.getRecordedLogs();
+
+        // TODO: Figure out exact keccak256 string: submitOrder(tuple(...))
+        bytes32 submitOrderHash = hex"1cbc0c0cb4c33342c2990ab4a9599dd53541f4522e363b5f19e37fde0d577b82";
+        uint256 submitIndex = harvestLogs.length - 1;
+        assertEq(harvestLogs[submitIndex].topics[0], submitOrderHash);
+        ISettlement.Payload memory decodedPayload = abi.decode(
+            harvestLogs[submitIndex].data,
+            (ISettlement.Payload)
+        );
 
         // Build executor data
         bytes memory executorData = abi.encode(

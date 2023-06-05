@@ -9,4 +9,6 @@ interface IERC20 {
     function approve(address, uint256) external;
 
     function transferFrom(address from, address to, uint256 amount) external;
+
+    function decimals() external view returns (uint256);
 }

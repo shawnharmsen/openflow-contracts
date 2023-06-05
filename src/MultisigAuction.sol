@@ -14,7 +14,7 @@ interface IMultisigAuction {
         uint256 amountIn;
         uint256 minAmountOut;
         address recipient;
-        ISettlement.Interaction[][2] interactions;
+        ISettlement.Hooks hooks;
     }
 }
 
@@ -43,8 +43,9 @@ contract MultisigAuction {
         IMultisigAuction.SwapOrder memory swapOrder
     ) external {
         if (!_tokenApproved[swapOrder.fromToken]) {
-            IERC20(fromToken).approve(settlement, type(uint256).max);
+            IERC20(swapOrder.fromToken).approve(settlement, type(uint256).max);
         }
+        // TOODO: Determine if it's better to do transferFrom or require users to transfer their tokens first
         IERC20(swapOrder.fromToken).transferFrom(
             msg.sender,
             address(this),
@@ -68,7 +69,7 @@ contract MultisigAuction {
             recipient: swapOrder.recipient,
             nonce: ISettlement(settlement).nonces(address(this)),
             deadline: block.timestamp,
-            interactions: swapOrder.interactions
+            hooks: swapOrder.hooks
         });
     }
 
