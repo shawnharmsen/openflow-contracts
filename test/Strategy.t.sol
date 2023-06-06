@@ -49,6 +49,8 @@ contract StrategyTest is Test {
             slippageBips,
             settlement
         );
+        masterChef.initialize(address(strategy));
+        masterChef.accrueReward();
         rewardToken = IERC20(masterChef.rewardToken());
         executor = new OrderExecutor(address(settlement));
         uniswapAggregator = new UniswapV2Aggregator();

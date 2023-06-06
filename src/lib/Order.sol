@@ -2,8 +2,6 @@
 pragma solidity 0.8.19;
 import "../interfaces/ISettlement.sol";
 import "../interfaces/IERC20.sol";
-import "../interfaces/IEip1271SignatureValidator.sol";
-import "../interfaces/ISignatureManager.sol";
 
 library OrderLib {
     uint256 internal constant _UID_LENGTH = 56;

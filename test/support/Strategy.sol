@@ -35,7 +35,6 @@ contract Strategy is OpenFlowSwapper {
         reward = _reward;
         masterChef = _masterChef;
         multisigOrderManager = _multisigOrderManager;
-        masterChef.accrueReward();
 
         // TODO: SafeApprove??
         IERC20(reward).approve(address(_settlement), type(uint256).max);

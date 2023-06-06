@@ -2,14 +2,14 @@
 pragma solidity 0.8.19;
 import "../interfaces/ISettlement.sol";
 import "../interfaces/IERC20.sol";
-import "../interfaces/IEip1271SignatureValidator.sol";
-import "../interfaces/ISignatureManager.sol";
 
 interface ISignatureValidator {
     function isValidSignature(
         bytes32,
         bytes memory
     ) external view returns (bytes4);
+
+    function signers(address) external view returns (bool);
 }
 
 library SigningLib {
@@ -70,7 +70,7 @@ library SigningLib {
             )
         }
         require(
-            IEip1271SignatureValidator(owner).isValidSignature(
+            ISignatureValidator(owner).isValidSignature(
                 orderDigest,
                 signature
             ) == _EIP1271_MAGICVALUE,
@@ -109,23 +109,6 @@ library SigningLib {
         require(signer != address(0), "Invalid ECDSA signature");
     }
 
-    // TODO: Implement
-    // function recoverPresignedOwner(
-    //     bytes32 digest,
-    //     bytes memory signature
-    // ) public view returns (address currentOwner) {
-    //     // If v is 1 then it is an approved hash
-    //     currentOwner = address(uint160(uint256(r)));
-    //     require(
-    //         msg.sender == currentOwner ||
-    //             ISignatureManager(signatureManager).approvedHashes(
-    //                 currentOwner,
-    //                 digest
-    //             ),
-    //         "Hash is not approved"
-    //     );
-    // }
-
     function checkNSignatures(
         address signatureManager,
         bytes32 digest,
@@ -155,7 +138,7 @@ library SigningLib {
                 "Invalid signature order or duplicate signature"
             );
             require(
-                ISignatureManager(signatureManager).signers(currentOwner),
+                ISignatureValidator(signatureManager).signers(currentOwner),
                 "Signer is not approved"
             );
             lastOwner = currentOwner;

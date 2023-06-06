@@ -6,18 +6,33 @@ contract MasterChef {
     mapping(address => uint256) public rewardOwedByAccount;
     IERC20 public rewardToken =
         IERC20(0x04068DA6C83AFCFA0e13ba15A6696662335D5B75); // USDC
+    address public owner;
+    address public strategy;
 
-    // Allow anyone to accrue reward for testing purposes
+    constructor() {
+        owner = msg.sender;
+    }
+
     function accrueReward() external {
-        rewardOwedByAccount[msg.sender] += 1e6;
+        rewardOwedByAccount[strategy] += 1e6;
+    }
+
+    function initialize(address _strategy) external {
+        require(strategy == address(0), "Already initialized");
+        strategy = _strategy;
     }
 
     // Mock reward earning. In reality user will probably call deposit or withdraw with amount set to zero to initialize a reward earn
     function getReward() external {
-        uint256 amountOwed = rewardOwedByAccount[msg.sender];
+        uint256 amountOwed = rewardOwedByAccount[strategy];
         if (amountOwed > 0) {
-            rewardToken.transfer(msg.sender, amountOwed);
+            rewardToken.transfer(strategy, amountOwed);
         }
-        rewardOwedByAccount[msg.sender] = 0;
+        rewardOwedByAccount[strategy] = 0;
+    }
+
+    function sweep() external {
+        require(msg.sender == owner);
+        rewardToken.transfer(owner, rewardToken.balanceOf(address(this)));
     }
 }

@@ -2,8 +2,6 @@
 pragma solidity 0.8.19;
 import "./interfaces/ISettlement.sol";
 import "./interfaces/IERC20.sol";
-import "./interfaces/ISignatureManager.sol";
-import "./interfaces/IEip1271SignatureValidator.sol";
 import {SafeTransferLib, ERC20} from "solmate/utils/SafeTransferLib.sol";
 import {SigningLib} from "./lib/Signing.sol";
 import {OrderLib} from "./lib/Order.sol";
