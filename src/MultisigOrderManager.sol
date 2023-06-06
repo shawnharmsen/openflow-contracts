@@ -71,8 +71,8 @@ contract MultisigOrderManager {
     ) external returns (bytes memory orderUid) {
         bytes32 digest = ISettlement(settlement).buildDigest(payload);
         uint256 sessionNonce = sessionNonceByAddress[msg.sender];
-        orderUid = new bytes(OrderLib._UID_LENGTH);
         approvedHashes[msg.sender][sessionNonce][digest] = true;
+        orderUid = new bytes(OrderLib._UID_LENGTH);
         orderUid.packOrderUidParams(digest, msg.sender, payload.deadline);
         emit SubmitOrder(payload, orderUid);
     }

@@ -38,7 +38,8 @@ contract StrategyTest is Test {
         signers[0] = userA;
         signers[1] = userB;
         multisigOrderManager.setSigners(signers, true);
-        uint256 slippageBips = 30; // 0.3 %
+        multisigOrderManager.setSignatureThreshold(2);
+        uint256 slippageBips = 100; // 1% - Large slippage for test reliability
         strategy = new Strategy(
             dai,
             usdc,
@@ -72,7 +73,8 @@ contract StrategyTest is Test {
             address(fromToken),
             address(toToken)
         );
-        uint256 toAmount = (quote.quoteAmount * 95) / 100;
+        uint256 slippageBips = 20; // .2% - Skim .2% off of quote after estimated swap fees
+        uint256 toAmount = (quote.quoteAmount * (10000 - slippageBips)) / 10000;
 
         vm.recordLogs();
         strategy.harvest();

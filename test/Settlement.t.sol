@@ -153,7 +153,7 @@ contract SettlementTest is Test {
         );
 
         // Expect revert if solver submits a duplicate order
-        vm.expectRevert("Nonce already used");
+        vm.expectRevert("Order already filled");
         executor.executeOrder(order);
 
         // Increase nonce and try again

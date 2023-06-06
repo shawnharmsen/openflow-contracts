@@ -73,9 +73,8 @@ contract OpenFlowSwapper {
             _fromToken,
             _toToken,
             fromAmount,
-            slippageBips
+            _slippageBips
         );
-
         // Create optional posthook
         ISettlement.Interaction[] memory preHooks;
         ISettlement.Interaction[]
