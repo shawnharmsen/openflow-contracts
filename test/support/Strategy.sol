@@ -1,27 +1,23 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.19;
 import {IERC20} from "../../src/interfaces/IERC20.sol";
-import {Settlement} from "../../src/Settlement.sol";
-import {MultisigOrderManager} from "../../src/MultisigOrderManager.sol";
-import {Oracle} from "./Oracle.sol";
+import {IMasterChef} from "../../src/interfaces/IMasterChef.sol";
 import {OpenFlowSwapper} from "./OpenFlowSwapper.sol";
-import {MasterChef} from "./MasterChef.sol";
-import "forge-std/Test.sol";
 
 contract Strategy is OpenFlowSwapper {
-    MasterChef public masterChef;
+    address public masterChef;
     address public asset; // Underlying want token is DAI
     address public reward; // Reward is USDC
-    MultisigOrderManager public multisigOrderManager;
+    address public multisigOrderManager;
 
     constructor(
         address _asset,
         address _reward,
-        MasterChef _masterChef,
-        MultisigOrderManager _multisigOrderManager,
-        Oracle _oracle,
+        address _masterChef,
+        address _multisigOrderManager,
+        address _oracle,
         uint256 _slippageBips,
-        Settlement _settlement
+        address _settlement
     )
         OpenFlowSwapper(
             _multisigOrderManager,
@@ -41,11 +37,11 @@ contract Strategy is OpenFlowSwapper {
     }
 
     function estimatedEarnings() external view returns (uint256) {
-        return masterChef.rewardOwedByAccount(address(this));
+        return IMasterChef(masterChef).rewardOwedByAccount(address(this));
     }
 
     function harvest() external {
-        masterChef.getReward();
+        IMasterChef(masterChef).getReward();
         _swap();
     }
 

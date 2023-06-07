@@ -2,9 +2,8 @@
 pragma solidity ^0.8.19;
 import {IERC20} from "../../src/interfaces/IERC20.sol";
 import {ISettlement} from "../../src/interfaces/ISettlement.sol";
-import {MultisigOrderManager} from "../../src/MultisigOrderManager.sol";
-import {Oracle} from "./Oracle.sol";
-import {Strategy} from "./Strategy.sol";
+import {IMultisigOrderManager} from "../../src/interfaces/IMultisigOrderManager.sol";
+import {IOracle} from "../../src/interfaces/IOracle.sol";
 
 /// @author OpenFlow
 /// @title OpenFlow Swapper
@@ -16,10 +15,10 @@ contract OpenFlowSwapper {
     bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;
 
     /// @dev Multisig order manager is responsible for signature validation and actual order submission
-    MultisigOrderManager _multisigOrderManager;
+    address _multisigOrderManager;
 
     /// @dev Oracle responsible for determining minimum amount out for an order
-    Oracle _oracle;
+    address _oracle;
 
     /// @dev Token to swap from
     address internal _fromToken;
@@ -31,8 +30,8 @@ contract OpenFlowSwapper {
     uint256 internal _slippageBips;
 
     constructor(
-        MultisigOrderManager multisigOrderManager,
-        Oracle oracle,
+        address multisigOrderManager,
+        address oracle,
         uint256 slippageBips,
         address fromToken,
         address toToken
@@ -54,9 +53,12 @@ contract OpenFlowSwapper {
         bytes32 digest,
         bytes calldata signatures
     ) external returns (bytes4) {
-        _multisigOrderManager.checkNSignatures(digest, signatures);
+        IMultisigOrderManager(_multisigOrderManager).checkNSignatures(
+            digest,
+            signatures
+        );
         require(
-            _multisigOrderManager.digestApproved(digest),
+            IMultisigOrderManager(_multisigOrderManager).digestApproved(digest),
             "Digest not approved"
         );
         return _EIP1271_MAGICVALUE;
@@ -69,12 +71,13 @@ contract OpenFlowSwapper {
     function _swap() internal {
         // Determine swap amounts
         uint256 fromAmount = IERC20(_fromToken).balanceOf(address(this));
-        uint256 minAmountOut = _oracle.calculateEquivalentAmountAfterSlippage(
-            _fromToken,
-            _toToken,
-            fromAmount,
-            _slippageBips
-        );
+        uint256 minAmountOut = IOracle(_oracle)
+            .calculateEquivalentAmountAfterSlippage(
+                _fromToken,
+                _toToken,
+                fromAmount,
+                _slippageBips
+            );
         // Create optional posthook
         ISettlement.Interaction[] memory preHooks;
         ISettlement.Interaction[]
@@ -82,7 +85,7 @@ contract OpenFlowSwapper {
         postHooks[0] = ISettlement.Interaction({
             target: address(this),
             value: 0,
-            callData: abi.encodeWithSelector(Strategy.updateAccounting.selector)
+            callData: abi.encodeWithSignature("updateAccounting()")
         });
         ISettlement.Hooks memory hooks = ISettlement.Hooks({
             preHooks: preHooks,
@@ -90,7 +93,7 @@ contract OpenFlowSwapper {
         });
 
         // Swap
-        _multisigOrderManager.submitOrder(
+        IMultisigOrderManager(_multisigOrderManager).submitOrder(
             ISettlement.Payload({
                 fromToken: address(_fromToken),
                 toToken: address(_toToken),

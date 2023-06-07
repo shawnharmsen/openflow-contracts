@@ -43,11 +43,11 @@ contract StrategyTest is Test {
         strategy = new Strategy(
             dai,
             usdc,
-            masterChef,
-            multisigOrderManager,
-            oracle,
+            address(masterChef),
+            address(multisigOrderManager),
+            address(oracle),
             slippageBips,
-            settlement
+            address(settlement)
         );
         masterChef.initialize(address(strategy));
         masterChef.accrueReward();

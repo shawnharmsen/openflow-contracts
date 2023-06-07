@@ -136,9 +136,11 @@ contract SettlementTest is Test {
         executor.executeOrder(order, solverInteractions);
 
         // Make sure solver is capable of receiving profit
-        uint256 solverBalanceAfter = toToken.balanceOf(solver);
-        uint256 solverProfit = solverBalanceAfter - solverBalanceBefore;
-        require(solverProfit > 0, "Solver had zero profit");
+        {
+            uint256 solverBalanceAfter = toToken.balanceOf(solver);
+            uint256 solverProfit = solverBalanceAfter - solverBalanceBefore;
+            require(solverProfit > 0, "Solver had zero profit");
+        }
 
         // Expectations after swap
         userAFromTokenBalanceBefore = fromToken.balanceOf(userA);
