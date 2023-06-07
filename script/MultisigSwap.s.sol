@@ -13,6 +13,7 @@ import {OrderExecutor} from "../src/executors/OrderExecutor.sol";
 import {UniswapV2Aggregator} from "../src/solvers/UniswapV2Aggregator.sol";
 
 contract MultisigSwap is Script {
+    // Hardcoded values. In the future read from broadcast deployment logs
     Strategy public strategy =
         Strategy(0xC7CE9fA323bC3a13a516c3c890e87316e4b2df52);
     Oracle public oracle = Oracle(0xcA81a85e8Bd58f24Df30c670dBF8188009eE8884);
@@ -30,18 +31,17 @@ contract MultisigSwap is Script {
     MultisigOrderManager public multisigOrderManager =
         MultisigOrderManager(0xE6512671fFcd79C833127363A75545b1C7baACDA);
 
-    address x48_1 = 0x4800C3b3B570bE4EeE918404d0f847c1Bf25826b;
-    address x48_2 = 0x481140F916a4e64559694DB4d56D692CadC0326c;
-
+    address public userA;
+    address public userB;
     uint256 internal immutable _USER_A_PRIVATE_KEY;
     uint256 internal immutable _USER_B_PRIVATE_KEY;
 
     constructor() {
-        _USER_A_PRIVATE_KEY = vm.envUint("PRIVATE_KEY_X48_1");
-        _USER_B_PRIVATE_KEY = vm.envUint("PRIVATE_KEY_X48_2");
+        _USER_A_PRIVATE_KEY = vm.envUint("PRIVATE_KEY_USER_A");
+        _USER_B_PRIVATE_KEY = vm.envUint("PRIVATE_KEY_USER_B");
+        userA = vm.addr(_USER_A_PRIVATE_KEY);
+        userB = vm.addr(_USER_B_PRIVATE_KEY);
     }
-
-    event Digest(ISettlement.Payload payload, bytes32 digest);
 
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -55,19 +55,10 @@ contract MultisigSwap is Script {
             address(fromToken),
             address(toToken)
         );
-        uint256 slippageBips = 10; // .2% - Skim .2% off of quote after estimated swap fees
+        uint256 slippageBips = 20;
         uint256 toAmount = (quote.quoteAmount * (10000 - slippageBips)) / 10000;
 
-        // vm.recordLogs();
-        // strategy.harvest();
-        // Vm.Log[] memory harvestLogs = vm.getRecordedLogs();
-
-        // uint256 submitIndex = harvestLogs.length - 1;
-        // ISettlement.Payload memory decodedPayload = abi.decode(
-        //     harvestLogs[submitIndex].data,
-        //     (ISettlement.Payload)
-        // );
-
+        // Build digest (in reality, do this by looking at signature logs)
         ISettlement.Interaction[] memory preHooks;
         ISettlement.Interaction[]
             memory postHooks = new ISettlement.Interaction[](1);
@@ -113,7 +104,6 @@ contract MultisigSwap is Script {
 
         // Build digest
         bytes32 digest = settlement.buildDigest(decodedPayload);
-        emit Digest(decodedPayload, digest);
 
         // Sign and execute order
         bytes memory signature1 = _sign(_USER_A_PRIVATE_KEY, digest);
