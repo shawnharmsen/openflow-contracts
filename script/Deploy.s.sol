@@ -24,15 +24,8 @@ contract Deploy is Script {
     OrderExecutor public executor;
     UniswapV2Aggregator public uniswapAggregator;
     MultisigOrderManager public multisigOrderManager;
-    uint256 internal constant _USER_A_PRIVATE_KEY = 0xB0B;
-    uint256 internal constant _USER_B_PRIVATE_KEY = 0xA11CE;
-    address public immutable userA = vm.addr(_USER_A_PRIVATE_KEY);
-    address public immutable userB = vm.addr(_USER_B_PRIVATE_KEY);
-
     address x48_1 = 0x4800C3b3B570bE4EeE918404d0f847c1Bf25826b;
     address x48_2 = 0x481140F916a4e64559694DB4d56D692CadC0326c;
-
-    function setUp() public {}
 
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -46,7 +39,8 @@ contract Deploy is Script {
         signers[1] = x48_2;
         multisigOrderManager.setSigners(signers, true);
         multisigOrderManager.setSignatureThreshold(2);
-        uint256 slippageBips = 100; // 1% - Large slippage for test reliability
+        uint32 auctionDuration = 5 * 60; // 5 minutes
+        uint256 slippageBips = 100;
         strategy = new Strategy(
             dai,
             usdc,
@@ -54,7 +48,8 @@ contract Deploy is Script {
             address(multisigOrderManager),
             address(oracle),
             slippageBips,
-            address(settlement)
+            address(settlement),
+            auctionDuration
         );
         masterChef.initialize(address(strategy));
         masterChef.accrueReward();

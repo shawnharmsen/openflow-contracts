@@ -1,94 +1,96 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.19;
-
 import "forge-std/Test.sol";
+import "forge-std/Script.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
 import {Settlement} from "../src/Settlement.sol";
 import {ISettlement} from "../src/interfaces/ISettlement.sol";
-import {Strategy} from "./support/Strategy.sol";
-import {MasterChef} from "./support/MasterChef.sol";
-import {Oracle} from "./support/Oracle.sol";
+import {Strategy} from "../test/support/Strategy.sol";
+import {MasterChef} from "../test/support/MasterChef.sol";
+import {Oracle} from "../test/support/Oracle.sol";
 import {MultisigOrderManager} from "../src/MultisigOrderManager.sol";
 import {OrderExecutor} from "../src/executors/OrderExecutor.sol";
 import {UniswapV2Aggregator} from "../src/solvers/UniswapV2Aggregator.sol";
 
-contract StrategyTest is Test {
-    Strategy public strategy;
-    Oracle public oracle;
-    IERC20 public rewardToken;
-    MasterChef public masterChef;
+contract MultisigSwap is Script {
+    Strategy public strategy =
+        Strategy(0xC7CE9fA323bC3a13a516c3c890e87316e4b2df52);
+    Oracle public oracle = Oracle(0xcA81a85e8Bd58f24Df30c670dBF8188009eE8884);
+    MasterChef public masterChef =
+        MasterChef(0xedE0aDA4Ec11969c31d113b2Ad069ed3333Ccb17);
     address public usdc = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
     address public dai = 0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E;
     address public weth = 0x74b23882a30290451A17c44f4F05243b6b58C76d;
-    Settlement public settlement;
-    OrderExecutor public executor;
-    UniswapV2Aggregator public uniswapAggregator;
-    MultisigOrderManager public multisigOrderManager;
-    uint256 internal constant _USER_A_PRIVATE_KEY = 0xB0B;
-    uint256 internal constant _USER_B_PRIVATE_KEY = 0xA11CE;
-    address public immutable userA = vm.addr(_USER_A_PRIVATE_KEY);
-    address public immutable userB = vm.addr(_USER_B_PRIVATE_KEY);
+    Settlement public settlement =
+        Settlement(0x3C7488fBDED5f5e056A6cF11BB6a0e4385dce58a);
+    OrderExecutor public executor =
+        OrderExecutor(0xE14C923eD1cdbbE34966AfF6A54e95DeAFC310be);
+    UniswapV2Aggregator public uniswapAggregator =
+        UniswapV2Aggregator(0x78101Bbcb00f9A62607cd8B31BEF8358Ed33BD11);
+    MultisigOrderManager public multisigOrderManager =
+        MultisigOrderManager(0xE6512671fFcd79C833127363A75545b1C7baACDA);
 
-    function setUp() public {
-        masterChef = new MasterChef();
-        oracle = new Oracle();
-        settlement = new Settlement();
-        multisigOrderManager = new MultisigOrderManager(address(settlement));
-        address[] memory signers = new address[](2);
-        signers[0] = userA;
-        signers[1] = userB;
-        multisigOrderManager.setSigners(signers, true);
-        multisigOrderManager.setSignatureThreshold(2);
-        uint32 auctionDuration = 60 * 5; // 5 minutes for example
-        uint256 slippageBips = 100; // 1% - Large slippage for test reliability
-        strategy = new Strategy(
-            dai,
-            usdc,
-            address(masterChef),
-            address(multisigOrderManager),
-            address(oracle),
-            slippageBips,
-            address(settlement),
-            auctionDuration
-        );
-        masterChef.initialize(address(strategy));
-        masterChef.accrueReward();
-        rewardToken = IERC20(masterChef.rewardToken());
-        executor = new OrderExecutor(address(settlement));
-        uniswapAggregator = new UniswapV2Aggregator();
-        uniswapAggregator.addDex(
-            UniswapV2Aggregator.Dex({
-                name: "Spookyswap",
-                factoryAddress: 0x152eE697f2E276fA89E96742e9bB9aB1F2E61bE3,
-                routerAddress: 0xbE4fC72f8293F9D3512d58B969c98c3F676cB957
-            })
-        );
-        deal(address(rewardToken), address(masterChef), 100e6);
+    address x48_1 = 0x4800C3b3B570bE4EeE918404d0f847c1Bf25826b;
+    address x48_2 = 0x481140F916a4e64559694DB4d56D692CadC0326c;
+
+    uint256 internal immutable _USER_A_PRIVATE_KEY;
+    uint256 internal immutable _USER_B_PRIVATE_KEY;
+
+    constructor() {
+        _USER_A_PRIVATE_KEY = vm.envUint("PRIVATE_KEY_X48_1");
+        _USER_B_PRIVATE_KEY = vm.envUint("PRIVATE_KEY_X48_2");
     }
 
-    function testHarvestAndDump() external {
-        // Get quote
+    event Digest(ISettlement.Payload payload, bytes32 digest);
+
+    function run() public {
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(deployerPrivateKey);
         IERC20 fromToken = IERC20(strategy.reward());
         IERC20 toToken = IERC20(strategy.asset());
-        uint256 fromAmount = strategy.estimatedEarnings();
-        require(fromAmount > 0, "Invalid fromAmount");
+        uint256 fromAmount = fromToken.balanceOf(address(strategy));
+
         UniswapV2Aggregator.Quote memory quote = uniswapAggregator.quote(
             fromAmount,
             address(fromToken),
             address(toToken)
         );
-        uint256 slippageBips = 20; // .2% - Skim .2% off of quote after estimated swap fees
+        uint256 slippageBips = 10; // .2% - Skim .2% off of quote after estimated swap fees
         uint256 toAmount = (quote.quoteAmount * (10000 - slippageBips)) / 10000;
 
-        vm.recordLogs();
-        strategy.harvest();
-        Vm.Log[] memory harvestLogs = vm.getRecordedLogs();
+        // vm.recordLogs();
+        // strategy.harvest();
+        // Vm.Log[] memory harvestLogs = vm.getRecordedLogs();
 
-        uint256 submitIndex = harvestLogs.length - 1;
-        ISettlement.Payload memory decodedPayload = abi.decode(
-            harvestLogs[submitIndex].data,
-            (ISettlement.Payload)
-        );
+        // uint256 submitIndex = harvestLogs.length - 1;
+        // ISettlement.Payload memory decodedPayload = abi.decode(
+        //     harvestLogs[submitIndex].data,
+        //     (ISettlement.Payload)
+        // );
+
+        ISettlement.Interaction[] memory preHooks;
+        ISettlement.Interaction[]
+            memory postHooks = new ISettlement.Interaction[](1);
+        postHooks[0] = ISettlement.Interaction({
+            target: address(strategy),
+            value: 0,
+            callData: abi.encodeWithSignature("updateAccounting()")
+        });
+        ISettlement.Hooks memory hooks = ISettlement.Hooks({
+            preHooks: preHooks,
+            postHooks: postHooks
+        });
+        ISettlement.Payload memory decodedPayload = ISettlement.Payload({
+            fromToken: usdc,
+            toToken: dai,
+            fromAmount: 3000000,
+            toAmount: 2970257895415816631,
+            sender: address(strategy),
+            recipient: address(strategy),
+            nonce: 0,
+            deadline: 1686175288,
+            hooks: hooks
+        });
 
         // Build executor data
         bytes memory executorData = abi.encode(
@@ -111,6 +113,7 @@ contract StrategyTest is Test {
 
         // Build digest
         bytes32 digest = settlement.buildDigest(decodedPayload);
+        emit Digest(decodedPayload, digest);
 
         // Sign and execute order
         bytes memory signature1 = _sign(_USER_A_PRIVATE_KEY, digest);

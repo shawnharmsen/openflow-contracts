@@ -59,10 +59,6 @@ contract OrderExecutor {
         _executeInteractions(interactions[1]);
     }
 
-    function sweep(IERC20 token, address recipient) external {
-        token.transfer(recipient, token.balanceOf(address(this)));
-    }
-
     function hook(bytes memory orderData) external {
         require(msg.sender == address(settlement)); // TODO: This is probably not necessary
         Data memory executorData = abi.decode(orderData, (Data));
@@ -85,5 +81,9 @@ contract OrderExecutor {
             }(interaction.callData);
             require(success, "Interaction failed");
         }
+    }
+
+    function sweep(IERC20 token, address recipient) external {
+        token.transfer(recipient, token.balanceOf(address(this)));
     }
 }

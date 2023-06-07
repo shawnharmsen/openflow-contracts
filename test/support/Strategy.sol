@@ -9,6 +9,7 @@ contract Strategy is OpenFlowSwapper {
     address public asset; // Underlying want token is DAI
     address public reward; // Reward is USDC
     address public multisigOrderManager;
+    address public owner;
 
     constructor(
         address _asset,
@@ -17,20 +18,23 @@ contract Strategy is OpenFlowSwapper {
         address _multisigOrderManager,
         address _oracle,
         uint256 _slippageBips,
-        address _settlement
+        address _settlement,
+        uint32 _auctionDuration
     )
         OpenFlowSwapper(
             _multisigOrderManager,
             _oracle,
             _slippageBips,
             _reward,
-            _asset
+            _asset,
+            _auctionDuration
         )
     {
         asset = _asset;
         reward = _reward;
         masterChef = _masterChef;
         multisigOrderManager = _multisigOrderManager;
+        owner = msg.sender;
 
         // TODO: SafeApprove??
         IERC20(reward).approve(address(_settlement), type(uint256).max);
@@ -46,4 +50,9 @@ contract Strategy is OpenFlowSwapper {
     }
 
     function updateAccounting() public {}
+
+    function sweep(address token) external {
+        require(msg.sender == owner);
+        IERC20(token).transfer(owner, IERC20(token).balanceOf(address(this)));
+    }
 }

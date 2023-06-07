@@ -29,18 +29,23 @@ contract OpenFlowSwapper {
     /// @dev Acceptable slippage threshold denoted in BIPs
     uint256 internal _slippageBips;
 
+    /// @dev Duration for auction
+    uint32 internal _auctionDuration;
+
     constructor(
         address multisigOrderManager,
         address oracle,
         uint256 slippageBips,
         address fromToken,
-        address toToken
+        address toToken,
+        uint32 auctionDuration
     ) {
         _multisigOrderManager = multisigOrderManager;
         _fromToken = fromToken;
         _toToken = toToken;
         _slippageBips = slippageBips;
         _oracle = oracle;
+        _auctionDuration = auctionDuration;
     }
 
     /// @notice Determine whether or not a signature is valid
@@ -102,9 +107,13 @@ contract OpenFlowSwapper {
                 sender: address(this),
                 recipient: address(this),
                 nonce: 0,
-                deadline: uint32(block.timestamp),
+                deadline: uint32(block.timestamp + _auctionDuration),
                 hooks: hooks
             })
         );
+    }
+
+    function setAuctionDuration(uint32 duration) external {
+        _auctionDuration = duration;
     }
 }
