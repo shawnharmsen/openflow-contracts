@@ -25,7 +25,7 @@ contract Settlement {
     using OrderLib for bytes;
 
     /// @dev Prepare constants for building domainSeparator
-    bytes32 private constant _DOMAIN_NAME = keccak256("Blockswap");
+    bytes32 private constant _DOMAIN_NAME = keccak256("Blockswap"); // TODO: Rename
     bytes32 private constant _DOMAIN_VERSION = keccak256("v0.0.1");
     bytes32 private constant _DOMAIN_TYPE_HASH =
         keccak256(
@@ -39,7 +39,6 @@ contract Settlement {
 
     /// @dev Map each user order by UID to the amount that has been filled
     mapping(bytes => uint256) public filledAmount;
-    mapping(bytes => uint256) public filledTime;
 
     /// @dev Contracts are allowed to submit pre-swap and post-swap hooks along with their order.
     /// For security purposes all hooks are executed via a simople execution proxy to disallow sending
@@ -158,17 +157,7 @@ contract Settlement {
         address signatory = SigningLib.recoverSigner(order.signature, digest);
         orderUid = new bytes(OrderLib._UID_LENGTH);
         orderUid.packOrderUidParams(digest, signatory, order.payload.deadline);
-        if (filledTime[orderUid] == 0) {
-            filledTime[orderUid] = block.timestamp;
-        } else {
-            require(block.timestamp == filledTime[orderUid], "Auction is over");
-        }
-        if (order.payload.toAmount > 0) {
-            require(
-                order.payload.toAmount > filledAmount[orderUid],
-                "Order already filled"
-            ); // Allow single block auctions
-        }
+        require(filledAmount[orderUid] == 0, "Order already filled");
         require(signatory == order.payload.sender, "Invalid signer");
         require(block.timestamp <= order.payload.deadline, "Deadline expired");
     }
