@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 import "./interfaces/ISettlement.sol";
 import "./interfaces/IERC20.sol";
-import {SafeTransferLib, ERC20} from "solmate/utils/SafeTransferLib.sol";
 import {SigningLib} from "./lib/Signing.sol";
 import {OrderLib} from "./lib/Order.sol";
 
@@ -18,9 +17,6 @@ import {OrderLib} from "./lib/Order.sol";
 /// - Order executor executes the swap in whatever way they see fit
 /// - At the end of the swap the user's `toToken` delta must be greater than or equal to the agreed upon `toAmount`
 contract Settlement {
-    /// @dev Use SafeTransfer for all ERC20 operations
-    using SafeTransferLib for ERC20;
-
     /// @dev Use OrderLib for order UID encoding/decoding
     using OrderLib for bytes;
 
@@ -90,13 +86,12 @@ contract Settlement {
 
         /// @notice Step 3. Optimistically transfer funds from payload.sender to msg.sender (order executor)
         /// @dev Payload.sender must approve settlement
-        /// @dev TODO: We probably don't need safe transfer anymore here since we are checking balances now
-        ERC20(payload.fromToken).safeTransferFrom(
+        IERC20(payload.fromToken).transferFrom(
             payload.sender,
             msg.sender,
             payload.fromAmount
         );
-        uint256 outputTokenBalanceBefore = ERC20(payload.toToken).balanceOf(
+        uint256 outputTokenBalanceBefore = IERC20(payload.toToken).balanceOf(
             payload.recipient
         );
 
@@ -111,7 +106,7 @@ contract Settlement {
         _execute(order.payload.hooks.postHooks);
 
         /// @notice Step 6. Make sure payload.recipient receives the agreed upon amount of tokens
-        uint256 outputTokenBalanceAfter = ERC20(payload.toToken).balanceOf(
+        uint256 outputTokenBalanceAfter = IERC20(payload.toToken).balanceOf(
             payload.recipient
         );
         uint256 balanceDelta = outputTokenBalanceAfter -
