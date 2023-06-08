@@ -5,6 +5,7 @@ import "forge-std/Script.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
 import {Settlement} from "../src/Settlement.sol";
 import {ISettlement} from "../src/interfaces/ISettlement.sol";
+import {IOpenFlowSwapper} from "../src/interfaces/IOpenFlowSwapper.sol";
 import {Strategy} from "../test/support/Strategy.sol";
 import {MasterChef} from "../test/support/MasterChef.sol";
 import {Oracle} from "../test/support/Oracle.sol";
@@ -46,9 +47,11 @@ contract Deploy is Script {
             usdc,
             address(masterChef),
             address(multisigOrderManager),
-            address(oracle),
-            slippageBips,
-            address(settlement),
+            address(settlement)
+        );
+        IOpenFlowSwapper(address(strategy)).setOracle(address(oracle));
+        IOpenFlowSwapper(address(strategy)).setSlippage(slippageBips);
+        IOpenFlowSwapper(address(strategy)).setMaxAuctionDuration(
             auctionDuration
         );
         masterChef.initialize(address(strategy));

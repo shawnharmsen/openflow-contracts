@@ -8,6 +8,7 @@ import {ISettlement} from "../src/interfaces/ISettlement.sol";
 import {Strategy} from "./support/Strategy.sol";
 import {MasterChef} from "./support/MasterChef.sol";
 import {Oracle} from "./support/Oracle.sol";
+import {IOpenFlowSwapper} from "../src/interfaces/IOpenFlowSwapper.sol";
 import {MultisigOrderManager} from "../src/MultisigOrderManager.sol";
 import {OrderExecutor} from "../src/executors/OrderExecutor.sol";
 import {UniswapV2Aggregator} from "../src/solvers/UniswapV2Aggregator.sol";
@@ -46,11 +47,15 @@ contract StrategyTest is Test {
             usdc,
             address(masterChef),
             address(multisigOrderManager),
-            address(oracle),
-            slippageBips,
-            address(settlement),
+            address(settlement)
+        );
+        console.log(strategy.manager());
+        IOpenFlowSwapper(address(strategy)).setOracle(address(oracle));
+        IOpenFlowSwapper(address(strategy)).setSlippage(slippageBips);
+        IOpenFlowSwapper(address(strategy)).setMaxAuctionDuration(
             auctionDuration
         );
+
         masterChef.initialize(address(strategy));
         masterChef.accrueReward();
         rewardToken = IERC20(masterChef.rewardToken());

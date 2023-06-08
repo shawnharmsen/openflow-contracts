@@ -4,6 +4,7 @@ import {IERC20} from "../../src/interfaces/IERC20.sol";
 import {ISettlement} from "../../src/interfaces/ISettlement.sol";
 import {IMultisigOrderManager} from "../../src/interfaces/IMultisigOrderManager.sol";
 import {IOracle} from "../../src/interfaces/IOracle.sol";
+import {IStrategy} from "../../test/interfaces/IStrategy.sol";
 
 /// @author OpenFlow
 /// @title OpenFlow Swapper
@@ -29,23 +30,26 @@ contract OpenFlowSwapper {
     /// @dev Acceptable slippage threshold denoted in BIPs
     uint256 internal _slippageBips;
 
-    /// @dev Duration for auction
-    uint32 internal _auctionDuration;
+    /// @dev Maximum duration for auction
+    uint256 internal _maxAuctionDuration;
 
     constructor(
         address multisigOrderManager,
-        address oracle,
-        uint256 slippageBips,
         address fromToken,
-        address toToken,
-        uint32 auctionDuration
+        address toToken
     ) {
         _multisigOrderManager = multisigOrderManager;
         _fromToken = fromToken;
         _toToken = toToken;
-        _slippageBips = slippageBips;
-        _oracle = oracle;
-        _auctionDuration = auctionDuration;
+    }
+
+    /// @notice Only allow strategy manager to configure swap parameters
+    modifier onlyManager() {
+        require(
+            msg.sender == IStrategy(address(this)).manager(),
+            "Only the owner can call this function."
+        );
+        _;
     }
 
     /// @notice Determine whether or not a signature is valid
@@ -83,6 +87,7 @@ contract OpenFlowSwapper {
                 fromAmount,
                 _slippageBips
             );
+
         // Create optional posthook
         ISettlement.Interaction[] memory preHooks;
         ISettlement.Interaction[]
@@ -107,13 +112,27 @@ contract OpenFlowSwapper {
                 sender: address(this),
                 recipient: address(this),
                 nonce: 0,
-                deadline: uint32(block.timestamp + _auctionDuration),
+                deadline: uint32(block.timestamp + _maxAuctionDuration),
                 hooks: hooks
             })
         );
     }
 
-    function setAuctionDuration(uint32 duration) external {
-        _auctionDuration = duration;
+    /// @notice Set auction duration
+    /// @param duration (in seconds)
+    function setMaxAuctionDuration(uint256 duration) external onlyManager {
+        _maxAuctionDuration = duration;
+    }
+
+    /// @notice Set slippage
+    /// @param slippageBips Amount of allowed slippage
+    function setSlippage(uint256 slippageBips) external onlyManager {
+        _slippageBips = slippageBips;
+    }
+
+    /// @notice Set oracle
+    /// @param oracle Oracle address
+    function setOracle(address oracle) external onlyManager {
+        _oracle = oracle;
     }
 }
