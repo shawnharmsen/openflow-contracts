@@ -37,10 +37,10 @@ contract Settlement {
     mapping(bytes => uint256) public filledAmount;
 
     /// @dev Contracts are allowed to submit pre-swap and post-swap hooks along with their order.
-    /// For security purposes all hooks are executed via a simople execution proxy to disallow sending
+    /// For security purposes all hooks are executed via a simple execution proxy to disallow sending
     /// arbitrary calls directly from the context of Settlement. This is done because Settlement is the
     /// primary contract upon which token allowances will be set.
-    ExecutionProxy _executionProxy;
+    ExecutionProxy public executionProxy;
 
     /// @dev When an order has been executed successfully emit an event
     event OrderExecuted(
@@ -54,7 +54,7 @@ contract Settlement {
         uint256 toAmount
     );
 
-    /// @dev Set domainSeparator and _executionProxy
+    /// @dev Set domainSeparator and executionProxy
     constructor() {
         domainSeparator = keccak256(
             abi.encode(
@@ -65,7 +65,7 @@ contract Settlement {
                 address(this)
             )
         );
-        _executionProxy = new ExecutionProxy();
+        executionProxy = new ExecutionProxy();
     }
 
     /// @notice Primary method for order execution
@@ -81,7 +81,7 @@ contract Settlement {
         /// @dev In the case of smart contracts sender must implement EIP-1271 isVerified method
         bytes memory orderUid = _verify(order);
 
-        /// @notice Step 2. Execute optional contract preswap hooks
+        /// @notice Step 2. Execute optional contract pre-swap hooks
         _execute(order.payload.hooks.preHooks);
 
         /// @notice Step 3. Optimistically transfer funds from payload.sender to msg.sender (order executor)
@@ -102,7 +102,7 @@ contract Settlement {
         /// the user receives the minimum amount of tokens the signer agreed to
         ISolver(msg.sender).hook(order.data);
 
-        /// @notice Step 5. Execute optional contract postswap hooks
+        /// @notice Step 5. Execute optional contract post-swap hooks
         _execute(order.payload.hooks.postHooks);
 
         /// @notice Step 6. Make sure payload.recipient receives the agreed upon amount of tokens
@@ -131,7 +131,7 @@ contract Settlement {
     /// @param interactions The interactions to execute
     function _execute(ISettlement.Interaction[] memory interactions) internal {
         if (interactions.length > 0) {
-            _executionProxy.execute(interactions);
+            executionProxy.execute(interactions);
         }
     }
 
@@ -177,7 +177,14 @@ contract Settlement {
 /// @dev This is necessary because we cannot allow Settlement to execute arbitrary transaction
 /// payloads directly since Settlement may have token approvals.
 contract ExecutionProxy {
+    address public settlement;
+
+    constructor() {
+        settlement = msg.sender;
+    }
+
     function execute(ISettlement.Interaction[] memory interactions) external {
+        require(msg.sender == settlement);
         for (uint256 i; i < interactions.length; i++) {
             ISettlement.Interaction memory interaction = interactions[i];
             (bool success, ) = interaction.target.call{
