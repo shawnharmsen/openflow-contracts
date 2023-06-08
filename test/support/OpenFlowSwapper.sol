@@ -111,7 +111,6 @@ contract OpenFlowSwapper {
                 toAmount: minAmountOut,
                 sender: address(this),
                 recipient: address(this),
-                nonce: 0,
                 deadline: uint32(block.timestamp + _maxAuctionDuration),
                 hooks: hooks
             })

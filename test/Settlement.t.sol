@@ -94,7 +94,6 @@ contract SettlementTest is Test {
                 toAmount: toAmount,
                 sender: userA,
                 recipient: userA,
-                nonce: 0,
                 deadline: uint32(block.timestamp),
                 hooks: hooks
             })
@@ -132,6 +131,16 @@ contract SettlementTest is Test {
             )
         });
 
+        // Make timestamp invalid
+        vm.warp(block.timestamp + 1);
+
+        // Expect order to expire
+        vm.expectRevert("Deadline expired");
+        executor.executeOrder(order);
+
+        // Decrease timestamp
+        vm.warp(block.timestamp - 1);
+
         // Execute order
         executor.executeOrder(order, solverInteractions);
 
@@ -156,27 +165,6 @@ contract SettlementTest is Test {
 
         // Expect revert if solver submits a duplicate order
         vm.expectRevert("Order already filled");
-        executor.executeOrder(order);
-
-        // Increase nonce and try again
-        order.payload.nonce++;
-
-        // Sign order
-        digest = settlement.buildDigest(order.payload);
-        (v, r, s) = vm.sign(_USER_A_PRIVATE_KEY, digest);
-        order.signature = abi.encodePacked(r, s, v);
-
-        // Increase timestamp
-        vm.warp(block.timestamp + 1);
-
-        // Expect order to expire
-        vm.expectRevert("Deadline expired");
-        executor.executeOrder(order);
-
-        // Decrease timestamp
-        vm.warp(block.timestamp - 1);
-
-        // Order should execute now
         executor.executeOrder(order);
     }
 }

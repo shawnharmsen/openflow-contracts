@@ -78,7 +78,6 @@ contract MultisigSwap is Script {
             toAmount: 2970257895415816631,
             sender: address(strategy),
             recipient: address(strategy),
-            nonce: 0,
             deadline: 1686175288,
             hooks: hooks
         });
