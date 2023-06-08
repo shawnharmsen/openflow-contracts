@@ -174,6 +174,8 @@ contract Settlement {
 
 /// @title Execution proxy
 /// @notice Simple contract used to execute pre-swap and post-swap hooks
+/// @dev This is necessary because we cannot allow Settlement to execute arbitrary transaction
+/// payloads directly since Settlement may have token approvals.
 contract ExecutionProxy {
     function execute(ISettlement.Interaction[] memory interactions) external {
         for (uint256 i; i < interactions.length; i++) {

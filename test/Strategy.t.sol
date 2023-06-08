@@ -71,7 +71,7 @@ contract StrategyTest is Test {
         deal(address(rewardToken), address(masterChef), 100e6);
     }
 
-    function testHarvestAndDump() external {
+    function testOrderExecutionEip1271() external {
         // Get quote
         IERC20 fromToken = IERC20(strategy.reward());
         IERC20 toToken = IERC20(strategy.asset());
