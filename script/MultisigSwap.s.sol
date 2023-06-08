@@ -15,21 +15,21 @@ import {UniswapV2Aggregator} from "../src/solvers/UniswapV2Aggregator.sol";
 contract MultisigSwap is Script {
     // Hardcoded values. In the future read from broadcast deployment logs
     Strategy public strategy =
-        Strategy(0xC7CE9fA323bC3a13a516c3c890e87316e4b2df52);
-    Oracle public oracle = Oracle(0xcA81a85e8Bd58f24Df30c670dBF8188009eE8884);
+        Strategy(0x96F71aDc0302907761Fa7C9a91f961fB1Be7230c);
+    Oracle public oracle = Oracle(0xaCcd3564e9fF00DE2a96ACfD6A97C1a9865596b1);
     MasterChef public masterChef =
-        MasterChef(0xedE0aDA4Ec11969c31d113b2Ad069ed3333Ccb17);
+        MasterChef(0x7e5CDA51741f38C63FDf3C40Ed48Adc005caC1a3);
     address public usdc = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
     address public dai = 0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E;
     address public weth = 0x74b23882a30290451A17c44f4F05243b6b58C76d;
     Settlement public settlement =
-        Settlement(0x3C7488fBDED5f5e056A6cF11BB6a0e4385dce58a);
+        Settlement(0xED2dcEF4cA23eE6b75EaF71E07907b07869b5E1F);
     OrderExecutor public executor =
-        OrderExecutor(0xE14C923eD1cdbbE34966AfF6A54e95DeAFC310be);
+        OrderExecutor(0xF24404E17CCFFcbfC74f6267080AB73bB619125c);
     UniswapV2Aggregator public uniswapAggregator =
-        UniswapV2Aggregator(0x78101Bbcb00f9A62607cd8B31BEF8358Ed33BD11);
+        UniswapV2Aggregator(0xC2c76012fe0e41420840083CCA19AB5c1179da4F);
     MultisigOrderManager public multisigOrderManager =
-        MultisigOrderManager(0xE6512671fFcd79C833127363A75545b1C7baACDA);
+        MultisigOrderManager(0x3a8FF5820D43782A63c76F361812fF5D308A884a);
 
     address public userA;
     address public userB;
@@ -74,11 +74,11 @@ contract MultisigSwap is Script {
         ISettlement.Payload memory decodedPayload = ISettlement.Payload({
             fromToken: usdc,
             toToken: dai,
-            fromAmount: 3000000,
-            toAmount: 2970257895415816631,
+            fromAmount: 1000000,
+            toAmount: 989953775051002040,
             sender: address(strategy),
             recipient: address(strategy),
-            deadline: 1686175288,
+            deadline: 1686195228,
             hooks: hooks
         });
 
