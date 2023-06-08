@@ -8,6 +8,7 @@ import {OrderExecutor} from "../src/executors/OrderExecutor.sol";
 import {UniswapV2Aggregator} from "../src/solvers/UniswapV2Aggregator.sol";
 import {ISettlement} from "../src/interfaces/ISettlement.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
+import {YearnVaultDepositor} from "../test/support/YearnVaultDepositor.sol";
 
 contract SettlementTest is Test {
     // Constants
@@ -166,5 +167,86 @@ contract SettlementTest is Test {
         // Expect revert if solver submits a duplicate order
         vm.expectRevert("Order already filled");
         executor.executeOrder(order);
+    }
+
+    function testZap() external {
+        address vaultDepositor = address(new YearnVaultDepositor());
+
+        // Get quote
+        uint256 fromAmount = 1 * 1e6;
+        UniswapV2Aggregator.Quote memory quote = uniswapAggregator.quote(
+            fromAmount,
+            address(fromToken),
+            address(toToken)
+        );
+        uint256 toAmount = (quote.quoteAmount * 95) / 100;
+
+        // Build hooks
+        ISettlement.Interaction[] memory preHooks;
+        ISettlement.Interaction[]
+            memory postHooks = new ISettlement.Interaction[](1);
+        postHooks[0] = ISettlement.Interaction({
+            target: vaultDepositor,
+            value: 0,
+            callData: abi.encodeWithSignature(
+                "deposit(address,address)",
+                toToken,
+                userA
+            )
+        });
+        ISettlement.Hooks memory hooks = ISettlement.Hooks({
+            preHooks: preHooks,
+            postHooks: postHooks
+        });
+
+        // Build paylod
+        ISettlement.Payload memory payload = ISettlement.Payload({
+            fromToken: address(fromToken),
+            toToken: address(toToken),
+            fromAmount: fromAmount,
+            toAmount: toAmount,
+            sender: userA,
+            recipient: vaultDepositor,
+            deadline: uint32(block.timestamp),
+            hooks: hooks
+        });
+
+        // Build executor data
+        bytes memory executorData = abi.encode(
+            OrderExecutor.Data({
+                fromToken: IERC20(payload.fromToken),
+                toToken: IERC20(payload.toToken),
+                fromAmount: payload.fromAmount,
+                toAmount: payload.toAmount,
+                recipient: payload.recipient,
+                target: address(uniswapAggregator),
+                payload: abi.encodeWithSelector(
+                    UniswapV2Aggregator.executeOrder.selector,
+                    quote.routerAddress,
+                    quote.path,
+                    payload.fromAmount,
+                    payload.toAmount
+                )
+            })
+        );
+
+        // Build order
+        ISettlement.Order memory order = ISettlement.Order({
+            signature: hex"",
+            data: executorData,
+            payload: payload
+        });
+
+        // Sign order
+        bytes32 digest = settlement.buildDigest(order.payload);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(_USER_A_PRIVATE_KEY, digest);
+        order.signature = abi.encodePacked(r, s, v);
+
+        // Change to user B
+        changePrank(userB);
+
+        // Execute order
+        ISettlement.Interaction[][2] memory solverInteractions;
+        executor.executeOrder(order, solverInteractions);
     }
 }

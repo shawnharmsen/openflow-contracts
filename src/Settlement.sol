@@ -102,10 +102,7 @@ contract Settlement {
         /// the user receives the minimum amount of tokens the signer agreed to
         ISolver(msg.sender).hook(order.data);
 
-        /// @notice Step 5. Execute optional contract post-swap hooks
-        _execute(order.payload.hooks.postHooks);
-
-        /// @notice Step 6. Make sure payload.recipient receives the agreed upon amount of tokens
+        /// @notice Step 5. Make sure payload.recipient receives the agreed upon amount of tokens
         uint256 outputTokenBalanceAfter = IERC20(payload.toToken).balanceOf(
             payload.recipient
         );
@@ -113,6 +110,9 @@ contract Settlement {
             outputTokenBalanceBefore;
         require(balanceDelta >= payload.toAmount, "Order not filled");
         filledAmount[orderUid] = balanceDelta;
+
+        /// @notice Step 6. Execute optional contract post-swap hooks
+        _execute(order.payload.hooks.postHooks);
 
         /// @dev Emit OrderExecuted
         emit OrderExecuted(
