@@ -20,11 +20,11 @@ contract YearnVaultInteractions {
 
     /// @notice Deposit swapped tokens on behalf of a user (zap in)
     /// @dev Steps for zap in:
-    /// - As per normal swap, user approves the Settlement contract to spend their fromToken
+    /// - As per normal swap user approves the Settlement contract to spend their fromToken
     /// - During the initial payload generation user sets recipient to vault interactions (this contract)
     /// - A swap occurs and `toToken` is sent to this contract
     /// - In a user signed post-swap hook the user instructs the solver to call out to this contract
-    /// and initiate a deposit, where recipient is the user
+    /// and initiate a deposit where recipient is the user
     /// - This contract initiates a deposit on behalf of the user
     function deposit(address token, address recipient) external {
         require(msg.sender == executionProxy, "Only execution proxy");
@@ -41,7 +41,7 @@ contract YearnVaultInteractions {
     /// - Settlement authenticates payload.sender (signatory) as per normal swap flow
     /// - Pre-swap hook is called from execution proxy where authenticated signatory is
     /// appended to calldata
-    /// - Users tokens are withdrawn and sent to Settlement
+    /// - User's tokens are withdrawn and sent to Settlement
     /// - Settlement continues and performs the swap
     /// - Settlement makes sure the user receives the agreed upon `toToken` and `toAmount`
     function withdraw(address yvToken) external {
