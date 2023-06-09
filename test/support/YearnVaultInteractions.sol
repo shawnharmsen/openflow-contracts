@@ -29,7 +29,6 @@ contract YearnVaultInteractions {
     function deposit(address token, address recipient) external {
         require(msg.sender == executionProxy, "Only execution proxy");
         IVault vault = IVault(registry.latestVault(token));
-        require(address(vault) != address(0), "Invalid vault");
         uint256 balance = IERC20(token).balanceOf(address(this));
         IERC20(token).approve(address(vault), type(uint256).max); // This contract should never hold tokens
         vault.deposit(balance, recipient);
