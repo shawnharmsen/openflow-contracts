@@ -73,24 +73,34 @@ contract Settlement {
     /// @param order The order to execute
     function executeOrder(ISettlement.Order calldata order) public {
         ISettlement.Payload memory payload = order.payload;
+        address signatory = payload.sender;
 
         /// @notice Step 1. Verify the integrity of the order
         /// @dev Verifies that payload.sender signed the order
         /// @dev Only the order payload is signed
-        /// @dev Once an order is signed anyone who has the signature can fufil the order
+        /// @dev Once an order is signed anyone who has the signature can fulfil the order
         /// @dev In the case of smart contracts sender must implement EIP-1271 isVerified method
         bytes memory orderUid = _verify(order);
 
         /// @notice Step 2. Execute optional contract pre-swap hooks
-        _execute(order.payload.hooks.preHooks);
+        _execute(payload.sender, order.payload.hooks.preHooks);
 
         /// @notice Step 3. Optimistically transfer funds from payload.sender to msg.sender (order executor)
-        /// @dev Payload.sender must approve settlement
-        IERC20(payload.fromToken).transferFrom(
-            payload.sender,
-            msg.sender,
-            payload.fromAmount
-        );
+        /// @dev Payload.sender must approve settlement.
+        /// @dev If settlement already has `fromAmount` of `inputToken` send balance from Settlement.
+        /// Otherwise send balance from payload.sender. The reason we do this is because the user may specify
+        /// pre-swap hooks such as withdrawing from a vault (and sending tokens to Settlement) before executing the swap.
+        uint256 inputTokenBalanceSettlement = IERC20(payload.fromToken)
+            .balanceOf(address(this));
+        if (inputTokenBalanceSettlement >= payload.fromAmount) {
+            IERC20(payload.fromToken).transfer(msg.sender, payload.fromAmount);
+        } else {
+            IERC20(payload.fromToken).transferFrom(
+                signatory,
+                msg.sender,
+                payload.fromAmount
+            );
+        }
         uint256 outputTokenBalanceBefore = IERC20(payload.toToken).balanceOf(
             payload.recipient
         );
@@ -112,13 +122,16 @@ contract Settlement {
         filledAmount[orderUid] = balanceDelta;
 
         /// @notice Step 6. Execute optional contract post-swap hooks
-        _execute(order.payload.hooks.postHooks);
+        /// @dev These are signer authenticated post-swap hooks. These hooks
+        /// happen after step 5 because the user may wish to perform an action
+        /// (such as deposit into a vault or reinvest/compound) with the swapped funds.
+        _execute(signatory, order.payload.hooks.postHooks);
 
         /// @dev Emit OrderExecuted
         emit OrderExecuted(
             tx.origin,
             msg.sender,
-            payload.sender,
+            signatory,
             payload.recipient,
             payload.fromToken,
             payload.toToken,
@@ -129,9 +142,12 @@ contract Settlement {
 
     /// @notice Pass hook execution interactions to execution proxy to be executed
     /// @param interactions The interactions to execute
-    function _execute(ISettlement.Interaction[] memory interactions) internal {
+    function _execute(
+        address signatory,
+        ISettlement.Interaction[] memory interactions
+    ) internal {
         if (interactions.length > 0) {
-            executionProxy.execute(interactions);
+            executionProxy.execute(signatory, interactions);
         }
     }
 
@@ -183,13 +199,26 @@ contract ExecutionProxy {
         settlement = msg.sender;
     }
 
-    function execute(ISettlement.Interaction[] memory interactions) external {
-        require(msg.sender == settlement);
+    /// @notice Executed user defined interactions signed by sender
+    /// @dev Sender has been authenticated by signature recovery
+    /// @dev Something very important to consider here is that we are appending
+    /// the authenticated sender  (signer) to the end of each interaction calldata.
+    /// The reason this is done is to allow the payload signatory to be
+    /// authenticated in interaction endpoints. If your interaction endpoint
+    /// needs to read signer it can do so by reading the last 20 bytes of calldata.
+    /// What this means is that if your interaction endpoint explicitly relies on
+    /// calldata length you will need to account for the additional 20 address bytes.
+    /// For example: signatory := shr(96, calldataload(sub(calldatasize(), 20)))
+    function execute(
+        address sender,
+        ISettlement.Interaction[] memory interactions
+    ) external {
+        require(msg.sender == settlement, "Only settlement");
         for (uint256 i; i < interactions.length; i++) {
             ISettlement.Interaction memory interaction = interactions[i];
             (bool success, ) = interaction.target.call{
                 value: interaction.value
-            }(interaction.callData);
+            }(abi.encodePacked(interaction.callData, sender));
             require(success, "Interaction failed");
         }
     }

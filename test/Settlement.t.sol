@@ -8,7 +8,7 @@ import {OrderExecutor} from "../src/executors/OrderExecutor.sol";
 import {UniswapV2Aggregator} from "../src/solvers/UniswapV2Aggregator.sol";
 import {ISettlement} from "../src/interfaces/ISettlement.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
-import {YearnVaultDepositor} from "../test/support/YearnVaultDepositor.sol";
+import {YearnVaultInteractions, IVaultRegistry, IVault} from "../test/support/YearnVaultInteractions.sol";
 
 contract SettlementTest is Test {
     // Constants
@@ -17,8 +17,10 @@ contract SettlementTest is Test {
     address public immutable userA = vm.addr(_USER_A_PRIVATE_KEY);
     address public immutable userB = vm.addr(_USER_B_PRIVATE_KEY);
     uint256 public constant INITIAL_TOKEN_AMOUNT = 100 * 1e18;
-    address public usdc = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
-    address public weth = 0x74b23882a30290451A17c44f4F05243b6b58C76d;
+    IVaultRegistry public constant vaultRegistry =
+        IVaultRegistry(0x727fe1759430df13655ddb0731dE0D0FDE929b04);
+    address public constant usdc = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
+    address public constant weth = 0x74b23882a30290451A17c44f4F05243b6b58C76d;
 
     // Storage
     Settlement public settlement;
@@ -169,8 +171,10 @@ contract SettlementTest is Test {
         executor.executeOrder(order);
     }
 
-    function testZap() external {
-        address vaultDepositor = address(new YearnVaultDepositor());
+    function testZapInAndOut() external {
+        address vaultInteractions = address(
+            new YearnVaultInteractions(address(settlement))
+        );
 
         // Get quote
         uint256 fromAmount = 1 * 1e6;
@@ -186,7 +190,7 @@ contract SettlementTest is Test {
         ISettlement.Interaction[]
             memory postHooks = new ISettlement.Interaction[](1);
         postHooks[0] = ISettlement.Interaction({
-            target: vaultDepositor,
+            target: vaultInteractions,
             value: 0,
             callData: abi.encodeWithSignature(
                 "deposit(address,address)",
@@ -206,7 +210,7 @@ contract SettlementTest is Test {
             fromAmount: fromAmount,
             toAmount: toAmount,
             sender: userA,
-            recipient: vaultDepositor,
+            recipient: vaultInteractions,
             deadline: uint32(block.timestamp),
             hooks: hooks
         });
@@ -245,8 +249,98 @@ contract SettlementTest is Test {
         // Change to user B
         changePrank(userB);
 
-        // Execute order
+        // Make sure user has no yvToken
+        IVault vault = IVault(vaultRegistry.latestVault(address(toToken)));
+        require(vault.balanceOf(userA) == 0, "Invalid vault start balance");
+
+        // Execute zap in
         ISettlement.Interaction[][2] memory solverInteractions;
+        executor.executeOrder(order, solverInteractions);
+
+        // Make sure zap was successful
+        require(vault.balanceOf(userA) > 0, "Invalid vault end balance");
+
+        // Back to user A
+        changePrank(userA);
+
+        // Allow settlement to zap out (this could also be done with permit)
+        vault.approve(address(vaultInteractions), type(uint256).max);
+
+        // Now zap out
+        // Build hooks
+        preHooks = new ISettlement.Interaction[](1);
+        preHooks[0] = ISettlement.Interaction({
+            target: vaultInteractions,
+            value: 0,
+            callData: abi.encodeWithSignature(
+                "withdraw(address)",
+                address(vault)
+            )
+        });
+        postHooks = new ISettlement.Interaction[](0);
+        hooks = ISettlement.Hooks({preHooks: preHooks, postHooks: postHooks});
+
+        // Swap from and to token
+        IERC20 tempToken = fromToken;
+        fromToken = toToken;
+        toToken = tempToken;
+
+        // Get quote
+        fromAmount = (vault.balanceOf(userA) * vault.pricePerShare()) / 1e18;
+        quote = uniswapAggregator.quote(
+            fromAmount,
+            address(fromToken), // Notice from and to token are swapped now
+            address(toToken)
+        );
+        toAmount = (quote.quoteAmount * 95) / 100;
+
+        // Build paylod
+        payload = ISettlement.Payload({
+            fromToken: address(fromToken),
+            toToken: address(toToken),
+            fromAmount: fromAmount,
+            toAmount: toAmount,
+            sender: userA,
+            recipient: userA,
+            deadline: uint32(block.timestamp),
+            hooks: hooks
+        });
+
+        // Build executor data
+        executorData = abi.encode(
+            OrderExecutor.Data({
+                fromToken: IERC20(payload.fromToken),
+                toToken: IERC20(payload.toToken),
+                fromAmount: payload.fromAmount,
+                toAmount: payload.toAmount,
+                recipient: payload.recipient,
+                target: address(uniswapAggregator),
+                payload: abi.encodeWithSelector(
+                    UniswapV2Aggregator.executeOrder.selector,
+                    quote.routerAddress,
+                    quote.path,
+                    payload.fromAmount,
+                    payload.toAmount
+                )
+            })
+        );
+
+        // Build order
+        order = ISettlement.Order({
+            signature: hex"",
+            data: executorData,
+            payload: payload
+        });
+
+        // Sign order
+        digest = settlement.buildDigest(order.payload);
+        (v, r, s) = vm.sign(_USER_A_PRIVATE_KEY, digest);
+        order.signature = abi.encodePacked(r, s, v);
+
+        // Change to user B
+        changePrank(userB);
+
+        // Execute zap in
         executor.executeOrder(order, solverInteractions);
     }
 }

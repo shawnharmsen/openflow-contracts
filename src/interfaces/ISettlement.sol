@@ -39,14 +39,14 @@ interface ISettlement {
 
     function executeOrder(Order memory) external;
 
-    function buildDigest(Payload memory) external view returns (bytes32);
-
-    function nonces(address) external view returns (uint256);
+    function buildDigest(Payload memory) external view returns (bytes32 digest);
 
     function recoverSigner(
         bytes memory,
         bytes32
-    ) external view returns (address);
+    ) external view returns (address signer);
+
+    function executionProxy() external view returns (address executionProxy);
 }
 
 interface ISolver {
