@@ -193,8 +193,9 @@ contract Settlement {
 /// @dev This is necessary because we cannot allow Settlement to execute arbitrary transaction
 /// payloads directly since Settlement may have token approvals.
 contract ExecutionProxy {
-    address public settlement;
+    address public immutable settlement;
 
+    /// @dev Set settlement address
     constructor() {
         settlement = msg.sender;
     }
