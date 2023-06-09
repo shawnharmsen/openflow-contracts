@@ -101,15 +101,17 @@ contract Settlement {
                 payload.fromAmount
             );
         }
-        uint256 outputTokenBalanceBefore = IERC20(payload.toToken).balanceOf(
-            payload.recipient
-        );
 
         /// @notice Step 4. Order executor executes the swap and is required to send funds to payload.recipient
         /// @dev Order executors can be completely custom, or the generic order executor can be used
         /// @dev Solver configurable metadata about the order is sent to the order executor hook
         /// @dev Settlement does not care how the solver executes the order, all Settlement cares about is that
         /// the user receives the minimum amount of tokens the signer agreed to
+        /// @dev Record output token balance before so we can ensure recipient
+        /// received at least the agreed upon number of output tokens
+        uint256 outputTokenBalanceBefore = IERC20(payload.toToken).balanceOf(
+            payload.recipient
+        );
         ISolver(msg.sender).hook(order.data);
 
         /// @notice Step 5. Make sure payload.recipient receives the agreed upon amount of tokens
