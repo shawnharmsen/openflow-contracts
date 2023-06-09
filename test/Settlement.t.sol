@@ -21,6 +21,7 @@ contract SettlementTest is Test {
         IVaultRegistry(0x727fe1759430df13655ddb0731dE0D0FDE929b04);
     address public constant usdc = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
     address public constant weth = 0x74b23882a30290451A17c44f4F05243b6b58C76d;
+    address public vaultInteractions;
 
     // Storage
     Settlement public settlement;
@@ -53,6 +54,10 @@ contract SettlementTest is Test {
                 factoryAddress: 0x152eE697f2E276fA89E96742e9bB9aB1F2E61bE3,
                 routerAddress: 0xbE4fC72f8293F9D3512d58B969c98c3F676cB957
             })
+        );
+
+        vaultInteractions = address(
+            new YearnVaultInteractions(address(settlement))
         );
     }
 
@@ -171,11 +176,7 @@ contract SettlementTest is Test {
         executor.executeOrder(order);
     }
 
-    function testZapInAndOut() external {
-        address vaultInteractions = address(
-            new YearnVaultInteractions(address(settlement))
-        );
-
+    function testZapIn() external {
         // Get quote
         uint256 fromAmount = 1 * 1e6;
         UniswapV2Aggregator.Quote memory quote = uniswapAggregator.quote(
@@ -259,16 +260,24 @@ contract SettlementTest is Test {
 
         // Make sure zap was successful
         require(vault.balanceOf(userA) > 0, "Invalid vault end balance");
+    }
 
-        // Back to user A
+    function testZapOut() external {
+        // Execute from user A
         changePrank(userA);
 
-        // Allow settlement to zap out (this could also be done with permit)
+        // Swap from and to token
+        IERC20 tempToken = fromToken;
+        fromToken = toToken;
+        toToken = tempToken;
+
+        // Allow vault interactions to zap out (this could also be done with permit)
+        IVault vault = IVault(vaultRegistry.latestVault(address(fromToken)));
         vault.approve(address(vaultInteractions), type(uint256).max);
 
-        // Now zap out
         // Build hooks
-        preHooks = new ISettlement.Interaction[](1);
+        ISettlement.Interaction[]
+            memory preHooks = new ISettlement.Interaction[](1);
         preHooks[0] = ISettlement.Interaction({
             target: vaultInteractions,
             value: 0,
@@ -277,25 +286,28 @@ contract SettlementTest is Test {
                 address(vault)
             )
         });
-        postHooks = new ISettlement.Interaction[](0);
-        hooks = ISettlement.Hooks({preHooks: preHooks, postHooks: postHooks});
+        ISettlement.Interaction[]
+            memory postHooks = new ISettlement.Interaction[](0);
+        ISettlement.Hooks memory hooks = ISettlement.Hooks({
+            preHooks: preHooks,
+            postHooks: postHooks
+        });
 
-        // Swap from and to token
-        IERC20 tempToken = fromToken;
-        fromToken = toToken;
-        toToken = tempToken;
+        // Give user A some vault token
+        deal(address(vault), userA, 1e18); // One share
 
         // Get quote
-        fromAmount = (vault.balanceOf(userA) * vault.pricePerShare()) / 1e18;
-        quote = uniswapAggregator.quote(
+        uint256 fromAmount = (vault.balanceOf(userA) * vault.pricePerShare()) /
+            1e18;
+        UniswapV2Aggregator.Quote memory quote = uniswapAggregator.quote(
             fromAmount,
-            address(fromToken), // Notice from and to token are swapped now
+            address(fromToken),
             address(toToken)
         );
-        toAmount = (quote.quoteAmount * 95) / 100;
+        uint256 toAmount = (quote.quoteAmount * 95) / 100;
 
         // Build paylod
-        payload = ISettlement.Payload({
+        ISettlement.Payload memory payload = ISettlement.Payload({
             fromToken: address(fromToken),
             toToken: address(toToken),
             fromAmount: fromAmount,
@@ -307,7 +319,7 @@ contract SettlementTest is Test {
         });
 
         // Build executor data
-        executorData = abi.encode(
+        bytes memory executorData = abi.encode(
             OrderExecutor.Data({
                 fromToken: IERC20(payload.fromToken),
                 toToken: IERC20(payload.toToken),
@@ -326,21 +338,22 @@ contract SettlementTest is Test {
         );
 
         // Build order
-        order = ISettlement.Order({
+        ISettlement.Order memory order = ISettlement.Order({
             signature: hex"",
             data: executorData,
             payload: payload
         });
 
         // Sign order
-        digest = settlement.buildDigest(order.payload);
-        (v, r, s) = vm.sign(_USER_A_PRIVATE_KEY, digest);
+        bytes32 digest = settlement.buildDigest(order.payload);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(_USER_A_PRIVATE_KEY, digest);
         order.signature = abi.encodePacked(r, s, v);
 
         // Change to user B
         changePrank(userB);
 
-        // Execute zap in
+        // Execute zap out
+        ISettlement.Interaction[][2] memory solverInteractions;
         executor.executeOrder(order, solverInteractions);
     }
 }

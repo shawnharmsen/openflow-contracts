@@ -2,19 +2,19 @@
 pragma solidity 0.8.19;
 import {IERC20} from "../../src/interfaces/IERC20.sol";
 import {ISettlement} from "../../src/interfaces/ISettlement.sol";
-import {IVault} from "../../test/support/interfaces/IVault.sol";
-import {IVaultRegistry} from "../../test/support/interfaces/IVaultRegistry.sol";
+import {IVault} from "../../test/interfaces/IVault.sol";
+import {IVaultRegistry} from "../../test/interfaces/IVaultRegistry.sol";
 
 /// @notice Sample contract to demonstrate usage of pre-swap and post-swap hooks
 /// to allow users to zap in and out of vaults.
 /// @dev Problem: If a user requests a swap between ERC20 tokenA and yvTokenA
-/// only one or two solvers may support this innately (Portls does, for instance).
+/// only one or two solvers may support this type of swap innately (Portals supports this).
 /// This is an issue because it's critically important for solvers to be able to compete
 /// for the best swap rate regardless of token wrapping.
 /// @dev Solution: By allowing users to specify pre-swap and post-swap hooks a user
 /// can perform the token wrapping and unwrapping (deposit/withdraw) themselves which opens up
-/// the actual  underlying token swap to the complete pool of solvers. This will result in the
-/// user getting access to a much larger pool of competitive swap rates.
+/// the actual underlying token swap to the complete pool of solvers vs a small subset of solvers.
+/// This will result in the user getting access to a much larger pool of competitive swap rates quotes.
 contract YearnVaultInteractions {
     IVaultRegistry registry =
         IVaultRegistry(0x727fe1759430df13655ddb0731dE0D0FDE929b04);
