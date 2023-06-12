@@ -12,6 +12,7 @@ import {Oracle} from "../test/support/Oracle.sol";
 import {MultisigOrderManager} from "../src/MultisigOrderManager.sol";
 import {OrderExecutor} from "../src/executors/OrderExecutor.sol";
 import {UniswapV2Aggregator} from "../src/solvers/UniswapV2Aggregator.sol";
+import {YearnVaultInteractions, IVaultRegistry, IVault} from "../test/support/YearnVaultInteractions.sol";
 
 contract Deploy is Script {
     Strategy public strategy;
@@ -31,6 +32,7 @@ contract Deploy is Script {
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
+
         masterChef = new MasterChef();
         oracle = new Oracle();
         settlement = new Settlement();
@@ -66,5 +68,6 @@ contract Deploy is Script {
                 routerAddress: 0xbE4fC72f8293F9D3512d58B969c98c3F676cB957
             })
         );
+        new YearnVaultInteractions(address(settlement));
     }
 }

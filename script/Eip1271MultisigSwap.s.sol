@@ -12,42 +12,56 @@ import {MultisigOrderManager} from "../src/MultisigOrderManager.sol";
 import {OrderExecutor} from "../src/executors/OrderExecutor.sol";
 import {UniswapV2Aggregator} from "../src/solvers/UniswapV2Aggregator.sol";
 
-contract MultisigSwap is Script {
+contract Storage is Script {
     // Hardcoded values. In the future read from broadcast deployment logs
     Strategy public strategy =
-        Strategy(0x96F71aDc0302907761Fa7C9a91f961fB1Be7230c);
-    Oracle public oracle = Oracle(0xaCcd3564e9fF00DE2a96ACfD6A97C1a9865596b1);
+        Strategy(0xE4D14B428a22461C1F8A822e86691df381458440);
+    Oracle public oracle = Oracle(0x233A3588972DDd57D7F19369FdE8DcEEe88B8e73);
     MasterChef public masterChef =
-        MasterChef(0x7e5CDA51741f38C63FDf3C40Ed48Adc005caC1a3);
+        MasterChef(0xFE38EE7F7228a1a278FF0d57365563a4c8c54297);
     address public usdc = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
     address public dai = 0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E;
     address public weth = 0x74b23882a30290451A17c44f4F05243b6b58C76d;
     Settlement public settlement =
-        Settlement(0xED2dcEF4cA23eE6b75EaF71E07907b07869b5E1F);
+        Settlement(0xD4D94C981Cd3a88E31D4070F5aCDf561084DEe00);
     OrderExecutor public executor =
-        OrderExecutor(0xF24404E17CCFFcbfC74f6267080AB73bB619125c);
+        OrderExecutor(0x09D2fB1f7f810e0099712fd2993CfFCcc53E7266);
     UniswapV2Aggregator public uniswapAggregator =
-        UniswapV2Aggregator(0xC2c76012fe0e41420840083CCA19AB5c1179da4F);
+        UniswapV2Aggregator(0x5CE348a9E2c7774e92C06c5f352Eb5F5cDD002DA);
     MultisigOrderManager public multisigOrderManager =
-        MultisigOrderManager(0x3a8FF5820D43782A63c76F361812fF5D308A884a);
+        MultisigOrderManager(0x0B40502A7C4f72c8e7547407039f41C43310301C);
 
     address public userA;
     address public userB;
     uint256 internal immutable _USER_A_PRIVATE_KEY;
     uint256 internal immutable _USER_B_PRIVATE_KEY;
+    uint256 deployerPrivateKey;
+    IERC20 fromToken;
+    IERC20 toToken;
 
     constructor() {
         _USER_A_PRIVATE_KEY = vm.envUint("PRIVATE_KEY_USER_A");
         _USER_B_PRIVATE_KEY = vm.envUint("PRIVATE_KEY_USER_B");
         userA = vm.addr(_USER_A_PRIVATE_KEY);
         userB = vm.addr(_USER_B_PRIVATE_KEY);
+        deployerPrivateKey = vm.envUint("PRIVATE_KEY");
+        fromToken = IERC20(strategy.reward());
+        toToken = IERC20(strategy.asset());
     }
+}
 
+contract Harvest is Storage {
     function run() public {
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
-        IERC20 fromToken = IERC20(strategy.reward());
-        IERC20 toToken = IERC20(strategy.asset());
+        fromToken.transfer(address(masterChef), 1e6);
+        masterChef.accrueReward();
+        strategy.harvest();
+    }
+}
+
+contract Swap is Storage {
+    function run() public {
+        vm.startBroadcast(deployerPrivateKey);
         uint256 fromAmount = fromToken.balanceOf(address(strategy));
 
         UniswapV2Aggregator.Quote memory quote = uniswapAggregator.quote(
@@ -74,11 +88,11 @@ contract MultisigSwap is Script {
         ISettlement.Payload memory decodedPayload = ISettlement.Payload({
             fromToken: usdc,
             toToken: dai,
-            fromAmount: 1000000,
-            toAmount: 989953775051002040,
+            fromAmount: 2000000,
+            toAmount: 1980131121398188226,
             sender: address(strategy),
             recipient: address(strategy),
-            deadline: 1686195228,
+            deadline: 1686297308,
             hooks: hooks
         });
 

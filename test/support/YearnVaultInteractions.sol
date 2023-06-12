@@ -14,7 +14,7 @@ import {IVaultRegistry} from "../../test/interfaces/IVaultRegistry.sol";
 /// @dev Solution: By allowing users to specify pre-swap and post-swap hooks a user
 /// can perform the token wrapping and unwrapping (deposit/withdraw) themselves which opens up
 /// the actual underlying token swap to the complete pool of solvers vs a small subset of solvers.
-/// This will result in the user getting access to a much larger pool of competitive swap rates quotes.
+/// This will result in the user getting access to a much larger pool of competitive swap rate quotes.
 contract YearnVaultInteractions {
     IVaultRegistry registry =
         IVaultRegistry(0x727fe1759430df13655ddb0731dE0D0FDE929b04);
