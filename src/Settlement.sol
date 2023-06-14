@@ -176,7 +176,7 @@ contract Settlement {
     }
 
     /// @notice Building the digest hash
-    /// @dev Message digest hash consists of type hash, domain separator and type hash
+    /// @dev Message digest hash consists of type hash, domain separator and struct hash
     function buildDigest(
         ISettlement.Payload memory _payload
     ) public view returns (bytes32 orderDigest) {
