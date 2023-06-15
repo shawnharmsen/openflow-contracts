@@ -6,6 +6,4 @@ interface ISignatureValidator {
         bytes32,
         bytes memory
     ) external view returns (bytes4);
-
-    function signers(address) external view returns (bool);
 }

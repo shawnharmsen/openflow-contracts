@@ -99,10 +99,11 @@ contract MultisigOrderManager {
     /// @param digest The order digest to check
     /// @return approved True if approved, false if not
     function digestApproved(
+        address signatory,
         bytes32 digest
     ) external view returns (bool approved) {
-        uint256 sessionNonce = sessionNonceByAddress[msg.sender];
-        approved = approvedHashes[msg.sender][sessionNonce][digest];
+        uint256 sessionNonce = sessionNonceByAddress[signatory];
+        approved = approvedHashes[signatory][sessionNonce][digest];
     }
 
     /// @notice Given a digest and encoded signatures, determine if a digest is approved by a

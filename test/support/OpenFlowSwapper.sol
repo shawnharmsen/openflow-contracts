@@ -67,7 +67,10 @@ contract OpenFlowSwapper {
             signatures
         );
         require(
-            IMultisigOrderManager(_multisigOrderManager).digestApproved(digest),
+            IMultisigOrderManager(_multisigOrderManager).digestApproved(
+                address(this),
+                digest
+            ),
             "Digest not approved"
         );
         return _EIP1271_MAGICVALUE;

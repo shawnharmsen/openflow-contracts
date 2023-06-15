@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL 1.1
 pragma solidity 0.8.19;
+import {IMultisigOrderManager} from "../interfaces/IMultisigOrderManager.sol";
 import {ISignatureValidator} from "../interfaces/ISignatureValidator.sol";
+import {OrderLib} from "./Order.sol";
 
 /// @author OpenFlow
 /// @title Signing Library
@@ -15,6 +17,9 @@ import {ISignatureValidator} from "../interfaces/ISignatureValidator.sol";
 library SigningLib {
     uint256 private constant _ECDSA_SIGNATURE_LENGTH = 65;
     bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;
+
+    uint256 private constant _PRE_SIGNED =
+        uint256(keccak256("GPv2Signing.Scheme.PreSign"));
 
     /// @notice Primary signature check endpoint
     /// @param signature Signature bytes (usually 65 bytes) but in the case of packed
@@ -35,7 +40,7 @@ library SigningLib {
             owner = recoverEip1271Signer(digest, signature);
         } else if (v == 1) {
             /// @dev Presigned (not yet implemented)
-            // currentOwner = recoverPresignedOwner(digest, signature);
+            // owner = recoverPresignedOwner(digest, signature);
         } else if (v > 30) {
             /// @dev EthSign signature. If v > 30 then default va (27,28)
             /// has been adjusted for eth_sign flow
@@ -103,6 +108,32 @@ library SigningLib {
         owner = ecdsaRecover(ethsignDigest, signature);
     }
 
+    /// @notice Verifies the order has been pre-signed. The signature is the
+    /// address of the signer of the order.
+    /// @param orderDigest The EIP-712 signing digest derived from the order
+    /// parameters.
+    /// @param encodedSignature The pre-sign signature reprenting the order UID.
+    /// @return owner The address of the signer.
+    /// TODO: Need validTo?
+    function recoverPresignedOwner(
+        bytes32 orderDigest,
+        bytes memory encodedSignature,
+        address signatureManager
+    ) internal view returns (address owner) {
+        require(encodedSignature.length == 20, "GPv2: malformed presignature");
+        assembly {
+            // owner = address(encodedSignature[0:20])
+            owner := shr(96, mload(encodedSignature))
+        }
+
+        bool presigned = IMultisigOrderManager(signatureManager).digestApproved(
+            owner,
+            orderDigest
+        );
+
+        require(presigned, "Order not presigned");
+    }
+
     /// @notice Utility for recovering signature using ecrecover
     /// @dev Signature length is expected to be exactly 65 bytes
     /// @param message Signed messed
@@ -164,7 +195,7 @@ library SigningLib {
                 "Invalid signature order or duplicate signature"
             );
             require(
-                ISignatureValidator(signatureManager).signers(currentOwner),
+                IMultisigOrderManager(signatureManager).signers(currentOwner),
                 "Signer is not approved"
             );
             lastOwner = currentOwner;

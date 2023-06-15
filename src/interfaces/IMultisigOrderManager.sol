@@ -6,7 +6,12 @@ import {ISettlement} from "./ISettlement.sol";
 interface IMultisigOrderManager {
     function checkNSignatures(bytes32 digest, bytes memory signature) external;
 
-    function digestApproved(bytes32 digest) external view returns (bool);
+    function digestApproved(
+        address signatory,
+        bytes32 digest
+    ) external view returns (bool approved);
 
     function submitOrder(ISettlement.Payload memory payload) external;
+
+    function signers(address) external view returns (bool);
 }
