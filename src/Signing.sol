@@ -35,8 +35,8 @@ contract Signing {
     /// @param digest Hashed payload digest
     /// @return owner Returns authenticated owner
     function recoverSigner(
-        bytes memory signature,
-        bytes32 digest
+        bytes32 digest,
+        bytes memory signature
     ) public view returns (address owner) {
         /// @dev Extract v from signature
         uint8 v;
@@ -87,9 +87,18 @@ contract Signing {
             r := mload(add(encodedSignature, 0x20))
             s := mload(add(encodedSignature, 0x40))
         }
+        /// @dev When handling contract signatures the address of the contract is encoded into r
         owner = address(uint160(uint256(r)));
+
+        /// @dev Check that signature data pointer (s) is not pointing inside the static part of the signatures bytes
+        // This check is not completely accurate, since it is possible that more signatures than the threshold are send.
+        // Here we only check that the pointer is not pointing inside the part that is being processed
         require(uint256(s) >= 65, "GS021");
+
+        /// @dev Check that signature data pointer (s) is in bounds (points to the length of data -> 32 bytes)
         require(uint256(s) + 32 <= encodedSignature.length, "GS022");
+
+        /// @dev Check if the contract signature is in bounds: start of data is s + 32 and end is start + signature length
         uint256 contractSignatureLen;
         assembly {
             contractSignatureLen := mload(add(add(encodedSignature, s), 0x20))
@@ -98,8 +107,11 @@ contract Signing {
             uint256(s) + 32 + contractSignatureLen <= encodedSignature.length,
             "GS023"
         );
+
+        /// @dev Check signature
         bytes memory contractSignature;
         assembly {
+            /// @dev The signature data for contract signatures is appended to the concatenated signatures and the offset is stored in s
             contractSignature := add(add(encodedSignature, s), 0x20)
         }
         require(
@@ -225,7 +237,7 @@ contract Signing {
                 v := and(mload(add(add(signatures, signaturePos), 0x41)), 0xff)
             }
             signature = abi.encodePacked(r, s, v);
-            currentOwner = recoverSigner(signature, digest);
+            currentOwner = recoverSigner(digest, signature);
             require(
                 currentOwner > lastOwner,
                 "Invalid signature order or duplicate signature"

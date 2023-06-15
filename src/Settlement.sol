@@ -168,7 +168,7 @@ contract Settlement is Signing {
         ISettlement.Order calldata order
     ) internal view returns (bytes memory orderUid) {
         bytes32 digest = buildDigest(order.payload);
-        address signatory = recoverSigner(order.signature, digest);
+        address signatory = recoverSigner(digest, order.signature);
         orderUid = new bytes(OrderLib._UID_LENGTH);
         orderUid.packOrderUidParams(digest, signatory, order.payload.deadline);
         require(filledAmount[orderUid] == 0, "Order already filled");

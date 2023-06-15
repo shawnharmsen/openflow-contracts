@@ -41,9 +41,9 @@ interface ISettlement {
     function buildDigest(Payload memory) external view returns (bytes32 digest);
 
     function recoverSigner(
-        bytes memory,
-        bytes32
-    ) external view returns (address signer);
+        bytes32 digest,
+        bytes memory signature
+    ) external view returns (address signatory);
 
     function executionProxy() external view returns (address executionProxy);
 }
