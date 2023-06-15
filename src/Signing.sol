@@ -216,8 +216,7 @@ contract Signing {
     /// @dev Reverts if signature threshold is not passed.
     /// @dev Signatures must be packed such that the decimal values of the derived signers are in
     /// ascending numerical order.
-    /// For instance `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48` > `0x6B175474E89094C44Da98b954EedeAC495271d0F`,
-    /// so the signature for `0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48` must come first.
+    /// For instance `0xA0b8...eB48` > `0x6B17....71d0F`, so the signature for `0xA0b8...eB48` must come first.
     /// @dev Code comes from Gnosis Safe: https://github.com/safe-global/safe-contracts/blob/main/contracts/Safe.sol
     /// The only change is that we use `recoverSigner()` to calculate signer based on v instead of
     /// doing this inline. The reason for this is that it lets us recover one signer at a time or
