@@ -95,10 +95,13 @@ contract Signing {
         /// since it is possible that more signatures than the threshold are send.
         // Here we only check that the pointer is not pointing inside the
         /// part that is being processed.
-        require(uint256(s) >= 65, "GS021");
+        require(uint256(s) >= 65, "Signature data pointer is invalid");
 
         /// @dev Check that signature data pointer (s) is in bounds (points to the length of data -> 32 bytes).
-        require(uint256(s) + 32 <= encodedSignature.length, "GS022");
+        require(
+            uint256(s) + 32 <= encodedSignature.length,
+            "Signature data pointer is out of bounds"
+        );
 
         /// @dev Check if the contract signature is in bounds: start of data is s + 32
         /// and end is start + signature length.
@@ -108,7 +111,7 @@ contract Signing {
         }
         require(
             uint256(s) + 32 + contractSignatureLen <= encodedSignature.length,
-            "GS023"
+            "Signature is out of bounds"
         );
 
         /// @dev Check signature.
@@ -124,7 +127,7 @@ contract Signing {
                 digest,
                 contractSignature
             ) == _EIP1271_MAGICVALUE,
-            "GS024"
+            "EIP-1271 signature is invalid"
         );
         return owner;
     }
@@ -231,7 +234,10 @@ contract Signing {
         uint256 requiredSignatures
     ) public view {
         /// @dev Check that the provided signature data is not too short
-        require(signatures.length >= requiredSignatures * 65, "GS020");
+        require(
+            signatures.length >= requiredSignatures * 65,
+            "Not enough signatures provided"
+        );
 
         /// @dev There cannot be an owner with address 0.
         address lastOwner = address(0);
