@@ -38,10 +38,7 @@ contract Signing {
         bytes memory signature
     ) public view returns (address owner) {
         /// @dev Extract v from signature
-        uint8 v;
-        assembly {
-            v := and(mload(add(signature, 0x41)), 0xff)
-        }
+        uint8 v = uint8(signature[64]);
         if (v == 0) {
             /// @dev Contract signature (EIP-1271).
             owner = _recoverEip1271Signer(digest, signature);
@@ -79,13 +76,12 @@ contract Signing {
         bytes32 digest,
         bytes memory encodedSignature
     ) internal view returns (address owner) {
-        bytes32 r; // owner
-        bytes32 s; // signature data offset
-        // v is already confirmed to be zero
-        assembly {
-            r := mload(add(encodedSignature, 0x20))
-            s := mload(add(encodedSignature, 0x40))
-        }
+        /// @dev Decode signature. v is not needed here since it's already confirmed to be zero
+        (bytes32 r, bytes32 s) = abi.decode(
+            encodedSignature,
+            (bytes32, bytes32)
+        );
+
         /// @dev When handling contract signatures the address of the contract is encoded into r.
         owner = address(uint160(uint256(r)));
 
@@ -181,35 +177,11 @@ contract Signing {
             signature.length == _ECDSA_SIGNATURE_LENGTH,
             "Malformed ECDSA signature"
         );
-        (uint8 v, bytes32 r, bytes32 s) = _signatureSplit(signature, 0);
+        (bytes32 r, bytes32 s) = abi.decode(signature, (bytes32, bytes32));
+        uint8 v = uint8(signature[64]);
+
         signer = ecrecover(message, v, r, s);
         require(signer != address(0), "Invalid ECDSA signature");
-    }
-
-    /// @notice Splits signature bytes into `uint8 v, bytes32 r, bytes32 s`.
-    /// @dev Make sure to perform a bounds check for @param pos, to avoid out of bounds access on @param signatures
-    /// The signature format is a compact form of {bytes32 r}{bytes32 s}{uint8 v}
-    /// Compact means uint8 is not padded to 32 bytes.
-    /// @param pos Which signature to read.
-    /// A prior bounds check of this parameter should be performed, to avoid out of bounds access.
-    /// @param signatures Concatenated {r, s, v} signatures.
-    /// @return v Recovery ID or Safe signature type.
-    /// @return r Output value r of the signature.
-    /// @return s Output value s of the signature.
-    function _signatureSplit(
-        bytes memory signatures,
-        uint256 pos
-    ) internal pure returns (uint8 v, bytes32 r, bytes32 s) {
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            let signaturePos := mul(0x41, pos)
-            r := mload(add(signatures, add(signaturePos, 0x20)))
-            s := mload(add(signatures, add(signaturePos, 0x40)))
-            /// @dev Here we are loading the last 32 bytes, including 31 bytes of 's'.
-            /// There is no 'mload8' to do this. 'byte' is not working due to
-            /// the Solidity parser, so lets use the second best option, 'and'.
-            v := and(mload(add(signatures, add(signaturePos, 0x41))), 0xff)
-        }
     }
 
     /// @notice Gnosis style signature threshold check.
@@ -249,7 +221,13 @@ contract Signing {
             signatureIdx < requiredSignatures;
             signatureIdx++
         ) {
-            (v, r, s) = _signatureSplit(signatures, signatureIdx);
+            // From Gnosis `signatureSplit` method
+            assembly {
+                let signaturePos := mul(0x41, signatureIdx)
+                r := mload(add(signatures, add(signaturePos, 0x20)))
+                s := mload(add(signatures, add(signaturePos, 0x40)))
+                v := and(mload(add(signatures, add(signaturePos, 0x41))), 0xff)
+            }
             bytes memory signature = abi.encodePacked(r, s, v);
             currentOwner = recoverSigner(digest, signature);
             require(
