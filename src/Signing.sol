@@ -15,8 +15,19 @@ import {OrderLib} from "./lib/Order.sol";
 /// combination of signature types. Signature type is auto-detected (per Gnosis)
 /// based on v value.
 contract Signing {
+    /// @dev All ECDSA signatures (EIP-712 and EthSign) must be 65 bytes
+    /// @dev Contract signatures (EIP-1271) can be any number of bytes, however
+    /// Gnosis-style threshold packed signatures must adhere to the Gnosis contract
+    /// signature format: {32-bytes owner_1 (r)}{32-bytes signature_offset_1 (s)}{1-byte v_1 (0)}{signature_length_1}{signature_bytes_1}
     uint256 private constant _ECDSA_SIGNATURE_LENGTH = 65;
     bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;
+
+    /// @dev Order manager manages the order signature logic for multisig authenticated swap auctions
+    address public immutable orderManager;
+
+    constructor(address _orderManager) {
+        orderManager = _orderManager;
+    }
 
     /// @notice Primary signature check endpoint
     /// @param signature Signature bytes (usually 65 bytes) but in the case of packed
@@ -41,7 +52,7 @@ contract Signing {
         } else if (v > 30) {
             /// @dev EthSign signature. If v > 30 then default va (27,28)
             /// has been adjusted for eth_sign flow
-            owner = _recoverEthsignSigner(digest, signature);
+            owner = _recoverEthSignSigner(digest, signature);
         } else {
             /// @dev EIP-712 signature. Default is the ecrecover flow with the provided data hash
             owner = _recoverEip712Signer(digest, signature);
@@ -106,7 +117,7 @@ contract Signing {
     /// @param digest Hashed payload digest
     /// @param signature Signature
     /// @return owner Signature owner
-    function _recoverEthsignSigner(
+    function _recoverEthSignSigner(
         bytes32 digest,
         bytes memory signature
     ) internal pure returns (address owner) {
@@ -132,11 +143,11 @@ contract Signing {
             // owner = address(encodedSignature[0:20])
             owner := shr(96, mload(encodedSignature))
         }
-        // bool presigned = IMultisigOrderManager(orderManager).digestApproved(
-        //     owner,
-        //     orderDigest
-        // );
-        // require(presigned, "Order not presigned");
+        bool presigned = IMultisigOrderManager(orderManager).digestApproved(
+            owner,
+            orderDigest
+        );
+        require(presigned, "Order not presigned");
     }
 
     /// @notice Utility for recovering signature using ecrecover
@@ -189,7 +200,6 @@ contract Signing {
     /// The reason for this is that it lets us recover one signer at a time or multiple signers
     /// at a time with maximum  with maximum flexibility
     function checkNSignatures(
-        address orderManager,
         bytes32 digest,
         bytes memory signatures,
         uint256 requiredSignatures

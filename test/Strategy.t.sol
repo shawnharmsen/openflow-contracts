@@ -126,16 +126,12 @@ contract StrategyTest is Test {
         // Build order
         // See "Contract Signature" section of https://docs.safe.global/learn/safe-core/safe-core-protocol/signatures
         // {32-bytes signature verifier}{32-bytes data position}{1-byte signature type}{32-bytes length}{n-bytes data}
-
-        /// data offset - 96
-        /// 0x00 (32 bytes): strategy
-        /// 0x20 (32 bytes): s (offset)
-        /// 0x40 (1 byte): v
-        /// 0x60 (32 bytes): length, 0x80 is data
+        // TODO: Test with multiple contract signatures
         bytes32 s = bytes32(uint256(0x60));
         bytes1 v = bytes1(uint8(0)); // type zero - contract sig
         bytes memory encodedSignatures = abi.encodePacked(
-            abi.encode(strategy, s, v, signatures.length),
+            abi.encode(strategy, s, v),
+            signatures.length,
             signatures
         );
         ISettlement.Order memory order = ISettlement.Order({

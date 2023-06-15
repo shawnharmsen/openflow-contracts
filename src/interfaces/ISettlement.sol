@@ -31,7 +31,6 @@ interface ISettlement {
     }
 
     function checkNSignatures(
-        address signatureManager,
         bytes32 digest,
         bytes memory signatures,
         uint256 requiredSignatures

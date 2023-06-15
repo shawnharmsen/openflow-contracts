@@ -112,7 +112,6 @@ contract MultisigOrderManager {
         bytes memory signatures
     ) external view {
         ISettlement(settlement).checkNSignatures(
-            address(this),
             digest,
             signatures,
             signatureThreshold

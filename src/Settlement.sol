@@ -33,9 +33,6 @@ contract Settlement is Signing {
         );
     bytes32 public immutable domainSeparator;
 
-    /// @dev Order manager manages the order signature logic for multisig authenticated swap auctions
-    address public immutable orderManager;
-
     /// @dev Map each user order by UID to the amount that has been filled
     mapping(bytes => uint256) public filledAmount;
 
@@ -58,7 +55,7 @@ contract Settlement is Signing {
     );
 
     /// @dev Set domainSeparator and executionProxy
-    constructor(address _orderManager) {
+    constructor(address _orderManager) Signing(_orderManager) {
         domainSeparator = keccak256(
             abi.encode(
                 _DOMAIN_TYPE_HASH,
@@ -68,7 +65,6 @@ contract Settlement is Signing {
                 address(this)
             )
         );
-        orderManager = _orderManager;
         executionProxy = new ExecutionProxy();
     }
 
