@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 import {IMultisigOrderManager} from "./interfaces/IMultisigOrderManager.sol";
 import {ISignatureValidator} from "./interfaces/ISignatureValidator.sol";
-import {OrderLib} from "./lib/Order.sol";
 
 /// @author OpenFlow
 /// @title Signing Library
