@@ -6,6 +6,7 @@ import {ERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import {Settlement} from "../src/Settlement.sol";
 import {OrderExecutor} from "../src/executors/OrderExecutor.sol";
 import {UniswapV2Aggregator} from "../src/solvers/UniswapV2Aggregator.sol";
+import {MultisigOrderManager} from "../src/MultisigOrderManager.sol";
 import {ISettlement} from "../src/interfaces/ISettlement.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
 import {YearnVaultInteractions, IVaultRegistry, IVault} from "../test/support/YearnVaultInteractions.sol";
@@ -35,7 +36,10 @@ contract SettlementTest is Test {
         startHoax(userA);
 
         // Configuration
-        settlement = new Settlement();
+        MultisigOrderManager multisigOrderManager = new MultisigOrderManager();
+        settlement = new Settlement(address(multisigOrderManager));
+        multisigOrderManager.initialize(address(settlement));
+
         executor = new OrderExecutor(address(settlement));
         fromToken = IERC20(usdc);
         toToken = IERC20(weth);

@@ -33,8 +33,9 @@ contract StrategyTest is Test {
     function setUp() public {
         masterChef = new MasterChef();
         oracle = new Oracle();
-        settlement = new Settlement();
-        multisigOrderManager = new MultisigOrderManager(address(settlement));
+        multisigOrderManager = new MultisigOrderManager();
+        settlement = new Settlement(address(multisigOrderManager));
+        multisigOrderManager.initialize(address(settlement));
         address[] memory signers = new address[](2);
         signers[0] = userA;
         signers[1] = userB;
@@ -124,8 +125,15 @@ contract StrategyTest is Test {
 
         // Build order
         // See "Contract Signature" section of https://docs.safe.global/learn/safe-core/safe-core-protocol/signatures
-        bytes32 s = bytes32(uint256(0x60)); // offset - 96. 0x00 is strategy, 0x20 is s, 0x40 is v 0x60 is length 0x 80 is data
-        bytes32 v = bytes32(uint256(0)); // type zero - contract sig
+        // {32-bytes signature verifier}{32-bytes data position}{1-byte signature type}{32-bytes length}{n-bytes data}
+
+        /// data offset - 96
+        /// 0x00 (32 bytes): strategy
+        /// 0x20 (32 bytes): s (offset)
+        /// 0x40 (1 byte): v
+        /// 0x60 (32 bytes): length, 0x80 is data
+        bytes32 s = bytes32(uint256(0x60));
+        bytes1 v = bytes1(uint8(0)); // type zero - contract sig
         bytes memory encodedSignatures = abi.encodePacked(
             abi.encode(strategy, s, v, signatures.length),
             signatures

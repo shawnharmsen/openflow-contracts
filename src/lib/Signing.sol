@@ -18,9 +18,6 @@ library SigningLib {
     uint256 private constant _ECDSA_SIGNATURE_LENGTH = 65;
     bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;
 
-    uint256 private constant _PRE_SIGNED =
-        uint256(keccak256("GPv2Signing.Scheme.PreSign"));
-
     /// @notice Primary signature check endpoint
     /// @param signature Signature bytes (usually 65 bytes) but in the case of packed
     /// contract signatures actual signature data offset and length may vary
@@ -39,8 +36,8 @@ library SigningLib {
             /// @dev Contract signature (EIP-1271)
             owner = recoverEip1271Signer(digest, signature);
         } else if (v == 1) {
-            /// @dev Presigned (not yet implemented)
-            // owner = recoverPresignedOwner(digest, signature);
+            /// @dev Presigned signature requires order manager as signature storage contract
+            owner = recoverPresignedOwner(digest, signature);
         } else if (v > 30) {
             /// @dev EthSign signature. If v > 30 then default va (27,28)
             /// has been adjusted for eth_sign flow
@@ -117,21 +114,18 @@ library SigningLib {
     /// TODO: Need validTo?
     function recoverPresignedOwner(
         bytes32 orderDigest,
-        bytes memory encodedSignature,
-        address signatureManager
+        bytes memory encodedSignature
     ) internal view returns (address owner) {
         require(encodedSignature.length == 20, "GPv2: malformed presignature");
         assembly {
             // owner = address(encodedSignature[0:20])
             owner := shr(96, mload(encodedSignature))
         }
-
-        bool presigned = IMultisigOrderManager(signatureManager).digestApproved(
-            owner,
-            orderDigest
-        );
-
-        require(presigned, "Order not presigned");
+        // bool presigned = IMultisigOrderManager(orderManager).digestApproved(
+        //     owner,
+        //     orderDigest
+        // );
+        // require(presigned, "Order not presigned");
     }
 
     /// @notice Utility for recovering signature using ecrecover
@@ -160,14 +154,14 @@ library SigningLib {
     }
 
     /// @notice Gnosis style signature threshold check
-    /// @param signatureManager The address responsible for signer storage
+    /// @param orderManager The address responsible for signer storage and order management
     /// @param digest The digest to check signatures for
     /// @param signatures Packed and encoded multisig signatures payload
     /// @param requiredSignatures Signature threshold. This is required since we are unable
     /// to easily determine the number of signatures from the signature payload alone
     /// @dev Reverts if signature threshold is not passed
     function checkNSignatures(
-        address signatureManager,
+        address orderManager,
         bytes32 digest,
         bytes memory signatures,
         uint256 requiredSignatures
@@ -195,7 +189,7 @@ library SigningLib {
                 "Invalid signature order or duplicate signature"
             );
             require(
-                IMultisigOrderManager(signatureManager).signers(currentOwner),
+                IMultisigOrderManager(orderManager).signers(currentOwner),
                 "Signer is not approved"
             );
             lastOwner = currentOwner;

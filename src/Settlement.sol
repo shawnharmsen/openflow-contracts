@@ -21,7 +21,7 @@ contract Settlement {
     using OrderLib for bytes;
 
     /// @dev Prepare constants for building domainSeparator
-    bytes32 private constant _DOMAIN_NAME = keccak256("Blockswap"); // TODO: Rename
+    bytes32 private constant _DOMAIN_NAME = keccak256("Blockswap");
     bytes32 private constant _DOMAIN_VERSION = keccak256("v0.0.1");
     bytes32 private constant _DOMAIN_TYPE_HASH =
         keccak256(
@@ -32,6 +32,9 @@ contract Settlement {
             "Payload(address fromToken,address toToken,uint256 fromAmount,uint256 toAmount,address sender,address recipient,uint256 deadline)"
         );
     bytes32 public immutable domainSeparator;
+
+    /// @dev Order manager manages the order signature logic for multisig authenticated swap auctions
+    address public immutable orderManager;
 
     /// @dev Map each user order by UID to the amount that has been filled
     mapping(bytes => uint256) public filledAmount;
@@ -55,7 +58,7 @@ contract Settlement {
     );
 
     /// @dev Set domainSeparator and executionProxy
-    constructor() {
+    constructor(address _orderManager) {
         domainSeparator = keccak256(
             abi.encode(
                 _DOMAIN_TYPE_HASH,
@@ -65,6 +68,7 @@ contract Settlement {
                 address(this)
             )
         );
+        orderManager = _orderManager;
         executionProxy = new ExecutionProxy();
     }
 
@@ -92,6 +96,7 @@ contract Settlement {
         /// pre-swap hooks such as withdrawing from a vault (and sending tokens to Settlement) before executing the swap.
         uint256 inputTokenBalanceSettlement = IERC20(payload.fromToken)
             .balanceOf(address(this));
+
         if (inputTokenBalanceSettlement >= payload.fromAmount) {
             IERC20(payload.fromToken).transfer(msg.sender, payload.fromAmount);
         } else {

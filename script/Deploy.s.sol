@@ -35,8 +35,9 @@ contract Deploy is Script {
 
         masterChef = new MasterChef();
         oracle = new Oracle();
-        settlement = new Settlement();
-        multisigOrderManager = new MultisigOrderManager(address(settlement));
+        multisigOrderManager = new MultisigOrderManager();
+        settlement = new Settlement(address(multisigOrderManager));
+        multisigOrderManager.initialize(address(settlement));
         address[] memory signers = new address[](2);
         signers[0] = x48_1;
         signers[1] = x48_2;

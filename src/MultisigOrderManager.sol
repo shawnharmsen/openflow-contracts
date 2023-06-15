@@ -3,8 +3,8 @@
 pragma solidity ^0.8.19;
 import {IERC20} from "../src/interfaces/IERC20.sol";
 import {ISettlement} from "../src/interfaces/ISettlement.sol";
-import {SigningLib} from "../src/lib/Signing.sol";
 import {OrderLib} from "../src/lib/Order.sol";
+import {SigningLib} from "../src/lib/Signing.sol";
 
 /// @author OpenFlow
 /// @title Multisig Order Manager
@@ -15,7 +15,7 @@ contract MultisigOrderManager {
     using OrderLib for bytes;
 
     /// @dev Settlement contract is used to build a digest hash given a payload.
-    address public immutable settlement;
+    address public settlement;
 
     /// @dev Owner is responsible for signer management (adding/removing signers
     /// and maintaining signature threshold).
@@ -55,8 +55,7 @@ contract MultisigOrderManager {
     /// user incrementing their session nonce.
     event InvalidateAllOrders(address account);
 
-    constructor(address _settlement) {
-        settlement = _settlement; // Initialize settlement
+    constructor() {
         owner = msg.sender; // Initialize owner
     }
 
@@ -145,5 +144,14 @@ contract MultisigOrderManager {
     function setOwner(address _owner) external {
         require(msg.sender == owner, "Only owner");
         owner = _owner;
+    }
+
+    /// @notice Initialize order manager
+    /// @dev Sets settlement
+    /// @dev Can only initialize once
+    /// @param _settlement New settlement address
+    function initialize(address _settlement) external {
+        require(settlement == address(0));
+        settlement = _settlement;
     }
 }
