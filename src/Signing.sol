@@ -152,12 +152,11 @@ contract Signing {
     /// parameters.
     /// @param encodedSignature The pre-sign signature reprenting the order UID.
     /// @return owner The address of the signer.
-    /// TODO: Need validTo?
     function _recoverPresignedOwner(
         bytes32 orderDigest,
         bytes memory encodedSignature
     ) internal view returns (address owner) {
-        require(encodedSignature.length == 20, "GPv2: malformed presignature");
+        require(encodedSignature.length == 20, "Malformed presignature");
         assembly {
             // owner = address(encodedSignature[0:20])
             owner := shr(96, mload(encodedSignature))

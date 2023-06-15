@@ -7,7 +7,7 @@ import {OrderLib} from "../src/lib/Order.sol";
 
 /// @author OpenFlow
 /// @title Multisig Order Manager
-/// @notice This contract manages the signing logic for OpenFlow multisig authenticated swap auctions
+/// @notice This contract manages the signing logic for OpenFlow multisig authenticated swap auctions.
 contract MultisigOrderManager {
     /// @dev OrderLib is used to generate and decode unique UIDs per order.
     /// A UID consists of digest hash, owner and deadline.
@@ -54,15 +54,21 @@ contract MultisigOrderManager {
     /// user incrementing their session nonce.
     event InvalidateAllOrders(address account);
 
+    /// @dev Initialize owner.
+    /// @dev Owner must be a trusted multisig.
+    /// @dev Owner can do three things:
+    /// - Set signature threshold for multisig swap auctions
+    /// - Update trusted signers for multisig swap auctions
+    /// - Change owner
     constructor() {
-        owner = msg.sender; // Initialize owner
+        owner = msg.sender;
     }
 
-    /// @notice Submit an order
+    /// @notice Submit an order.
     /// @dev Given an order payload, build and approve the digest hash, and then emit an event
     /// that indicates an auction is ready to begin.
-    /// @param payload The payload to sign
-    /// @return orderUid Returns unique order UID
+    /// @param payload The payload to sign.
+    /// @return orderUid Returns unique order UID.
     function submitOrder(
         ISettlement.Payload memory payload
     ) external returns (bytes memory orderUid) {
@@ -74,9 +80,9 @@ contract MultisigOrderManager {
         emit SubmitOrder(payload, orderUid);
     }
 
-    /// @notice Invalidate an order
-    /// @dev Only the user who initiated the order can invalidate the order
-    /// @param orderUid The order UID to invalidate
+    /// @notice Invalidate an order.
+    /// @dev Only the user who initiated the order can invalidate the order.
+    /// @param orderUid The order UID to invalidate.
     function invalidateOrder(bytes memory orderUid) external {
         (bytes32 digest, address ownerOwner, ) = orderUid
             .extractOrderUidParams();
@@ -86,16 +92,16 @@ contract MultisigOrderManager {
         emit InvalidateOrder(orderUid);
     }
 
-    /// @notice Invalidate all orders for a user
-    /// @dev Accomplished by incrementing the user's session nonce
+    /// @notice Invalidate all orders for a user.
+    /// @dev Accomplished by incrementing the user's session nonce.
     function invalidateAllOrders() external {
         sessionNonceByAddress[msg.sender]++;
         emit InvalidateAllOrders(msg.sender);
     }
 
-    /// @notice Determine whether or not a user has approved an order digest for the current session
-    /// @param digest The order digest to check
-    /// @return approved True if approved, false if not
+    /// @notice Determine whether or not a user has approved an order digest for the current session.
+    /// @param digest The order digest to check.
+    /// @return approved True if approved, false if not.
     function digestApproved(
         address signatory,
         bytes32 digest
@@ -106,7 +112,7 @@ contract MultisigOrderManager {
 
     /// @notice Given a digest and encoded signatures, determine if a digest is approved by a
     /// sufficient number of multisig signers.
-    /// @dev Reverts if not approved
+    /// @dev Reverts if not approved.
     function checkNSignatures(
         bytes32 digest,
         bytes memory signatures
@@ -118,9 +124,9 @@ contract MultisigOrderManager {
         );
     }
 
-    /// @notice Add or remove trusted multisig signers
-    /// @dev Only owner is allowed to perform this action
-    /// @param _signers An array of signer addresses
+    /// @notice Add or remove trusted multisig signers.
+    /// @dev Only owner is allowed to perform this action.
+    /// @param _signers An array of signer addresses.
     /// @param _status If true, all signers in the array will be approved.
     /// If false all signers in the array will be unapproved.
     function setSigners(address[] memory _signers, bool _status) external {
@@ -130,24 +136,24 @@ contract MultisigOrderManager {
         }
     }
 
-    /// @notice Set signature threshold
-    /// @dev Only owner is allowed to perform this action
+    /// @notice Set signature threshold.
+    /// @dev Only owner is allowed to perform this action.
     function setSignatureThreshold(uint256 _signatureThreshold) external {
         require(msg.sender == owner, "Only owner");
         signatureThreshold = _signatureThreshold;
     }
 
-    /// @notice Select a new owner
-    /// @dev Only owner is allowed to perform this action
+    /// @notice Select a new owner.
+    /// @dev Only owner is allowed to perform this action.
     function setOwner(address _owner) external {
         require(msg.sender == owner, "Only owner");
         owner = _owner;
     }
 
-    /// @notice Initialize order manager
-    /// @dev Sets settlement
-    /// @dev Can only initialize once
-    /// @param _settlement New settlement address
+    /// @notice Initialize order manager.
+    /// @dev Sets settlement.
+    /// @dev Can only initialize once.
+    /// @param _settlement New settlement address.
     function initialize(address _settlement) external {
         require(settlement == address(0));
         settlement = _settlement;
