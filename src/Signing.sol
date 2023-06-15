@@ -164,13 +164,30 @@ contract Signing {
         require(signer != address(0), "Invalid ECDSA signature");
     }
 
+    function signatureSplit(
+        bytes memory signatures,
+        uint256 pos
+    ) internal pure returns (uint8 v, bytes32 r, bytes32 s) {
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            let signaturePos := mul(0x41, pos)
+            r := mload(add(signatures, add(signaturePos, 0x20)))
+            s := mload(add(signatures, add(signaturePos, 0x40)))
+            v := and(mload(add(signatures, add(signaturePos, 0x41))), 0xff)
+        }
+    }
+
     /// @notice Gnosis style signature threshold check
     /// @param orderManager The address responsible for signer storage and order management
     /// @param digest The digest to check signatures for
     /// @param signatures Packed and encoded multisig signatures payload
-    /// @param requiredSignatures Signature threshold. This is required since we are unable
+    // / @param requiredSignatures Signature threshold. This is required since we are unable
     /// to easily determine the number of signatures from the signature payload alone
     /// @dev Reverts if signature threshold is not passed
+    /// @dev Code comes from Gnosis Safe: https://github.com/safe-global/safe-contracts/blob/main/contracts/Safe.sol
+    /// The only change is that we use recoverSigner to calculate signer based on v instead of doing this inline.
+    /// The reason for this is that it lets us recover one signer at a time or multiple signers
+    /// at a time with maximum  with maximum flexibility
     function checkNSignatures(
         address orderManager,
         bytes32 digest,
@@ -180,21 +197,25 @@ contract Signing {
         require(signatures.length >= requiredSignatures * 65, "GS020");
         address lastOwner = address(0);
         address currentOwner;
-        uint256 i;
-        for (i = 0; i < requiredSignatures; i++) {
+        uint256 signatureIdx;
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+        for (
+            signatureIdx = 0;
+            signatureIdx < requiredSignatures;
+            signatureIdx++
+        ) {
             bytes memory signature;
-            // TODO: More checks? Review Gnosis code: https://ftmscan.com/address/d9db270c1b5e3bd161e8c8503c55ceabee709552#code
+            // From Gnosis signatureSplit method
             assembly {
-                // Similar to Gnosis signatureSplit, except splits the entire signature into 65 byte chunks instead of r, s, v
-                let signaturePos := add(
-                    add(sub(signatures, 28), mul(0x41, i)),
-                    0x40
-                )
-                mstore(signature, 65)
-                calldatacopy(add(signature, 0x20), signaturePos, 65)
+                let signaturePos := mul(0x41, signatureIdx)
+                r := mload(add(add(signatures, signaturePos), 0x20))
+                s := mload(add(add(signatures, signaturePos), 0x40))
+                v := and(mload(add(add(signatures, signaturePos), 0x41)), 0xff)
             }
+            signature = abi.encodePacked(r, s, v);
             currentOwner = recoverSigner(signature, digest);
-
             require(
                 currentOwner > lastOwner,
                 "Invalid signature order or duplicate signature"
