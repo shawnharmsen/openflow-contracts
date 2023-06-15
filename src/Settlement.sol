@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 import "./interfaces/ISettlement.sol";
 import "./interfaces/IERC20.sol";
-import {SigningLib} from "./lib/Signing.sol";
+import {Signing} from "./Signing.sol";
 import {OrderLib} from "./lib/Order.sol";
 
 /// @author OpenFlow
@@ -16,7 +16,7 @@ import {OrderLib} from "./lib/Order.sol";
 /// - Order `fromToken` is transferred from the order signer to the order executor (order executor is solver configurable)
 /// - Order executor executes the swap in whatever way they see fit
 /// - At the end of the swap the user's `toToken` delta must be greater than or equal to the agreed upon `toAmount`
-contract Settlement {
+contract Settlement is Signing {
     /// @dev Use OrderLib for order UID encoding/decoding
     using OrderLib for bytes;
 
@@ -172,7 +172,7 @@ contract Settlement {
         ISettlement.Order calldata order
     ) internal view returns (bytes memory orderUid) {
         bytes32 digest = buildDigest(order.payload);
-        address signatory = SigningLib.recoverSigner(order.signature, digest);
+        address signatory = recoverSigner(order.signature, digest);
         orderUid = new bytes(OrderLib._UID_LENGTH);
         orderUid.packOrderUidParams(digest, signatory, order.payload.deadline);
         require(filledAmount[orderUid] == 0, "Order already filled");

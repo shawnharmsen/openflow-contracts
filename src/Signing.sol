@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL 1.1
 pragma solidity 0.8.19;
-import {IMultisigOrderManager} from "../interfaces/IMultisigOrderManager.sol";
-import {ISignatureValidator} from "../interfaces/ISignatureValidator.sol";
-import {OrderLib} from "./Order.sol";
+import {IMultisigOrderManager} from "./interfaces/IMultisigOrderManager.sol";
+import {ISignatureValidator} from "./interfaces/ISignatureValidator.sol";
+import {OrderLib} from "./lib/Order.sol";
 
 /// @author OpenFlow
 /// @title Signing Library
@@ -14,7 +14,7 @@ import {OrderLib} from "./Order.sol";
 /// multisig signature threshold. Multisig signatures can be comprised of any
 /// combination of signature types. Signature type is auto-detected (per Gnosis)
 /// based on v value.
-library SigningLib {
+contract Signing {
     uint256 private constant _ECDSA_SIGNATURE_LENGTH = 65;
     bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;
 
@@ -34,17 +34,17 @@ library SigningLib {
         }
         if (v == 0) {
             /// @dev Contract signature (EIP-1271)
-            owner = recoverEip1271Signer(digest, signature);
+            owner = _recoverEip1271Signer(digest, signature);
         } else if (v == 1) {
             /// @dev Presigned signature requires order manager as signature storage contract
-            owner = recoverPresignedOwner(digest, signature);
+            owner = _recoverPresignedOwner(digest, signature);
         } else if (v > 30) {
             /// @dev EthSign signature. If v > 30 then default va (27,28)
             /// has been adjusted for eth_sign flow
-            owner = recoverEthsignSigner(digest, signature);
+            owner = _recoverEthsignSigner(digest, signature);
         } else {
             /// @dev EIP-712 signature. Default is the ecrecover flow with the provided data hash
-            owner = recoverEip712Signer(digest, signature);
+            owner = _recoverEip712Signer(digest, signature);
         }
     }
 
@@ -52,40 +52,51 @@ library SigningLib {
     /// @param digest Hashed payload digest
     /// @param signature Signature bytes
     /// @return owner Signature owner
-    function recoverEip712Signer(
+    function _recoverEip712Signer(
         bytes32 digest,
         bytes memory signature
     ) internal pure returns (address owner) {
-        owner = ecdsaRecover(digest, signature);
+        owner = _ecdsaRecover(digest, signature);
     }
 
     /// @notice Extract forward and validate signature for EIP-1271
     /// @dev See "Contract Signature" section of https://docs.safe.global/learn/safe-core/safe-core-protocol/signatures
+    /// @dev Code comes from Gnosis Safe: https://github.com/safe-global/safe-contracts/blob/main/contracts/Safe.sol
     /// @param digest Hashed payload digest
     /// @param encodedSignature Encoded signature
     /// @return owner Signature owner
-    function recoverEip1271Signer(
+    function _recoverEip1271Signer(
         bytes32 digest,
         bytes memory encodedSignature
     ) internal view returns (address owner) {
-        bytes32 signatureOffset;
-        uint256 signatureLength;
-        bytes memory signature;
+        bytes32 r; // owner
+        bytes32 s; // signature data offset
+        // v is already confirmed to be zero
         assembly {
-            owner := mload(add(encodedSignature, 0x20))
-            signatureOffset := mload(add(encodedSignature, 0x40))
-            signatureLength := mload(add(encodedSignature, 0x80))
-            mstore(signature, signatureLength)
-            calldatacopy(
-                add(signature, 0x20),
-                add(add(signature, signatureOffset), 0x24), // digest + free memory + 4byte
-                signatureLength
-            )
+            r := mload(add(encodedSignature, 0x20))
+            s := mload(add(encodedSignature, 0x40))
+        }
+        owner = address(uint160(uint256(r)));
+        require(uint256(s) >= 65, "GS021");
+        require(uint256(s) + 32 <= encodedSignature.length, "GS022");
+        uint256 contractSignatureLen;
+        assembly {
+            contractSignatureLen := mload(add(add(encodedSignature, s), 0x20))
         }
         require(
-            ISignatureValidator(owner).isValidSignature(digest, signature) ==
-                _EIP1271_MAGICVALUE,
-            "Invalid EIP-1271 signature"
+            uint256(s) + 32 + contractSignatureLen <= encodedSignature.length,
+            "GS023"
+        );
+        bytes memory contractSignature;
+        assembly {
+            contractSignature := add(add(encodedSignature, s), 0x20)
+        }
+        require(
+            ISignatureValidator(owner).isValidSignature(
+                digest,
+                contractSignature
+            ) == _EIP1271_MAGICVALUE,
+            "GS024"
         );
         return owner;
     }
@@ -95,14 +106,14 @@ library SigningLib {
     /// @param digest Hashed payload digest
     /// @param signature Signature
     /// @return owner Signature owner
-    function recoverEthsignSigner(
+    function _recoverEthsignSigner(
         bytes32 digest,
         bytes memory signature
     ) internal pure returns (address owner) {
         bytes32 ethsignDigest = keccak256(
             abi.encodePacked("\x19Ethereum Signed Message:\n32", digest)
         );
-        owner = ecdsaRecover(ethsignDigest, signature);
+        owner = _ecdsaRecover(ethsignDigest, signature);
     }
 
     /// @notice Verifies the order has been pre-signed. The signature is the
@@ -112,7 +123,7 @@ library SigningLib {
     /// @param encodedSignature The pre-sign signature reprenting the order UID.
     /// @return owner The address of the signer.
     /// TODO: Need validTo?
-    function recoverPresignedOwner(
+    function _recoverPresignedOwner(
         bytes32 orderDigest,
         bytes memory encodedSignature
     ) internal view returns (address owner) {
@@ -133,7 +144,7 @@ library SigningLib {
     /// @param message Signed messed
     /// @param signature Signature
     /// @return signer Returns signer (signature owner)
-    function ecdsaRecover(
+    function _ecdsaRecover(
         bytes32 message,
         bytes memory signature
     ) internal pure returns (address signer) {

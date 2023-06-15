@@ -4,7 +4,6 @@ pragma solidity ^0.8.19;
 import {IERC20} from "../src/interfaces/IERC20.sol";
 import {ISettlement} from "../src/interfaces/ISettlement.sol";
 import {OrderLib} from "../src/lib/Order.sol";
-import {SigningLib} from "../src/lib/Signing.sol";
 
 /// @author OpenFlow
 /// @title Multisig Order Manager
@@ -112,7 +111,7 @@ contract MultisigOrderManager {
         bytes32 digest,
         bytes memory signatures
     ) external view {
-        SigningLib.checkNSignatures(
+        ISettlement(settlement).checkNSignatures(
             address(this),
             digest,
             signatures,
