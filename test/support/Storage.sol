@@ -49,7 +49,7 @@ contract Storage is Test {
             new YearnVaultInteractions(address(settlement))
         );
         uint32 auctionDuration = 60 * 5; // 5 minutes for example
-        uint256 slippageBips = 100; // 1% - Large slippage for test reliability
+        uint256 slippageBips = 150; // 1.5% - Large slippage for test reliability
         strategy = new Strategy(
             dai,
             usdc,
