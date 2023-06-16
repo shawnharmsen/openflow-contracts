@@ -34,6 +34,7 @@ contract Storage is Test {
     address public immutable userB = vm.addr(_USER_B_PRIVATE_KEY);
 
     constructor() {
+        startHoax(userA);
         masterChef = new MasterChef();
         oracle = new Oracle();
         multisigOrderManager = new MultisigOrderManager();
@@ -56,7 +57,6 @@ contract Storage is Test {
             address(multisigOrderManager),
             address(settlement)
         );
-        console.log(strategy.manager());
         IOpenFlowSwapper(address(strategy)).setOracle(address(oracle));
         IOpenFlowSwapper(address(strategy)).setSlippage(slippageBips);
         IOpenFlowSwapper(address(strategy)).setMaxAuctionDuration(
