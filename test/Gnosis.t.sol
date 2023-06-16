@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 import {ISafe} from "../test/interfaces/IGnosisSafe.sol";
 import {GnosisHelper} from "../test/support/GnosisHelper.sol";
+import "../test/support/Storage.sol";
 import "forge-std/Test.sol";
 
 contract GnosisTest is GnosisHelper {
@@ -9,23 +10,41 @@ contract GnosisTest is GnosisHelper {
     ISafe safeB;
     ISafe safeC;
     bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;
+    uint256 public constant INITIAL_TOKEN_AMOUNT = 100 * 1e6; // 100 USDC
+    IERC20 public fromToken = IERC20(usdc);
+    IERC20 public toToken = IERC20(weth);
 
+    /// @notice notice Create 3 Gnosis Safes:
+    /// - SafeA owners:
+    ///   - userA
+    ///   - userB
+    /// - SafeB owners:
+    ///   - userA
+    /// - SafeC owners:
+    ///   - safeA
+    ///   - safeB
     function setUp() public {
         startHoax(userA);
-        // SafeA is a simple safe with two EOA owners
+        /// @dev SafeA is a simple safe with two EOA owners.
         address[] memory owners = new address[](2);
         owners[0] = userA;
         owners[1] = userB;
         safeA = ISafe(newSafe(owners));
         console.log("Safe A", address(safeA));
+        uint256 signatureThreshold = safeA.getThreshold();
+        require(signatureThreshold == 2, "Incorrect threshold");
+        require(
+            safeA.getOwners().length == signatureThreshold,
+            "Incorrect owner count"
+        );
 
-        // SafeB has one EOA owner
+        /// @dev SafeB has one EOA owner.
         owners = new address[](1);
         owners[0] = userA;
         safeB = ISafe(newSafe(owners));
         console.log("Safe B", address(safeB));
 
-        // SafeC has two owners (SafeA and SafeB)
+        /// @dev SafeC has two owners (SafeA and SafeB).
         changePrank(address(safeA));
         owners = new address[](2);
         owners[0] = address(safeA);
@@ -35,15 +54,109 @@ contract GnosisTest is GnosisHelper {
         changePrank(userA);
     }
 
-    function testSafeConstruction() external {
-        uint256 signatureThreshold = safeA.getThreshold();
-        require(signatureThreshold == 2, "Incorrect threshold");
-        require(
-            safeA.getOwners().length == signatureThreshold,
-            "Incorrect owner count"
+    function testGnosisSafeEip1271SimpleSwap() external {
+        /// @dev Give safe A 100 fromToken.
+        deal(address(fromToken), address(safeA), INITIAL_TOKEN_AMOUNT);
+
+        /// @dev Allow settlement to spend fromToken from Gnosis Safe.
+        changePrank(address(safeA));
+        fromToken.approve(address(settlement), type(uint256).max);
+        changePrank(address(userA));
+
+        /// @dev Get quote from sample aggregator.
+        uint256 fromAmount = 100 * 1e6;
+        require(fromAmount > 0, "Invalid fromAmount");
+        UniswapV2Aggregator.Quote memory quote = uniswapAggregator.quote(
+            fromAmount,
+            address(fromToken),
+            address(toToken)
         );
+        uint256 slippageBips = 20;
+        uint256 toAmount = (quote.quoteAmount * (10000 - slippageBips)) / 10000;
+
+        /// @dev Build payload.
+        ISettlement.Hooks memory hooks; // Optional pre and post swap hooks.
+        ISettlement.Payload memory payload = ISettlement.Payload({
+            fromToken: address(fromToken),
+            toToken: address(toToken),
+            fromAmount: fromAmount,
+            toAmount: toAmount,
+            sender: address(safeA),
+            recipient: address(safeA),
+            deadline: uint32(block.timestamp),
+            hooks: hooks
+        });
+
+        /// @dev Build digest. Order digest is what will be signed.
+        bytes32 orderDigest = settlement.buildDigest(payload);
+
+        /// @dev Sign order digest
+        bytes memory safeASignature;
+        {
+            bytes memory orderDigestAsBytes = abi.encodePacked(orderDigest);
+            bytes32 safeDigest = safeA.getMessageHashForSafe(
+                address(safeA),
+                orderDigestAsBytes
+            );
+            (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+                _USER_A_PRIVATE_KEY,
+                safeDigest
+            );
+            bytes memory userASignature = abi.encodePacked(r, s, v);
+            (v, r, s) = vm.sign(_USER_B_PRIVATE_KEY, safeDigest);
+            bytes memory userBSignature = abi.encodePacked(r, s, v);
+
+            /// @dev Derived signatories must be in sequential order
+            safeASignature = abi.encodePacked(userASignature, userBSignature);
+        }
+        require(
+            safeA.isValidSignature(bytes32(orderDigest), safeASignature) ==
+                _EIP1271_MAGICVALUE,
+            "Bad signature"
+        );
+
+        //////////////////// Solver execution ////////////////////
+
+        /// @dev Build executor data.
+        bytes memory executorData = abi.encode(
+            OrderExecutor.Data({
+                fromToken: fromToken,
+                toToken: toToken,
+                fromAmount: fromAmount,
+                toAmount: toAmount,
+                recipient: address(safeA),
+                target: address(uniswapAggregator),
+                payload: abi.encodeWithSelector(
+                    UniswapV2Aggregator.executeOrder.selector,
+                    quote.routerAddress,
+                    quote.path,
+                    fromAmount,
+                    toAmount
+                )
+            })
+        );
+
+        bytes memory signatures = abi.encodePacked(
+            hex"000000000000000000000000",
+            address(safeA),
+            bytes32(uint256(65 * 1)),
+            hex"00",
+            bytes32(uint256(safeASignature.length)),
+            safeASignature
+        );
+
+        /// @dev Build order using
+        ISettlement.Order memory order = ISettlement.Order({
+            signature: signatures,
+            data: executorData,
+            payload: payload
+        });
+        /// @dev Execute order
+        ISettlement.Interaction[][2] memory solverInteractions;
+        executor.executeOrder(order, solverInteractions);
     }
 
+    /// @dev Sample simple Gnosis Safe signing without OpenFlow
     function testSafeEip1271SimpleSign() external {
         bytes
             memory orderDigest = hex"9de4c55938fc5d093859fb29a973a31dfd516c76d39063470be94ad8518874a0";
@@ -72,8 +185,7 @@ contract GnosisTest is GnosisHelper {
         );
     }
 
-    event Log(uint256 length, bytes byt);
-
+    /// @dev Sample complex Gnosis Safe signing without OpenFlow
     function testSafeEip1271ComplexSign() external {
         bytes
             memory orderDigest = hex"9de4c55938fc5d093859fb29a973a31dfd516c76d39063470be94ad8518874a0";
