@@ -22,6 +22,13 @@ interface ISafe {
 
     function addOwnerWithThreshold(address owner, uint256 _threshold) external;
 
+    function getMessageHashForSafe(
+        address,
+        bytes memory
+    ) external view returns (bytes32);
+
+    function isValidSignature(bytes32, bytes memory) external returns (bytes4);
+
     function execTransaction(
         address to,
         uint256 value,
