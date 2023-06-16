@@ -34,7 +34,6 @@ contract Storage is Test {
     address public immutable userB = vm.addr(_USER_B_PRIVATE_KEY);
 
     constructor() {
-        startHoax(userA);
         masterChef = new MasterChef();
         oracle = new Oracle();
         multisigOrderManager = new MultisigOrderManager();

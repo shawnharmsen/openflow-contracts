@@ -2,9 +2,10 @@
 pragma solidity 0.8.19;
 
 interface ISafeFactory {
-    function createProxy(
+    function createProxyWithNonce(
         address _singleton,
-        bytes memory initializer
+        bytes memory initializer,
+        uint256 nonce
     ) external returns (address proxy);
 }
 
