@@ -17,7 +17,7 @@ import {IVaultRegistry} from "../../test/interfaces/IVaultRegistry.sol";
 /// This will result in the user getting access to a much larger pool of competitive swap rate quotes.
 contract YearnVaultInteractions {
     IVaultRegistry registry =
-        IVaultRegistry(0x727fe1759430df13655ddb0731dE0D0FDE929b04);
+        IVaultRegistry(0x50c1a2eA0a861A967D9d0FFE2AE4012c2E053804);
     address public settlement;
     address public executionProxy;
 

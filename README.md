@@ -7,5 +7,5 @@ Blockswap is the world's first fully decentralized massively-multichain dex aggr
 ```
 foundryup
 forge build
-forge test --rpc-url fantom
+forge test --rpc-url mainnet
 ```

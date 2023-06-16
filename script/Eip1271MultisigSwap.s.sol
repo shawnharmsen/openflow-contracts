@@ -19,9 +19,9 @@ contract Storage is Script {
     Oracle public oracle = Oracle(0x233A3588972DDd57D7F19369FdE8DcEEe88B8e73);
     MasterChef public masterChef =
         MasterChef(0xFE38EE7F7228a1a278FF0d57365563a4c8c54297);
-    address public usdc = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
-    address public dai = 0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E;
-    address public weth = 0x74b23882a30290451A17c44f4F05243b6b58C76d;
+    address public usdc = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address public dai = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address public weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     Settlement public settlement =
         Settlement(0xD4D94C981Cd3a88E31D4070F5aCDf561084DEe00);
     OrderExecutor public executor =

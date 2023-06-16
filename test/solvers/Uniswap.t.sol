@@ -11,10 +11,8 @@ import {UniswapV2Aggregator} from "../../src/solvers/UniswapV2Aggregator.sol";
 
 contract UniswapTest is Test {
     UniswapV2Aggregator public uniswapAggregator;
-
-    address public router = 0xbE4fC72f8293F9D3512d58B969c98c3F676cB957;
-    address public usdc = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
-    address public weth = 0x74b23882a30290451A17c44f4F05243b6b58C76d;
+    address public usdc = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address public weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     uint256 public amountIn = 1e6;
 
     function setUp() public {
@@ -24,9 +22,9 @@ contract UniswapTest is Test {
         // Add dex
         uniswapAggregator.addDex(
             UniswapV2Aggregator.Dex({
-                name: "Spookyswap",
-                factoryAddress: 0x152eE697f2E276fA89E96742e9bB9aB1F2E61bE3,
-                routerAddress: 0xbE4fC72f8293F9D3512d58B969c98c3F676cB957
+                name: "Sushiswap",
+                factoryAddress: 0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac,
+                routerAddress: 0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F
             })
         );
     }

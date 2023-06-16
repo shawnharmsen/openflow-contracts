@@ -19,15 +19,15 @@ contract Deploy is Script {
     Oracle public oracle;
     IERC20 public rewardToken;
     MasterChef public masterChef;
-    address public usdc = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
-    address public dai = 0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E;
-    address public weth = 0x74b23882a30290451A17c44f4F05243b6b58C76d;
+    address public usdc = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address public dai = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address public weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     Settlement public settlement;
     OrderExecutor public executor;
     UniswapV2Aggregator public uniswapAggregator;
     MultisigOrderManager public multisigOrderManager;
-    address x48_1 = 0x4800C3b3B570bE4EeE918404d0f847c1Bf25826b;
-    address x48_2 = 0x481140F916a4e64559694DB4d56D692CadC0326c;
+    address public x48_1 = 0x4800C3b3B570bE4EeE918404d0f847c1Bf25826b;
+    address public x48_2 = 0x481140F916a4e64559694DB4d56D692CadC0326c;
 
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -64,9 +64,9 @@ contract Deploy is Script {
         uniswapAggregator = new UniswapV2Aggregator();
         uniswapAggregator.addDex(
             UniswapV2Aggregator.Dex({
-                name: "Spookyswap",
-                factoryAddress: 0x152eE697f2E276fA89E96742e9bB9aB1F2E61bE3,
-                routerAddress: 0xbE4fC72f8293F9D3512d58B969c98c3F676cB957
+                name: "Sushiswap",
+                factoryAddress: 0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac,
+                routerAddress: 0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F
             })
         );
         new YearnVaultInteractions(address(settlement));

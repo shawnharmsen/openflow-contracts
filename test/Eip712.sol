@@ -11,7 +11,7 @@ import {ISettlement} from "../src/interfaces/ISettlement.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
 import {YearnVaultInteractions, IVaultRegistry, IVault} from "../test/support/YearnVaultInteractions.sol";
 
-contract SettlementTest is Test {
+contract Eip712Test is Test {
     // Constants
     uint256 internal constant _USER_A_PRIVATE_KEY = 0xB0B;
     uint256 internal constant _USER_B_PRIVATE_KEY = 0xA11CE;
@@ -19,9 +19,9 @@ contract SettlementTest is Test {
     address public immutable userB = vm.addr(_USER_B_PRIVATE_KEY);
     uint256 public constant INITIAL_TOKEN_AMOUNT = 100 * 1e18;
     IVaultRegistry public constant vaultRegistry =
-        IVaultRegistry(0x727fe1759430df13655ddb0731dE0D0FDE929b04);
-    address public constant usdc = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
-    address public constant weth = 0x74b23882a30290451A17c44f4F05243b6b58C76d;
+        IVaultRegistry(0x50c1a2eA0a861A967D9d0FFE2AE4012c2E053804);
+    address public constant usdc = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address public constant weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public vaultInteractions;
 
     // Storage
@@ -54,9 +54,9 @@ contract SettlementTest is Test {
         uniswapAggregator = new UniswapV2Aggregator();
         uniswapAggregator.addDex(
             UniswapV2Aggregator.Dex({
-                name: "Spookyswap",
-                factoryAddress: 0x152eE697f2E276fA89E96742e9bB9aB1F2E61bE3,
-                routerAddress: 0xbE4fC72f8293F9D3512d58B969c98c3F676cB957
+                name: "Sushiswap",
+                factoryAddress: 0xC0AEe478e3658e2610c5F7A4A2E1777cE9e4f2Ac,
+                routerAddress: 0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F
             })
         );
 

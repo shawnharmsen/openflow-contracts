@@ -9,10 +9,10 @@ interface IChainklinkAggregator {
 /// @title Sample Chainlink Oracle
 /// @dev Not to be used in production
 contract Oracle {
-    address public usdc = 0x04068DA6C83AFCFA0e13ba15A6696662335D5B75;
-    address public dai = 0x8D11eC38a3EB5E956B052f67Da8Bdc9bef8Abf3E;
-    address public usdcOracle = 0x2553f4eeb82d5A26427b8d1106C51499CBa5D99c; // Chainlink decimals is 8 --in practice need to account for decimals difference
-    address public daiOracle = 0x91d5DEFAFfE2854C7D02F50c80FA1fdc8A721e52; // Chainlink decimals is 8 --in practice need to account for decimals difference
+    address public usdc = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address public dai = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+    address public usdcOracle = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6; // Chainlink decimals is 8 --in practice need to account for decimals difference
+    address public daiOracle = 0xAed0c38402a5d19df6E4c03F4E2DceD6e29c1ee9; // Chainlink decimals is 8 --in practice need to account for decimals difference
     mapping(address => address) public chainlinkOracleByToken;
 
     constructor() {
