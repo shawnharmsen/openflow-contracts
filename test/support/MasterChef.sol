@@ -25,9 +25,7 @@ contract MasterChef {
     // Mock reward earning. In reality user will probably call deposit or withdraw with amount set to zero to initialize a reward earn
     function getReward() external {
         uint256 amountOwed = rewardOwedByAccount[strategy];
-        if (amountOwed > 0) {
-            rewardToken.transfer(strategy, amountOwed);
-        }
+        rewardToken.transfer(strategy, amountOwed);
         rewardOwedByAccount[strategy] = 0;
     }
 

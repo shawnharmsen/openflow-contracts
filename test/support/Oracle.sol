@@ -22,7 +22,7 @@ contract Oracle {
 
     function getChainlinkPrice(
         address token
-    ) public view returns (uint256 price) {
+    ) internal view returns (uint256 price) {
         price = IChainklinkAggregator(chainlinkOracleByToken[token])
             .latestAnswer();
     }

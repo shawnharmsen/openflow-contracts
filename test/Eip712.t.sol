@@ -90,21 +90,10 @@ contract Eip712Test is Storage {
             "User A should have initial amount of tokens"
         );
 
-        // Build after swap solver hook
-        ISettlement.Interaction[][2] memory solverInteractions;
-        solverInteractions[1] = new ISettlement.Interaction[](1);
-        solverInteractions[1][0] = ISettlement.Interaction({
-            target: address(executor),
-            value: 0,
-            callData: abi.encodeWithSelector(
-                OrderExecutor.sweep.selector,
-                address(toToken),
-                solver
-            )
-        });
-
         /// @dev Test execution proxy auth.
         vm.expectRevert("Only settlement");
+        ISettlement.Interaction[][2] memory solverInteractions;
+        solverInteractions[1] = new ISettlement.Interaction[](1);
         executionProxy.execute(address(this), solverInteractions[0]);
 
         /// @dev Test invalid sender.
@@ -122,8 +111,51 @@ contract Eip712Test is Storage {
 
         /// @dev Fix timestamp.
         vm.warp(block.timestamp - 1);
+        {
+            // Build invalid solver hook
+            ISettlement.Interaction memory invalidInteraction = ISettlement
+                .Interaction({
+                    target: address(executor),
+                    value: 0,
+                    callData: hex"deadbeef"
+                });
+            solverInteractions[1][0] = invalidInteraction;
+
+            /// @dev Test bad solver hook execution.
+            vm.expectRevert("Order executor interaction failed");
+            executor.executeOrder(order, solverInteractions);
+        }
+
+        // Build solver hook
+        ISettlement.Interaction memory interaction = ISettlement.Interaction({
+            target: address(executor),
+            value: 0,
+            callData: abi.encodeWithSelector(
+                OrderExecutor.sweep.selector,
+                address(toToken),
+                solver
+            )
+        });
+        solverInteractions[1][0] = interaction;
+
+        /// @dev Make sure only settlement can call executor hook
+        vm.expectRevert("Only settlement");
+        executor.hook(order.data);
+
+        /// @dev Test bad executor swap hook
+        {
+            vm.expectRevert("Execution hook failed");
+            OrderExecutor.Data memory badData = abi.decode(
+                order.data,
+                (OrderExecutor.Data)
+            );
+            badData.payload = hex"deadbeef";
+            order.data = abi.encode(badData);
+            executor.executeOrder(order, solverInteractions);
+        }
 
         /// @dev Test order execution.
+        order.data = executorData;
         executor.executeOrder(order, solverInteractions);
 
         /// @dev Make sure solver is capable of receiving profit.

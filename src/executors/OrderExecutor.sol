@@ -60,10 +60,11 @@ contract OrderExecutor {
     }
 
     function hook(bytes memory orderData) external {
-        require(msg.sender == address(settlement)); // TODO: This is probably not necessary
+        require(msg.sender == address(settlement), "Only settlement");
         Data memory executorData = abi.decode(orderData, (Data));
         executorData.fromToken.approve(executorData.target, type(uint256).max); // Max approve to save gas --this contract should not hold tokens
-        executorData.target.call(executorData.payload);
+        (bool success, ) = executorData.target.call(executorData.payload);
+        require(success, "Execution hook failed");
         executorData.toToken.transfer(
             executorData.recipient,
             executorData.toAmount
@@ -79,7 +80,7 @@ contract OrderExecutor {
             (bool success, ) = interaction.target.call{
                 value: interaction.value
             }(interaction.callData);
-            require(success, "Interaction failed");
+            require(success, "Order executor interaction failed");
         }
     }
 

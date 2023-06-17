@@ -24,7 +24,6 @@ contract Strategy is OpenFlowSwapper {
         multisigOrderManager = _multisigOrderManager;
         manager = msg.sender;
 
-        // TODO: SafeApprove??
         IERC20(reward).approve(address(_settlement), type(uint256).max);
     }
 
