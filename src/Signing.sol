@@ -38,7 +38,7 @@ contract Signing {
         ISettlement.Scheme scheme,
         bytes32 digest,
         bytes memory signature
-    ) public returns (address owner) {
+    ) public view returns (address owner) {
         /// @dev Extract v from signature
         if (scheme == ISettlement.Scheme.Eip1271) {
             /// @dev Contract signature (EIP-1271).
@@ -102,10 +102,10 @@ contract Signing {
         bytes32 digest,
         bytes memory signature
     ) internal pure returns (address owner) {
-        bytes32 ethsignDigest = keccak256(
+        bytes32 ethSignDigest = keccak256(
             abi.encodePacked("\x19Ethereum Signed Message:\n32", digest)
         );
-        owner = _ecdsaRecover(ethsignDigest, signature);
+        owner = _ecdsaRecover(ethSignDigest, signature);
     }
 
     /// @notice Verifies the order has been pre-signed. The signature is the
