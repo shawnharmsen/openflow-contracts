@@ -60,10 +60,9 @@ contract OpenFlowSwapper {
     /// - 1. The digest is approved (and not invalidated)
     /// - 2. The swap has been approved by multisig (to ensure best quote was selected)
     /// @param digest The digest of the order payload
-    /// @param signatures Encoded EIP-1271 signatures formatted per Gnosis
     function isValidSignature(
         bytes32 digest,
-        bytes calldata signatures
+        bytes calldata
     ) external view returns (bytes4) {
         require(
             IMultisigOrderManager(_settlement).digestApproved(
