@@ -81,7 +81,7 @@
 <span id="L10"><span class="lineNum">      10</span>                 :             : /// @title OpenFlow Swapper</span>
 <span id="L11"><span class="lineNum">      11</span>                 :             : /// @notice Implements an example of on-chain swap order submission for OpenFlow multisig authenticated auctions</span>
 <span id="L12"><span class="lineNum">      12</span>                 :             : /// @dev Responsible submitting swap orders. Supports EIP-1271 signature validation by delegating signature</span>
-<span id="L13"><span class="lineNum">      13</span>                 :             : /// validation requests to MultisigOrderManager</span>
+<span id="L13"><span class="lineNum">      13</span>                 :             : /// validation requests to Driver</span>
 <span id="L14"><span class="lineNum">      14</span>                 :             : contract OpenFlowSwapper {</span>
 <span id="L15"><span class="lineNum">      15</span>                 :             :     /// @dev Magic value per EIP-1271 to be returned upon successful validation</span>
 <span id="L16"><span class="lineNum">      16</span>                 :             :     bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;</span>
@@ -105,11 +105,11 @@
 <span id="L34"><span class="lineNum">      34</span>                 :             :     uint256 internal _maxAuctionDuration;</span>
 <span id="L35"><span class="lineNum">      35</span>                 :             : </span>
 <span id="L36"><span class="lineNum">      36</span>                 :             :     constructor(</span>
-<span id="L37"><span class="lineNum">      37</span>                 :             :         address multisigOrderManager,</span>
+<span id="L37"><span class="lineNum">      37</span>                 :             :         address driver,</span>
 <span id="L38"><span class="lineNum">      38</span>                 :             :         address fromToken,</span>
 <span id="L39"><span class="lineNum">      39</span>                 :             :         address toToken</span>
 <span id="L40"><span class="lineNum">      40</span>                 :             :     ) {</span>
-<span id="L41"><span class="lineNum">      41</span>                 :             :         _multisigOrderManager = multisigOrderManager;</span>
+<span id="L41"><span class="lineNum">      41</span>                 :             :         _multisigOrderManager = driver;</span>
 <span id="L42"><span class="lineNum">      42</span>                 :             :         _fromToken = fromToken;</span>
 <span id="L43"><span class="lineNum">      43</span>                 :             :         _toToken = toToken;</span>
 <span id="L44"><span class="lineNum">      44</span>                 :             :     }</span>

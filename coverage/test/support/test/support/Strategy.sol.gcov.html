@@ -79,7 +79,7 @@
 <span id="L8"><span class="lineNum">       8</span>                 :             :     address public masterChef;</span>
 <span id="L9"><span class="lineNum">       9</span>                 :             :     address public asset; // Underlying want token is DAI</span>
 <span id="L10"><span class="lineNum">      10</span>                 :             :     address public reward; // Reward is USDC</span>
-<span id="L11"><span class="lineNum">      11</span>                 :             :     address public multisigOrderManager;</span>
+<span id="L11"><span class="lineNum">      11</span>                 :             :     address public driver;</span>
 <span id="L12"><span class="lineNum">      12</span>                 :             :     address public manager;</span>
 <span id="L13"><span class="lineNum">      13</span>                 :             : </span>
 <span id="L14"><span class="lineNum">      14</span>                 :             :     constructor(</span>
@@ -92,7 +92,7 @@
 <span id="L21"><span class="lineNum">      21</span>                 :             :         asset = _asset;</span>
 <span id="L22"><span class="lineNum">      22</span>                 :             :         reward = _reward;</span>
 <span id="L23"><span class="lineNum">      23</span>                 :             :         masterChef = _masterChef;</span>
-<span id="L24"><span class="lineNum">      24</span>                 :             :         multisigOrderManager = _multisigOrderManager;</span>
+<span id="L24"><span class="lineNum">      24</span>                 :             :         driver = _multisigOrderManager;</span>
 <span id="L25"><span class="lineNum">      25</span>                 :             :         manager = msg.sender;</span>
 <span id="L26"><span class="lineNum">      26</span>                 :             : </span>
 <span id="L27"><span class="lineNum">      27</span>                 :             :         IERC20(reward).approve(address(_settlement), type(uint256).max);</span>

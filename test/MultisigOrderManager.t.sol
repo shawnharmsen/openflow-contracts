@@ -5,10 +5,10 @@ import "./support/Storage.sol";
 
 contract MultisigOrderManagerTest is Storage {
     address[] public signers;
-    MultisigOrderManager public orderManager;
+    Driver public orderManager;
 
     constructor() {
-        orderManager = new MultisigOrderManager();
+        orderManager = new Driver();
     }
 
     function testInvalidateOrder() external {}

@@ -8,7 +8,7 @@ import {Strategy} from "../support/Strategy.sol";
 import {MasterChef} from "../support/MasterChef.sol";
 import {Oracle} from "../support/Oracle.sol";
 import {IOpenFlowSwapper} from "../../src/interfaces/IOpenFlowSwapper.sol";
-import {MultisigOrderManager} from "../../src/MultisigOrderManager.sol";
+import {Driver} from "../../src/Driver.sol";
 import {OrderExecutor} from "../../src/executors/OrderExecutor.sol";
 import {UniswapV2Aggregator} from "../../src/solvers/UniswapV2Aggregator.sol";
 import {YearnVaultInteractions, IVaultRegistry, IVault} from "../support/YearnVaultInteractions.sol";
@@ -27,7 +27,7 @@ contract Storage is Test {
     ExecutionProxy public executionProxy;
     OrderExecutor public executor;
     UniswapV2Aggregator public uniswapAggregator;
-    MultisigOrderManager public multisigOrderManager;
+    Driver public driver;
     address public vaultInteractions;
     uint256 internal constant _USER_A_PRIVATE_KEY = 0xB0B;
     uint256 internal constant _USER_B_PRIVATE_KEY = 0xA11CE;
@@ -37,15 +37,15 @@ contract Storage is Test {
     constructor() {
         masterChef = new MasterChef();
         oracle = new Oracle();
-        multisigOrderManager = new MultisigOrderManager();
-        settlement = new Settlement(address(multisigOrderManager));
+        driver = new Driver();
+        settlement = new Settlement(address(driver));
         executionProxy = ExecutionProxy(settlement.executionProxy());
-        multisigOrderManager.initialize(address(settlement));
+        driver.initialize(address(settlement));
         address[] memory signers = new address[](2);
         signers[0] = userA;
         signers[1] = userB;
-        multisigOrderManager.setSigners(signers, true);
-        multisigOrderManager.setSignatureThreshold(2);
+        driver.setSigners(signers, true);
+        driver.setSignatureThreshold(2);
         vaultInteractions = address(
             new YearnVaultInteractions(address(settlement))
         );
@@ -55,7 +55,7 @@ contract Storage is Test {
             dai,
             usdc,
             address(masterChef),
-            address(multisigOrderManager),
+            address(driver),
             address(settlement)
         );
         IOpenFlowSwapper(address(strategy)).setOracle(address(oracle));

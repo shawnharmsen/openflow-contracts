@@ -10,7 +10,7 @@ import {IStrategy} from "../../test/interfaces/IStrategy.sol";
 /// @title OpenFlow Swapper
 /// @notice Implements an example of on-chain swap order submission for OpenFlow multisig authenticated auctions
 /// @dev Responsible submitting swap orders. Supports EIP-1271 signature validation by delegating signature
-/// validation requests to MultisigOrderManager
+/// validation requests to Driver
 contract OpenFlowSwapper {
     /// @dev Magic value per EIP-1271 to be returned upon successful validation
     bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;
