@@ -41,6 +41,7 @@ contract SettlementTest is Storage {
             recipient: address(userA),
             deadline: uint32(block.timestamp),
             scheme: ISettlement.Scheme.EthSign,
+            driver: address(0),
             hooks: hooks
         });
 
@@ -80,6 +81,7 @@ contract SettlementTest is Storage {
         );
         ISettlement.Order memory order = ISettlement.Order({
             signature: signature,
+            multisigSignature: hex"",
             data: executorData,
             payload: payload
         });

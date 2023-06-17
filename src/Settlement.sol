@@ -3,7 +3,9 @@ pragma solidity 0.8.19;
 import "./interfaces/ISettlement.sol";
 import "./interfaces/IERC20.sol";
 import {Signing} from "./Signing.sol";
+import {OrderManager} from "./OrderManager.sol";
 import {OrderLib} from "./lib/Order.sol";
+import {IMultisigOrderManager} from "./interfaces/IMultisigOrderManager.sol";
 
 /// @author OpenFlow
 /// @title Settlement
@@ -16,7 +18,7 @@ import {OrderLib} from "./lib/Order.sol";
 /// - Order `fromToken` is transferred from the order signer to the order executor (order executor is solver configurable)
 /// - Order executor executes the swap in whatever way they see fit
 /// - At the end of the swap the user's `toToken` delta must be greater than or equal to the agreed upon `toAmount`
-contract Settlement is Signing {
+contract Settlement is OrderManager, Signing {
     /// @dev Use OrderLib for order UID encoding/decoding.
     using OrderLib for bytes;
 
@@ -55,7 +57,7 @@ contract Settlement is Signing {
     );
 
     /// @dev Set domainSeparator and executionProxy.
-    constructor(address _orderManager) Signing(_orderManager) {
+    constructor(address _defaultDriver) Signing(_defaultDriver) {
         domainSeparator = keccak256(
             abi.encode(
                 _DOMAIN_TYPE_HASH,
@@ -174,6 +176,24 @@ contract Settlement is Signing {
             digest,
             order.signature
         );
+
+        /// @dev Regardless of authentication type any user/contract can decide
+        /// if they would like to delegate quote selection to the decentralized
+        /// driver, or if they wish to select the best quote themselves. If
+        /// requiresMultisig is set to false anyone who has the signature can
+        /// execute the order. This means EOA signers must give their signature
+        /// only to solvers who they wish to allow the execute their order (solvers)
+        /// who provide the best quotes. If this flag is set to false then all
+        /// smart contract orders (EIP-1271 or presign) will be treated as limit
+        /// orders, where anyone who can meet the minimum amount out the swap requires
+        /// can execute the order.
+        address driver = order.payload.driver;
+        if (driver != address(0)) {
+            IMultisigOrderManager(driver).checkNSignatures(
+                digest,
+                order.multisigSignature
+            );
+        }
         orderUid = new bytes(OrderLib._UID_LENGTH);
         orderUid.packOrderUidParams(digest, signatory, order.payload.deadline);
         require(filledAmount[orderUid] == 0, "Order already filled");

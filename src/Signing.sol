@@ -21,12 +21,11 @@ contract Signing {
     /// Signature format: {32-bytes owner_1 (r)}{32-bytes signature_offset_1 (s)}{1-byte v_1 (0)}{signature_length_1}{signature_bytes_1}
     uint256 private constant _ECDSA_SIGNATURE_LENGTH = 65;
     bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;
+    address public immutable defaultDriver;
 
-    /// @dev Order manager manages the order signature logic for multisig authenticated swap auctions.
-    address public immutable orderManager;
-
-    constructor(address _orderManager) {
-        orderManager = _orderManager;
+    /// TODO: comments
+    constructor(address _defaultDriver) {
+        defaultDriver = _defaultDriver;
     }
 
     /// @notice Primary signature check endpoint.
@@ -121,7 +120,7 @@ contract Signing {
             // owner = address(encodedSignature[0:20])
             owner := shr(96, mload(encodedSignature))
         }
-        bool presigned = IMultisigOrderManager(orderManager).digestApproved(
+        bool presigned = IMultisigOrderManager(address(this)).digestApproved(
             owner,
             orderDigest
         );
@@ -161,6 +160,7 @@ contract Signing {
     /// @param requiredSignatures Signature threshold. This is required since we are unable.
     /// to easily determine the number of signatures from the signature payload alone.
     function checkNSignatures(
+        address driver,
         bytes32 digest,
         bytes memory signatures,
         uint256 requiredSignatures
@@ -256,7 +256,7 @@ contract Signing {
                 "Invalid signature order or duplicate signature"
             );
             require(
-                IMultisigOrderManager(orderManager).signers(currentOwner),
+                IMultisigOrderManager(driver).signers(currentOwner),
                 "Signer is not approved"
             );
             lastOwner = currentOwner;

@@ -15,8 +15,9 @@ contract OpenFlowSwapper {
     /// @dev Magic value per EIP-1271 to be returned upon successful validation
     bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;
 
-    /// @dev Multisig order manager is responsible for signature validation and actual order submission
-    address _multisigOrderManager;
+    /// @dev TODO: comment
+    address _settlement;
+    address _driver;
 
     /// @dev Oracle responsible for determining minimum amount out for an order
     address _oracle;
@@ -34,11 +35,13 @@ contract OpenFlowSwapper {
     uint256 internal _maxAuctionDuration;
 
     constructor(
-        address multisigOrderManager,
+        address driver,
+        address settlement,
         address fromToken,
         address toToken
     ) {
-        _multisigOrderManager = multisigOrderManager;
+        _driver = driver;
+        _settlement = settlement;
         _fromToken = fromToken;
         _toToken = toToken;
     }
@@ -61,13 +64,9 @@ contract OpenFlowSwapper {
     function isValidSignature(
         bytes32 digest,
         bytes calldata signatures
-    ) external returns (bytes4) {
-        IMultisigOrderManager(_multisigOrderManager).checkNSignatures(
-            digest,
-            signatures
-        );
+    ) external view returns (bytes4) {
         require(
-            IMultisigOrderManager(_multisigOrderManager).digestApproved(
+            IMultisigOrderManager(_settlement).digestApproved(
                 address(this),
                 digest
             ),
@@ -106,7 +105,7 @@ contract OpenFlowSwapper {
         });
 
         // Swap
-        IMultisigOrderManager(_multisigOrderManager).submitOrder(
+        IMultisigOrderManager(_settlement).submitOrder(
             ISettlement.Payload({
                 fromToken: address(_fromToken),
                 toToken: address(_toToken),
@@ -116,6 +115,7 @@ contract OpenFlowSwapper {
                 recipient: address(this),
                 deadline: uint32(block.timestamp + _maxAuctionDuration),
                 scheme: ISettlement.Scheme.Eip1271,
+                driver: ISettlement(_settlement).defaultDriver(),
                 hooks: hooks
             })
         );

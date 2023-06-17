@@ -11,6 +11,7 @@ interface ISettlement {
 
     struct Order {
         bytes signature;
+        bytes multisigSignature;
         bytes data;
         Payload payload;
     }
@@ -23,6 +24,7 @@ interface ISettlement {
         address sender;
         address recipient;
         uint32 deadline;
+        address driver;
         Scheme scheme;
         Hooks hooks;
     }
@@ -39,6 +41,7 @@ interface ISettlement {
     }
 
     function checkNSignatures(
+        address driver,
         bytes32 digest,
         bytes memory signatures,
         uint256 requiredSignatures
@@ -55,6 +58,8 @@ interface ISettlement {
     ) external view returns (address signatory);
 
     function executionProxy() external view returns (address executionProxy);
+
+    function defaultDriver() external view returns (address driver);
 }
 
 interface ISolver {

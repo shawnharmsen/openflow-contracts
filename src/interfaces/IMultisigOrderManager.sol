@@ -4,7 +4,10 @@ pragma solidity 0.8.19;
 import {ISettlement} from "./ISettlement.sol";
 
 interface IMultisigOrderManager {
-    function checkNSignatures(bytes32 digest, bytes memory signature) external;
+    function checkNSignatures(
+        bytes32 digest,
+        bytes memory signature
+    ) external view;
 
     function digestApproved(
         address signatory,

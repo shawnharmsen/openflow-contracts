@@ -57,6 +57,7 @@ contract Eip712Test is Storage {
         ISettlement.Hooks memory hooks;
         ISettlement.Order memory order = ISettlement.Order({
             signature: hex"",
+            multisigSignature: hex"",
             data: executorData,
             payload: ISettlement.Payload({
                 fromToken: address(fromToken),
@@ -67,6 +68,7 @@ contract Eip712Test is Storage {
                 recipient: userA,
                 deadline: uint32(block.timestamp),
                 scheme: ISettlement.Scheme.Eip712,
+                driver: address(0),
                 hooks: hooks
             })
         });

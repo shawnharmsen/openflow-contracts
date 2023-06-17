@@ -8,20 +8,18 @@ contract Strategy is OpenFlowSwapper {
     address public masterChef;
     address public asset; // Underlying want token is DAI
     address public reward; // Reward is USDC
-    address public multisigOrderManager;
     address public manager;
 
     constructor(
         address _asset,
         address _reward,
         address _masterChef,
-        address _multisigOrderManager,
+        address _driver,
         address _settlement
-    ) OpenFlowSwapper(_multisigOrderManager, _reward, _asset) {
+    ) OpenFlowSwapper(_driver, _settlement, _reward, _asset) {
         asset = _asset;
         reward = _reward;
         masterChef = _masterChef;
-        multisigOrderManager = _multisigOrderManager;
         manager = msg.sender;
 
         IERC20(reward).approve(address(_settlement), type(uint256).max);

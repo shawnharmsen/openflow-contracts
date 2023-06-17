@@ -85,6 +85,7 @@ contract GnosisTest is GnosisHelper {
             recipient: address(safeA),
             deadline: uint32(block.timestamp),
             scheme: ISettlement.Scheme.Eip1271,
+            driver: address(0),
             hooks: hooks
         });
 
@@ -144,6 +145,7 @@ contract GnosisTest is GnosisHelper {
         );
         ISettlement.Order memory order = ISettlement.Order({
             signature: encodedSignature,
+            multisigSignature: hex"",
             data: executorData,
             payload: payload
         });

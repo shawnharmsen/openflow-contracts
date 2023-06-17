@@ -60,7 +60,8 @@ contract Eip1271Test is Storage {
         /// @dev Execute order.
         bytes memory encodedSignatures = abi.encodePacked(strategy, signatures);
         ISettlement.Order memory order = ISettlement.Order({
-            signature: encodedSignatures,
+            signature: abi.encodePacked(strategy),
+            multisigSignature: signatures,
             data: executorData,
             payload: decodedPayload
         });

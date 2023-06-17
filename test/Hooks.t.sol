@@ -61,6 +61,7 @@ contract HooksTest is Storage {
             recipient: vaultInteractions,
             deadline: uint32(block.timestamp),
             scheme: ISettlement.Scheme.Eip712,
+            driver: address(0),
             hooks: hooks
         });
 
@@ -90,6 +91,7 @@ contract HooksTest is Storage {
         // Build and sign order
         ISettlement.Order memory order = ISettlement.Order({
             signature: hex"",
+            multisigSignature: hex"",
             data: executorData,
             payload: payload
         });
@@ -164,6 +166,7 @@ contract HooksTest is Storage {
             recipient: userA,
             deadline: uint32(block.timestamp),
             scheme: ISettlement.Scheme.Eip712,
+            driver: address(0),
             hooks: hooks
         });
 
@@ -189,6 +192,7 @@ contract HooksTest is Storage {
         // Build order
         ISettlement.Order memory order = ISettlement.Order({
             signature: hex"",
+            multisigSignature: hex"",
             data: executorData,
             payload: payload
         });
@@ -240,6 +244,7 @@ contract HooksTest is Storage {
             recipient: vaultInteractions,
             deadline: uint32(block.timestamp),
             scheme: ISettlement.Scheme.Eip712,
+            driver: address(0),
             hooks: hooks
         });
 
@@ -269,6 +274,7 @@ contract HooksTest is Storage {
         // Build and sign order
         ISettlement.Order memory order = ISettlement.Order({
             signature: hex"",
+            multisigSignature: hex"",
             data: executorData,
             payload: payload
         });

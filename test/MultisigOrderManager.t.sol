@@ -41,11 +41,4 @@ contract MultisigOrderManagerTest is Storage {
         orderManager.setOwner(address(this));
         require(orderManager.owner() == address(this), "Invalid owner");
     }
-
-    function testInitialization() external {
-        orderManager.initialize(address(settlement));
-
-        vm.expectRevert("Already initialized");
-        orderManager.initialize(address(settlement));
-    }
 }

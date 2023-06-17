@@ -64,52 +64,6 @@ contract MultisigOrderManager {
         owner = msg.sender;
     }
 
-    /// @notice Submit an order.
-    /// @dev Given an order payload, build and approve the digest hash, and then emit an event
-    /// that indicates an auction is ready to begin.
-    /// @param payload The payload to sign.
-    /// @return orderUid Returns unique order UID.
-    function submitOrder(
-        ISettlement.Payload memory payload
-    ) external returns (bytes memory orderUid) {
-        bytes32 digest = ISettlement(settlement).buildDigest(payload);
-        uint256 sessionNonce = sessionNonceByAddress[msg.sender];
-        approvedHashes[msg.sender][sessionNonce][digest] = true;
-        orderUid = new bytes(OrderLib._UID_LENGTH);
-        orderUid.packOrderUidParams(digest, msg.sender, payload.deadline);
-        emit SubmitOrder(payload, orderUid);
-    }
-
-    /// @notice Invalidate an order.
-    /// @dev Only the user who initiated the order can invalidate the order.
-    /// @param orderUid The order UID to invalidate.
-    function invalidateOrder(bytes memory orderUid) external {
-        (bytes32 digest, address ownerOwner, ) = orderUid
-            .extractOrderUidParams();
-        uint256 sessionNonce = sessionNonceByAddress[msg.sender];
-        approvedHashes[msg.sender][sessionNonce][digest] = false;
-        require(msg.sender == ownerOwner, "Only owner of order can invalidate");
-        emit InvalidateOrder(orderUid);
-    }
-
-    /// @notice Invalidate all orders for a user.
-    /// @dev Accomplished by incrementing the user's session nonce.
-    function invalidateAllOrders() external {
-        sessionNonceByAddress[msg.sender]++;
-        emit InvalidateAllOrders(msg.sender);
-    }
-
-    /// @notice Determine whether or not a user has approved an order digest for the current session.
-    /// @param digest The order digest to check.
-    /// @return approved True if approved, false if not.
-    function digestApproved(
-        address signatory,
-        bytes32 digest
-    ) external view returns (bool approved) {
-        uint256 sessionNonce = sessionNonceByAddress[signatory];
-        approved = approvedHashes[signatory][sessionNonce][digest];
-    }
-
     /// @notice Given a digest and encoded signatures, determine if a digest is approved by a
     /// sufficient number of multisig signers.
     /// @dev Reverts if not approved.
@@ -118,6 +72,7 @@ contract MultisigOrderManager {
         bytes memory signatures
     ) external view {
         ISettlement(settlement).checkNSignatures(
+            address(this),
             digest,
             signatures,
             signatureThreshold
