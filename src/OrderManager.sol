@@ -6,7 +6,7 @@ import {ISettlement} from "../src/interfaces/ISettlement.sol";
 import {OrderLib} from "../src/lib/Order.sol";
 
 /// @author OpenFlow
-/// @title Multisig Order Manager
+/// @title Multisig Driver
 /// @notice This contract manages the signing logic for OpenFlow multisig authenticated swap auctions.
 contract OrderManager {
     /// @dev OrderLib is used to generate and decode unique UIDs per order.

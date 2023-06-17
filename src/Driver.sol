@@ -6,7 +6,7 @@ import {ISettlement} from "../src/interfaces/ISettlement.sol";
 import {OrderLib} from "../src/lib/Order.sol";
 
 /// @author OpenFlow
-/// @title Multisig Order Manager
+/// @title Multisig Driver
 /// @notice This contract manages the signing logic for OpenFlow multisig authenticated swap auctions.
 contract Driver {
     /// @dev OrderLib is used to generate and decode unique UIDs per order.
@@ -29,30 +29,6 @@ contract Driver {
 
     /// @dev Signers is mapping of authenticated multisig signers.
     mapping(address => bool) public signers;
-
-    /// @dev approvedHashes[owner][nonce][hash]
-    /// Allows a user to validate and invalidate an order.
-    mapping(address => mapping(uint256 => mapping(bytes32 => bool)))
-        public approvedHashes;
-
-    /// @dev All orders for a user can be invalidated by incrementing the user's session nonce.
-    mapping(address => uint256) public sessionNonceByAddress;
-
-    /// @dev Event emitted when an order is submitted. This event is used off-chain to detect new orders.
-    /// When a SubmitOrder event is fired, multisig auction authenticators (signers) will request new quotes from all
-    /// solvers, and when the auction period is up, multisig will sign the best quote. The signature will be relayed to
-    /// the solver who submitted the quote. When the solver has enough multisig signatures, the solver can construct
-    /// the multisig signature (see: https://docs.safe.global/learn/safe-core/safe-core-protocol/signatures) and
-    /// execute the order.
-    event SubmitOrder(ISettlement.Payload payload, bytes orderUid);
-
-    /// @dev Event emitted when an order is invalidated. Only users who submit an order can invalidate the order.
-    /// When an order is invalidated it is no longer able to be executed.
-    event InvalidateOrder(bytes orderUid);
-
-    /// @dev Event emitted to indicate a user has invalidated all of their orders. This is accomplished by the
-    /// user incrementing their session nonce.
-    event InvalidateAllOrders(address account);
 
     /// @dev Initialize owner.
     /// @dev Owner must be a trusted multisig.

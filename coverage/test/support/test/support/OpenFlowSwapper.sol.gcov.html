@@ -86,7 +86,7 @@
 <span id="L15"><span class="lineNum">      15</span>                 :             :     /// @dev Magic value per EIP-1271 to be returned upon successful validation</span>
 <span id="L16"><span class="lineNum">      16</span>                 :             :     bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;</span>
 <span id="L17"><span class="lineNum">      17</span>                 :             : </span>
-<span id="L18"><span class="lineNum">      18</span>                 :             :     /// @dev Multisig order manager is responsible for signature validation and actual order submission</span>
+<span id="L18"><span class="lineNum">      18</span>                 :             :     /// @dev Multisig Driver is responsible for signature validation and actual order submission</span>
 <span id="L19"><span class="lineNum">      19</span>                 :             :     address _multisigOrderManager;</span>
 <span id="L20"><span class="lineNum">      20</span>                 :             : </span>
 <span id="L21"><span class="lineNum">      21</span>                 :             :     /// @dev Oracle responsible for determining minimum amount out for an order</span>
@@ -124,7 +124,7 @@
 <span id="L53"><span class="lineNum">      53</span>                 :             :     }</span>
 <span id="L54"><span class="lineNum">      54</span>                 :             : </span>
 <span id="L55"><span class="lineNum">      55</span>                 :             :     /// @notice Determine whether or not a signature is valid</span>
-<span id="L56"><span class="lineNum">      56</span>                 :             :     /// @dev In this case we leverage Multisig Order Manager to ensure two things:</span>
+<span id="L56"><span class="lineNum">      56</span>                 :             :     /// @dev In this case we leverage Multisig Driver to ensure two things:</span>
 <span id="L57"><span class="lineNum">      57</span>                 :             :     /// - 1. The digest is approved (and not invalidated)</span>
 <span id="L58"><span class="lineNum">      58</span>                 :             :     /// - 2. The swap has been approved by multisig (to ensure best quote was selected)</span>
 <span id="L59"><span class="lineNum">      59</span>                 :             :     /// @param digest The digest of the order payload</span>

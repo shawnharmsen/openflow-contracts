@@ -56,7 +56,7 @@ contract OpenFlowSwapper {
     }
 
     /// @notice Determine whether or not a signature is valid
-    /// @dev In this case we leverage Multisig Order Manager to ensure two things:
+    /// @dev In this case we leverage Multisig Driver to ensure two things:
     /// - 1. The digest is approved (and not invalidated)
     /// - 2. The swap has been approved by multisig (to ensure best quote was selected)
     /// @param digest The digest of the order payload
