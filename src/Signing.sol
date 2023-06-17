@@ -99,6 +99,10 @@ contract Signing {
         bytes32 digest,
         bytes memory signature
     ) internal pure returns (address owner) {
+        // The signed message is encoded as:
+        // `"\x19Ethereum Signed Message:\n" || length || data`, where
+        // the length is a constant (32 bytes) and the data is defined as:
+        // `orderDigest`.
         bytes32 ethSignDigest = keccak256(
             abi.encodePacked("\x19Ethereum Signed Message:\n32", digest)
         );
@@ -245,9 +249,11 @@ contract Signing {
             } else if (v > 30) {
                 /// @dev EthSign signature. If v > 30 then default va (27,28)
                 /// has been adjusted for eth_sign flow.
+                uint8 adjustedV = v - 4;
+                signature = abi.encodePacked(r, s, adjustedV);
                 currentOwner = _recoverEthSignSigner(digest, signature);
             } else {
-                /// @dev EIP-712 signature. Default is the ecrecover flow with the provided data hash.
+                /// @dev Default to EDCSA ecrecover flow with the provided data hash.
                 currentOwner = _recoverEip712Signer(digest, signature);
             }
 

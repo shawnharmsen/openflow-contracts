@@ -42,21 +42,11 @@ contract EthSignTest is Storage {
             hooks: hooks
         });
 
-        bytes memory signature;
-        {
-            /// @dev Build digest. Order digest is what will be signed.
-            bytes32 digest = settlement.buildDigest(payload);
+        /// @dev Build digest. Order digest is what will be signed.
+        bytes32 digest = settlement.buildDigest(payload);
 
-            /// @dev Sign and execute order.
-            bytes32 ethSignDigest = keccak256(
-                abi.encodePacked("\x19Ethereum Signed Message:\n32", digest)
-            );
-            (uint8 v, bytes32 r, bytes32 s) = vm.sign(
-                _USER_A_PRIVATE_KEY,
-                ethSignDigest
-            );
-            signature = abi.encodePacked(r, s, v);
-        }
+        /// @dev Sign and execute order.
+        bytes memory signature = _ethSign(_USER_A_PRIVATE_KEY, digest, 0);
 
         /// @notice Execute order
         bytes memory executorData = abi.encode(

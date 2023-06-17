@@ -86,4 +86,17 @@ contract Storage is Test {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
         signature = abi.encodePacked(r, s, v);
     }
+
+    function _ethSign(
+        uint256 privateKey,
+        bytes32 digest,
+        uint8 vOffset
+    ) internal pure returns (bytes memory signature) {
+        bytes32 ethSignDigest = keccak256(
+            abi.encodePacked("\x19Ethereum Signed Message:\n32", digest)
+        );
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, ethSignDigest);
+        v += vOffset;
+        signature = abi.encodePacked(r, s, v);
+    }
 }

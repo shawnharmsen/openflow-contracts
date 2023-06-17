@@ -31,13 +31,13 @@
             <td class="headerValue">lcov.info</td>
             <td></td>
             <td class="headerItem">Lines:</td>
-            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
-            <td class="headerCovTableEntry">33</td>
-            <td class="headerCovTableEntry">33</td>
+            <td class="headerCovTableEntryHi">97.2&nbsp;%</td>
+            <td class="headerCovTableEntry">36</td>
+            <td class="headerCovTableEntry">35</td>
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2023-06-17 11:58:11</td>
+            <td class="headerValue">2023-06-17 17:33:23</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -49,8 +49,8 @@
             <td></td>
             <td></td>
             <td class="headerItem">Branches:</td>
-            <td class="headerCovTableEntryHi">93.8&nbsp;%</td>
-            <td class="headerCovTableEntry">16</td>
+            <td class="headerCovTableEntryMed">83.3&nbsp;%</td>
+            <td class="headerCovTableEntry">18</td>
             <td class="headerCovTableEntry">15</td>
           </tr>
                   <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
@@ -74,235 +74,259 @@
 <span id="L3"><span class="lineNum">       3</span>                 :             : import &quot;./interfaces/ISettlement.sol&quot;;</span>
 <span id="L4"><span class="lineNum">       4</span>                 :             : import &quot;./interfaces/IERC20.sol&quot;;</span>
 <span id="L5"><span class="lineNum">       5</span>                 :             : import {Signing} from &quot;./Signing.sol&quot;;</span>
-<span id="L6"><span class="lineNum">       6</span>                 :             : import {OrderLib} from &quot;./lib/Order.sol&quot;;</span>
-<span id="L7"><span class="lineNum">       7</span>                 :             : </span>
-<span id="L8"><span class="lineNum">       8</span>                 :             : /// @author OpenFlow</span>
-<span id="L9"><span class="lineNum">       9</span>                 :             : /// @title Settlement</span>
-<span id="L10"><span class="lineNum">      10</span>                 :             : /// @dev Settlement is the primary contract for swap execution. The concept is simple.</span>
-<span id="L11"><span class="lineNum">      11</span>                 :             : /// - User approves Settlement to spend fromToken</span>
-<span id="L12"><span class="lineNum">      12</span>                 :             : /// - User submits a request for quotes (RFQ) and solvers submit quotes</span>
-<span id="L13"><span class="lineNum">      13</span>                 :             : /// - User selects the best quote and user creates a signed order for the swap based on the quote</span>
-<span id="L14"><span class="lineNum">      14</span>                 :             : /// - Once an order is signed anyone with the signature and payload can execute the order</span>
-<span id="L15"><span class="lineNum">      15</span>                 :             : /// - The solver whose quote was selected receives the signature and initiates a signed order execution</span>
-<span id="L16"><span class="lineNum">      16</span>                 :             : /// - Order `fromToken` is transferred from the order signer to the order executor (order executor is solver configurable)</span>
-<span id="L17"><span class="lineNum">      17</span>                 :             : /// - Order executor executes the swap in whatever way they see fit</span>
-<span id="L18"><span class="lineNum">      18</span>                 :             : /// - At the end of the swap the user's `toToken` delta must be greater than or equal to the agreed upon `toAmount`</span>
-<span id="L19"><span class="lineNum">      19</span>                 :             : contract Settlement is Signing {</span>
-<span id="L20"><span class="lineNum">      20</span>                 :             :     /// @dev Use OrderLib for order UID encoding/decoding.</span>
-<span id="L21"><span class="lineNum">      21</span>                 :             :     using OrderLib for bytes;</span>
-<span id="L22"><span class="lineNum">      22</span>                 :             : </span>
-<span id="L23"><span class="lineNum">      23</span>                 :             :     /// @dev Prepare constants for building domainSeparator.</span>
-<span id="L24"><span class="lineNum">      24</span>                 :             :     bytes32 private constant _DOMAIN_NAME = keccak256(&quot;OpenFlow&quot;);</span>
-<span id="L25"><span class="lineNum">      25</span>                 :             :     bytes32 private constant _DOMAIN_VERSION = keccak256(&quot;v0.0.1&quot;);</span>
-<span id="L26"><span class="lineNum">      26</span>                 :             :     bytes32 private constant _DOMAIN_TYPE_HASH =</span>
-<span id="L27"><span class="lineNum">      27</span>                 :             :         keccak256(</span>
-<span id="L28"><span class="lineNum">      28</span>                 :             :             &quot;EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)&quot;</span>
-<span id="L29"><span class="lineNum">      29</span>                 :             :         );</span>
-<span id="L30"><span class="lineNum">      30</span>                 :             :     bytes32 public constant TYPE_HASH =</span>
-<span id="L31"><span class="lineNum">      31</span>                 :             :         keccak256(</span>
-<span id="L32"><span class="lineNum">      32</span>                 :             :             &quot;Payload(address fromToken,address toToken,uint256 fromAmount,uint256 toAmount,address sender,address recipient,uint256 deadline,Scheme scheme,Hooks hooks)&quot;</span>
-<span id="L33"><span class="lineNum">      33</span>                 :             :         );</span>
-<span id="L34"><span class="lineNum">      34</span>                 :             :     bytes32 public immutable domainSeparator;</span>
-<span id="L35"><span class="lineNum">      35</span>                 :             : </span>
-<span id="L36"><span class="lineNum">      36</span>                 :             :     /// @dev Map each user order by UID to the amount that has been filled.</span>
-<span id="L37"><span class="lineNum">      37</span>                 :             :     mapping(bytes =&gt; uint256) public filledAmount;</span>
-<span id="L38"><span class="lineNum">      38</span>                 :             : </span>
-<span id="L39"><span class="lineNum">      39</span>                 :             :     /// @dev Contracts are allowed to submit pre-swap and post-swap hooks along with their order.</span>
-<span id="L40"><span class="lineNum">      40</span>                 :             :     /// For security purposes all hooks are executed via a simple execution proxy to disallow sending</span>
-<span id="L41"><span class="lineNum">      41</span>                 :             :     /// arbitrary calls directly from the context of Settlement. This is done because Settlement is the</span>
-<span id="L42"><span class="lineNum">      42</span>                 :             :     /// primary contract upon which token allowances will be set.</span>
-<span id="L43"><span class="lineNum">      43</span>                 :             :     ExecutionProxy public executionProxy;</span>
-<span id="L44"><span class="lineNum">      44</span>                 :             : </span>
-<span id="L45"><span class="lineNum">      45</span>                 :             :     /// @dev When an order has been executed successfully emit an event.</span>
-<span id="L46"><span class="lineNum">      46</span>                 :             :     event OrderExecuted(</span>
-<span id="L47"><span class="lineNum">      47</span>                 :             :         address solver,</span>
-<span id="L48"><span class="lineNum">      48</span>                 :             :         address executor,</span>
-<span id="L49"><span class="lineNum">      49</span>                 :             :         address sender,</span>
-<span id="L50"><span class="lineNum">      50</span>                 :             :         address recipient,</span>
-<span id="L51"><span class="lineNum">      51</span>                 :             :         address fromToken,</span>
-<span id="L52"><span class="lineNum">      52</span>                 :             :         address toToken,</span>
-<span id="L53"><span class="lineNum">      53</span>                 :             :         uint256 fromAmount,</span>
-<span id="L54"><span class="lineNum">      54</span>                 :             :         uint256 toAmount</span>
-<span id="L55"><span class="lineNum">      55</span>                 :             :     );</span>
-<span id="L56"><span class="lineNum">      56</span>                 :             : </span>
-<span id="L57"><span class="lineNum">      57</span>                 :             :     /// @dev Set domainSeparator and executionProxy.</span>
-<span id="L58"><span class="lineNum">      58</span>                 :             :     constructor(address _orderManager) Signing(_orderManager) {</span>
-<span id="L59"><span class="lineNum">      59</span>                 :             :         domainSeparator = keccak256(</span>
-<span id="L60"><span class="lineNum">      60</span>                 :             :             abi.encode(</span>
-<span id="L61"><span class="lineNum">      61</span>                 :             :                 _DOMAIN_TYPE_HASH,</span>
-<span id="L62"><span class="lineNum">      62</span>                 :             :                 _DOMAIN_NAME,</span>
-<span id="L63"><span class="lineNum">      63</span>                 :             :                 _DOMAIN_VERSION,</span>
-<span id="L64"><span class="lineNum">      64</span>                 :             :                 block.chainid,</span>
-<span id="L65"><span class="lineNum">      65</span>                 :             :                 address(this)</span>
-<span id="L66"><span class="lineNum">      66</span>                 :             :             )</span>
-<span id="L67"><span class="lineNum">      67</span>                 :             :         );</span>
-<span id="L68"><span class="lineNum">      68</span>                 :             :         executionProxy = new ExecutionProxy();</span>
-<span id="L69"><span class="lineNum">      69</span>                 :             :     }</span>
-<span id="L70"><span class="lineNum">      70</span>                 :             : </span>
-<span id="L71"><span class="lineNum">      71</span>                 :             :     /// @notice Primary method for order execution.</span>
-<span id="L72"><span class="lineNum">      72</span>                 :             :     /// @dev TODO: Analyze whether or not this needs to be non-reentrant</span>
-<span id="L73"><span class="lineNum">      73</span>                 :             :     /// @param order The order to execute.</span>
-<span id="L74"><span class="lineNum">      74</span>                 :<span class="tlaGNC tlaBgGNC">          14 :     function executeOrder(ISettlement.Order calldata order) public {</span></span>
-<span id="L75"><span class="lineNum">      75</span>                 :<span class="tlaGNC">          14 :         ISettlement.Payload memory payload = order.payload;</span></span>
-<span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC">          14 :         address signatory = payload.sender;</span></span>
-<span id="L77"><span class="lineNum">      77</span>                 :             : </span>
-<span id="L78"><span class="lineNum">      78</span>                 :             :         /// @notice Step 1. Verify the integrity of the order.</span>
-<span id="L79"><span class="lineNum">      79</span>                 :             :         /// @dev Verifies that payload.sender signed the order.</span>
-<span id="L80"><span class="lineNum">      80</span>                 :             :         /// @dev Only the order payload is signed.</span>
-<span id="L81"><span class="lineNum">      81</span>                 :             :         /// @dev Once an order is signed anyone who has the signature can fulfil the order.</span>
-<span id="L82"><span class="lineNum">      82</span>                 :             :         /// @dev In the case of smart contracts sender must implement EIP-1271 isVerified method.</span>
-<span id="L83"><span class="lineNum">      83</span>                 :<span class="tlaGNC">          14 :         bytes memory orderUid = _verify(order);</span></span>
-<span id="L84"><span class="lineNum">      84</span>                 :             : </span>
-<span id="L85"><span class="lineNum">      85</span>                 :             :         /// @notice Step 2. Execute optional contract pre-swap hooks.</span>
-<span id="L86"><span class="lineNum">      86</span>                 :<span class="tlaGNC">          11 :         _execute(payload.sender, order.payload.hooks.preHooks);</span></span>
-<span id="L87"><span class="lineNum">      87</span>                 :             : </span>
-<span id="L88"><span class="lineNum">      88</span>                 :             :         /// @notice Step 3. Optimistically transfer funds from payload.sender to msg.sender (order executor).</span>
-<span id="L89"><span class="lineNum">      89</span>                 :             :         /// @dev Payload.sender must approve settlement.</span>
-<span id="L90"><span class="lineNum">      90</span>                 :             :         /// @dev If settlement already has `fromAmount` of `inputToken` send balance from Settlement.</span>
-<span id="L91"><span class="lineNum">      91</span>                 :             :         /// Otherwise send balance from payload.sender. The reason we do this is because the user may specify</span>
-<span id="L92"><span class="lineNum">      92</span>                 :             :         /// pre-swap hooks such as withdrawing from a vault (and sending tokens to Settlement) before executing the swap.</span>
-<span id="L93"><span class="lineNum">      93</span>                 :<span class="tlaGNC">          11 :         uint256 inputTokenBalanceSettlement = IERC20(payload.fromToken)</span></span>
-<span id="L94"><span class="lineNum">      94</span>                 :             :             .balanceOf(address(this));</span>
-<span id="L95"><span class="lineNum">      95</span>                 :             : </span>
-<span id="L96"><span class="lineNum">      96</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">          11 :         if (inputTokenBalanceSettlement &gt;= payload.fromAmount) {</span></span>
-<span id="L97"><span class="lineNum">      97</span>                 :<span class="tlaGNC">           1 :             IERC20(payload.fromToken).transfer(msg.sender, payload.fromAmount);</span></span>
-<span id="L98"><span class="lineNum">      98</span>                 :             :         } else {</span>
-<span id="L99"><span class="lineNum">      99</span>                 :<span class="tlaGNC">          10 :             IERC20(payload.fromToken).transferFrom(</span></span>
-<span id="L100"><span class="lineNum">     100</span>                 :             :                 signatory,</span>
-<span id="L101"><span class="lineNum">     101</span>                 :             :                 msg.sender,</span>
-<span id="L102"><span class="lineNum">     102</span>                 :             :                 payload.fromAmount</span>
-<span id="L103"><span class="lineNum">     103</span>                 :             :             );</span>
-<span id="L104"><span class="lineNum">     104</span>                 :             :         }</span>
-<span id="L105"><span class="lineNum">     105</span>                 :             : </span>
-<span id="L106"><span class="lineNum">     106</span>                 :             :         /// @notice Step 4. Order executor executes the swap and is required to send funds to payload.recipient.</span>
-<span id="L107"><span class="lineNum">     107</span>                 :             :         /// @dev Order executors can be completely custom, or the generic order executor can be used.</span>
-<span id="L108"><span class="lineNum">     108</span>                 :             :         /// @dev Solver configurable metadata about the order is sent to the order executor hook.</span>
-<span id="L109"><span class="lineNum">     109</span>                 :             :         /// @dev Settlement does not care how the solver executes the order, all Settlement cares about is that</span>
-<span id="L110"><span class="lineNum">     110</span>                 :             :         /// the user receives the minimum amount of tokens the signer agreed to.</span>
-<span id="L111"><span class="lineNum">     111</span>                 :             :         /// @dev Record output token balance before so we can ensure recipient</span>
-<span id="L112"><span class="lineNum">     112</span>                 :             :         /// received at least the agreed upon number of output tokens.</span>
-<span id="L113"><span class="lineNum">     113</span>                 :<span class="tlaGNC">          11 :         uint256 outputTokenBalanceBefore = IERC20(payload.toToken).balanceOf(</span></span>
-<span id="L114"><span class="lineNum">     114</span>                 :             :             payload.recipient</span>
-<span id="L115"><span class="lineNum">     115</span>                 :             :         );</span>
-<span id="L116"><span class="lineNum">     116</span>                 :<span class="tlaGNC">          11 :         ISolver(msg.sender).hook(order.data);</span></span>
-<span id="L117"><span class="lineNum">     117</span>                 :             : </span>
-<span id="L118"><span class="lineNum">     118</span>                 :             :         /// @notice Step 5. Make sure payload.recipient receives the agreed upon amount of tokens.</span>
-<span id="L119"><span class="lineNum">     119</span>                 :<span class="tlaGNC">          10 :         uint256 outputTokenBalanceAfter = IERC20(payload.toToken).balanceOf(</span></span>
-<span id="L120"><span class="lineNum">     120</span>                 :             :             payload.recipient</span>
-<span id="L121"><span class="lineNum">     121</span>                 :             :         );</span>
-<span id="L122"><span class="lineNum">     122</span>                 :<span class="tlaGNC">          10 :         uint256 balanceDelta = outputTokenBalanceAfter -</span></span>
-<span id="L123"><span class="lineNum">     123</span>                 :             :             outputTokenBalanceBefore;</span>
-<span id="L124"><span class="lineNum">     124</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 9 times"> + </span>]:<span class="tlaGNC">          10 :         require(balanceDelta &gt;= payload.toAmount, &quot;Order not filled&quot;);</span></span>
-<span id="L125"><span class="lineNum">     125</span>                 :<span class="tlaGNC">           9 :         filledAmount[orderUid] = balanceDelta;</span></span>
-<span id="L126"><span class="lineNum">     126</span>                 :             : </span>
-<span id="L127"><span class="lineNum">     127</span>                 :             :         /// @notice Step 6. Execute optional contract post-swap hooks.</span>
-<span id="L128"><span class="lineNum">     128</span>                 :             :         /// @dev These are signer authenticated post-swap hooks. These hooks</span>
-<span id="L129"><span class="lineNum">     129</span>                 :             :         /// happen after step 5 because the user may wish to perform an action</span>
-<span id="L130"><span class="lineNum">     130</span>                 :             :         /// (such as deposit into a vault or reinvest/compound) with the swapped funds.</span>
-<span id="L131"><span class="lineNum">     131</span>                 :<span class="tlaGNC">           9 :         _execute(signatory, order.payload.hooks.postHooks);</span></span>
-<span id="L132"><span class="lineNum">     132</span>                 :             : </span>
-<span id="L133"><span class="lineNum">     133</span>                 :             :         /// @dev Emit OrderExecuted</span>
-<span id="L134"><span class="lineNum">     134</span>                 :<span class="tlaGNC">           8 :         emit OrderExecuted(</span></span>
-<span id="L135"><span class="lineNum">     135</span>                 :             :             tx.origin,</span>
-<span id="L136"><span class="lineNum">     136</span>                 :             :             msg.sender,</span>
-<span id="L137"><span class="lineNum">     137</span>                 :             :             signatory,</span>
-<span id="L138"><span class="lineNum">     138</span>                 :             :             payload.recipient,</span>
-<span id="L139"><span class="lineNum">     139</span>                 :             :             payload.fromToken,</span>
-<span id="L140"><span class="lineNum">     140</span>                 :             :             payload.toToken,</span>
-<span id="L141"><span class="lineNum">     141</span>                 :             :             payload.fromAmount,</span>
-<span id="L142"><span class="lineNum">     142</span>                 :             :             balanceDelta</span>
-<span id="L143"><span class="lineNum">     143</span>                 :             :         );</span>
-<span id="L144"><span class="lineNum">     144</span>                 :             :     }</span>
-<span id="L145"><span class="lineNum">     145</span>                 :             : </span>
-<span id="L146"><span class="lineNum">     146</span>                 :             :     /// @notice Pass hook execution interactions to execution proxy to be executed.</span>
-<span id="L147"><span class="lineNum">     147</span>                 :             :     /// @param interactions The interactions to execute.</span>
-<span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">          20 :     function _execute(</span></span>
-<span id="L149"><span class="lineNum">     149</span>                 :             :         address signatory,</span>
-<span id="L150"><span class="lineNum">     150</span>                 :             :         ISettlement.Interaction[] memory interactions</span>
-<span id="L151"><span class="lineNum">     151</span>                 :             :     ) internal {</span>
-<span id="L152"><span class="lineNum">     152</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">          20 :         if (interactions.length &gt; 0) {</span></span>
-<span id="L153"><span class="lineNum">     153</span>                 :<span class="tlaGNC">           4 :             executionProxy.execute(signatory, interactions);</span></span>
-<span id="L154"><span class="lineNum">     154</span>                 :             :         }</span>
-<span id="L155"><span class="lineNum">     155</span>                 :             :     }</span>
-<span id="L156"><span class="lineNum">     156</span>                 :             : </span>
-<span id="L157"><span class="lineNum">     157</span>                 :             :     /// @notice Order verification.</span>
-<span id="L158"><span class="lineNum">     158</span>                 :             :     /// @dev Verify the order.</span>
-<span id="L159"><span class="lineNum">     159</span>                 :             :     /// @dev Signature type is auto-detected based on signature's v.</span>
-<span id="L160"><span class="lineNum">     160</span>                 :             :     /// see: Gnosis Safe implementation.</span>
-<span id="L161"><span class="lineNum">     161</span>                 :             :     /// @dev Supports:</span>
-<span id="L162"><span class="lineNum">     162</span>                 :             :     /// - EIP-712 (Structured EOA signatures)</span>
-<span id="L163"><span class="lineNum">     163</span>                 :             :     /// - EIP-1271 (Contract based signatures)</span>
-<span id="L164"><span class="lineNum">     164</span>                 :             :     /// - EthSign (Non-structured EOA signatures)</span>
-<span id="L165"><span class="lineNum">     165</span>                 :             :     /// - Presign (Anyone can presign a digest)</span>
-<span id="L166"><span class="lineNum">     166</span>                 :             :     /// @param order Complete signed order.</span>
-<span id="L167"><span class="lineNum">     167</span>                 :             :     /// @return orderUid New order UID.</span>
-<span id="L168"><span class="lineNum">     168</span>                 :<span class="tlaGNC">          14 :     function _verify(</span></span>
-<span id="L169"><span class="lineNum">     169</span>                 :             :         ISettlement.Order calldata order</span>
-<span id="L170"><span class="lineNum">     170</span>                 :             :     ) internal view returns (bytes memory orderUid) {</span>
-<span id="L171"><span class="lineNum">     171</span>                 :<span class="tlaGNC">          14 :         bytes32 digest = buildDigest(order.payload);</span></span>
-<span id="L172"><span class="lineNum">     172</span>                 :<span class="tlaGNC">          14 :         address signatory = recoverSigner(</span></span>
-<span id="L173"><span class="lineNum">     173</span>                 :             :             order.payload.scheme,</span>
-<span id="L174"><span class="lineNum">     174</span>                 :             :             digest,</span>
-<span id="L175"><span class="lineNum">     175</span>                 :             :             order.signature</span>
-<span id="L176"><span class="lineNum">     176</span>                 :             :         );</span>
-<span id="L177"><span class="lineNum">     177</span>                 :<span class="tlaGNC">          14 :         orderUid = new bytes(OrderLib._UID_LENGTH);</span></span>
-<span id="L178"><span class="lineNum">     178</span>                 :<span class="tlaGNC">          14 :         orderUid.packOrderUidParams(digest, signatory, order.payload.deadline);</span></span>
-<span id="L179"><span class="lineNum">     179</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 13 times"> + </span>]:<span class="tlaGNC">          14 :         require(filledAmount[orderUid] == 0, &quot;Order already filled&quot;);</span></span>
-<span id="L180"><span class="lineNum">     180</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 12 times"> + </span>]:<span class="tlaGNC">          13 :         require(signatory == order.payload.sender, &quot;Invalid signer&quot;);</span></span>
-<span id="L181"><span class="lineNum">     181</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 11 times"> + </span>]:<span class="tlaGNC">          12 :         require(block.timestamp &lt;= order.payload.deadline, &quot;Deadline expired&quot;);</span></span>
-<span id="L182"><span class="lineNum">     182</span>                 :             :     }</span>
-<span id="L183"><span class="lineNum">     183</span>                 :             : </span>
-<span id="L184"><span class="lineNum">     184</span>                 :             :     /// @notice Building the digest hash.</span>
-<span id="L185"><span class="lineNum">     185</span>                 :             :     /// @dev Message digest hash consists of type hash, domain separator and struct hash.</span>
-<span id="L186"><span class="lineNum">     186</span>                 :<span class="tlaGNC">          10 :     function buildDigest(</span></span>
-<span id="L187"><span class="lineNum">     187</span>                 :             :         ISettlement.Payload memory _payload</span>
-<span id="L188"><span class="lineNum">     188</span>                 :             :     ) public view returns (bytes32 orderDigest) {</span>
-<span id="L189"><span class="lineNum">     189</span>                 :<span class="tlaGNC">          24 :         bytes32 typeHash = TYPE_HASH;</span></span>
-<span id="L190"><span class="lineNum">     190</span>                 :<span class="tlaGNC">          24 :         bytes32 structHash = keccak256(</span></span>
-<span id="L191"><span class="lineNum">     191</span>                 :             :             abi.encodePacked(typeHash, abi.encode(_payload))</span>
-<span id="L192"><span class="lineNum">     192</span>                 :             :         );</span>
-<span id="L193"><span class="lineNum">     193</span>                 :<span class="tlaGNC">          24 :         orderDigest = keccak256(</span></span>
-<span id="L194"><span class="lineNum">     194</span>                 :             :             abi.encodePacked(&quot;\x19\x01&quot;, domainSeparator, structHash)</span>
-<span id="L195"><span class="lineNum">     195</span>                 :             :         );</span>
-<span id="L196"><span class="lineNum">     196</span>                 :             :     }</span>
-<span id="L197"><span class="lineNum">     197</span>                 :             : }</span>
-<span id="L198"><span class="lineNum">     198</span>                 :             : </span>
-<span id="L199"><span class="lineNum">     199</span>                 :             : /// @title Execution proxy.</span>
-<span id="L200"><span class="lineNum">     200</span>                 :             : /// @notice Simple contract used to execute pre-swap and post-swap hooks.</span>
-<span id="L201"><span class="lineNum">     201</span>                 :             : /// @dev This is necessary because we cannot allow Settlement to execute arbitrary transaction</span>
-<span id="L202"><span class="lineNum">     202</span>                 :             : /// payloads directly since Settlement may have token approvals.</span>
-<span id="L203"><span class="lineNum">     203</span>                 :             : contract ExecutionProxy {</span>
-<span id="L204"><span class="lineNum">     204</span>                 :             :     address public immutable settlement;</span>
-<span id="L205"><span class="lineNum">     205</span>                 :             : </span>
-<span id="L206"><span class="lineNum">     206</span>                 :             :     /// @dev Set settlement address.</span>
-<span id="L207"><span class="lineNum">     207</span>                 :             :     constructor() {</span>
-<span id="L208"><span class="lineNum">     208</span>                 :             :         settlement = msg.sender;</span>
-<span id="L209"><span class="lineNum">     209</span>                 :             :     }</span>
-<span id="L210"><span class="lineNum">     210</span>                 :             : </span>
-<span id="L211"><span class="lineNum">     211</span>                 :             :     /// @notice Executed user defined interactions signed by sender.</span>
-<span id="L212"><span class="lineNum">     212</span>                 :             :     /// @dev Sender has been authenticated by signature recovery.</span>
-<span id="L213"><span class="lineNum">     213</span>                 :             :     /// @dev Something very important to consider here is that we are appending</span>
-<span id="L214"><span class="lineNum">     214</span>                 :             :     /// the authenticated sender (signer) to the end of each interaction calldata.</span>
-<span id="L215"><span class="lineNum">     215</span>                 :             :     /// The reason this is done is to allow the payload signatory to be</span>
-<span id="L216"><span class="lineNum">     216</span>                 :             :     /// authenticated in interaction endpoints. If your interaction endpoint</span>
-<span id="L217"><span class="lineNum">     217</span>                 :             :     /// needs to read signer it can do so by reading the last 20 bytes of calldata.</span>
-<span id="L218"><span class="lineNum">     218</span>                 :             :     /// What this means is that if your interaction endpoint explicitly relies on</span>
-<span id="L219"><span class="lineNum">     219</span>                 :             :     /// calldata length you will need to account for the additional 20 address bytes.</span>
-<span id="L220"><span class="lineNum">     220</span>                 :             :     /// For example: signatory := shr(96, calldataload(sub(calldatasize(), 20))).</span>
-<span id="L221"><span class="lineNum">     221</span>                 :<span class="tlaGNC">           5 :     function execute(</span></span>
-<span id="L222"><span class="lineNum">     222</span>                 :             :         address sender,</span>
-<span id="L223"><span class="lineNum">     223</span>                 :             :         ISettlement.Interaction[] memory interactions</span>
-<span id="L224"><span class="lineNum">     224</span>                 :             :     ) external {</span>
-<span id="L225"><span class="lineNum">     225</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 4 times"> + </span>]:<span class="tlaGNC">           5 :         require(msg.sender == settlement, &quot;Only settlement&quot;);</span></span>
-<span id="L226"><span class="lineNum">     226</span>                 :<span class="tlaGNC">           4 :         for (uint256 i; i &lt; interactions.length; i++) {</span></span>
-<span id="L227"><span class="lineNum">     227</span>                 :<span class="tlaGNC">           4 :             ISettlement.Interaction memory interaction = interactions[i];</span></span>
-<span id="L228"><span class="lineNum">     228</span>                 :<span class="tlaGNC">           4 :             (bool success, ) = interaction.target.call{</span></span>
-<span id="L229"><span class="lineNum">     229</span>                 :             :                 value: interaction.value</span>
-<span id="L230"><span class="lineNum">     230</span>                 :             :             }(abi.encodePacked(interaction.callData, sender));</span>
-<span id="L231"><span class="lineNum">     231</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">           4 :             require(success, &quot;Execution proxy interaction failed&quot;);</span></span>
-<span id="L232"><span class="lineNum">     232</span>                 :             :         }</span>
+<span id="L6"><span class="lineNum">       6</span>                 :             : import {OrderManager} from &quot;./OrderManager.sol&quot;;</span>
+<span id="L7"><span class="lineNum">       7</span>                 :             : import {OrderLib} from &quot;./lib/Order.sol&quot;;</span>
+<span id="L8"><span class="lineNum">       8</span>                 :             : import {IMultisigOrderManager} from &quot;./interfaces/IMultisigOrderManager.sol&quot;;</span>
+<span id="L9"><span class="lineNum">       9</span>                 :             : </span>
+<span id="L10"><span class="lineNum">      10</span>                 :             : /// @author OpenFlow</span>
+<span id="L11"><span class="lineNum">      11</span>                 :             : /// @title Settlement</span>
+<span id="L12"><span class="lineNum">      12</span>                 :             : /// @dev Settlement is the primary contract for swap execution. The concept is simple.</span>
+<span id="L13"><span class="lineNum">      13</span>                 :             : /// - User approves Settlement to spend fromToken</span>
+<span id="L14"><span class="lineNum">      14</span>                 :             : /// - User submits a request for quotes (RFQ) and solvers submit quotes</span>
+<span id="L15"><span class="lineNum">      15</span>                 :             : /// - User selects the best quote and user creates a signed order for the swap based on the quote</span>
+<span id="L16"><span class="lineNum">      16</span>                 :             : /// - Once an order is signed anyone with the signature and payload can execute the order</span>
+<span id="L17"><span class="lineNum">      17</span>                 :             : /// - The solver whose quote was selected receives the signature and initiates a signed order execution</span>
+<span id="L18"><span class="lineNum">      18</span>                 :             : /// - Order `fromToken` is transferred from the order signer to the order executor (order executor is solver configurable)</span>
+<span id="L19"><span class="lineNum">      19</span>                 :             : /// - Order executor executes the swap in whatever way they see fit</span>
+<span id="L20"><span class="lineNum">      20</span>                 :             : /// - At the end of the swap the user's `toToken` delta must be greater than or equal to the agreed upon `toAmount`</span>
+<span id="L21"><span class="lineNum">      21</span>                 :             : contract Settlement is OrderManager, Signing {</span>
+<span id="L22"><span class="lineNum">      22</span>                 :             :     /// @dev Use OrderLib for order UID encoding/decoding.</span>
+<span id="L23"><span class="lineNum">      23</span>                 :             :     using OrderLib for bytes;</span>
+<span id="L24"><span class="lineNum">      24</span>                 :             : </span>
+<span id="L25"><span class="lineNum">      25</span>                 :             :     /// @dev Prepare constants for building domainSeparator.</span>
+<span id="L26"><span class="lineNum">      26</span>                 :             :     bytes32 private constant _DOMAIN_NAME = keccak256(&quot;OpenFlow&quot;);</span>
+<span id="L27"><span class="lineNum">      27</span>                 :             :     bytes32 private constant _DOMAIN_VERSION = keccak256(&quot;v0.0.1&quot;);</span>
+<span id="L28"><span class="lineNum">      28</span>                 :             :     bytes32 private constant _DOMAIN_TYPE_HASH =</span>
+<span id="L29"><span class="lineNum">      29</span>                 :             :         keccak256(</span>
+<span id="L30"><span class="lineNum">      30</span>                 :             :             &quot;EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)&quot;</span>
+<span id="L31"><span class="lineNum">      31</span>                 :             :         );</span>
+<span id="L32"><span class="lineNum">      32</span>                 :             :     bytes32 public constant TYPE_HASH =</span>
+<span id="L33"><span class="lineNum">      33</span>                 :             :         keccak256(</span>
+<span id="L34"><span class="lineNum">      34</span>                 :             :             &quot;Payload(address fromToken,address toToken,uint256 fromAmount,uint256 toAmount,address sender,address recipient,uint256 deadline,Scheme scheme,Hooks hooks)&quot;</span>
+<span id="L35"><span class="lineNum">      35</span>                 :             :         );</span>
+<span id="L36"><span class="lineNum">      36</span>                 :             :     bytes32 public immutable domainSeparator;</span>
+<span id="L37"><span class="lineNum">      37</span>                 :             : </span>
+<span id="L38"><span class="lineNum">      38</span>                 :             :     /// @dev Map each user order by UID to the amount that has been filled.</span>
+<span id="L39"><span class="lineNum">      39</span>                 :             :     mapping(bytes =&gt; uint256) public filledAmount;</span>
+<span id="L40"><span class="lineNum">      40</span>                 :             : </span>
+<span id="L41"><span class="lineNum">      41</span>                 :             :     /// @dev Contracts are allowed to submit pre-swap and post-swap hooks along with their order.</span>
+<span id="L42"><span class="lineNum">      42</span>                 :             :     /// For security purposes all hooks are executed via a simple execution proxy to disallow sending</span>
+<span id="L43"><span class="lineNum">      43</span>                 :             :     /// arbitrary calls directly from the context of Settlement. This is done because Settlement is the</span>
+<span id="L44"><span class="lineNum">      44</span>                 :             :     /// primary contract upon which token allowances will be set.</span>
+<span id="L45"><span class="lineNum">      45</span>                 :             :     ExecutionProxy public executionProxy;</span>
+<span id="L46"><span class="lineNum">      46</span>                 :             : </span>
+<span id="L47"><span class="lineNum">      47</span>                 :             :     /// @dev When an order has been executed successfully emit an event.</span>
+<span id="L48"><span class="lineNum">      48</span>                 :             :     event OrderExecuted(</span>
+<span id="L49"><span class="lineNum">      49</span>                 :             :         address solver,</span>
+<span id="L50"><span class="lineNum">      50</span>                 :             :         address executor,</span>
+<span id="L51"><span class="lineNum">      51</span>                 :             :         address sender,</span>
+<span id="L52"><span class="lineNum">      52</span>                 :             :         address recipient,</span>
+<span id="L53"><span class="lineNum">      53</span>                 :             :         address fromToken,</span>
+<span id="L54"><span class="lineNum">      54</span>                 :             :         address toToken,</span>
+<span id="L55"><span class="lineNum">      55</span>                 :             :         uint256 fromAmount,</span>
+<span id="L56"><span class="lineNum">      56</span>                 :             :         uint256 toAmount</span>
+<span id="L57"><span class="lineNum">      57</span>                 :             :     );</span>
+<span id="L58"><span class="lineNum">      58</span>                 :             : </span>
+<span id="L59"><span class="lineNum">      59</span>                 :             :     /// @dev Set domainSeparator and executionProxy.</span>
+<span id="L60"><span class="lineNum">      60</span>                 :             :     constructor(address _defaultDriver) Signing(_defaultDriver) {</span>
+<span id="L61"><span class="lineNum">      61</span>                 :             :         domainSeparator = keccak256(</span>
+<span id="L62"><span class="lineNum">      62</span>                 :             :             abi.encode(</span>
+<span id="L63"><span class="lineNum">      63</span>                 :             :                 _DOMAIN_TYPE_HASH,</span>
+<span id="L64"><span class="lineNum">      64</span>                 :             :                 _DOMAIN_NAME,</span>
+<span id="L65"><span class="lineNum">      65</span>                 :             :                 _DOMAIN_VERSION,</span>
+<span id="L66"><span class="lineNum">      66</span>                 :             :                 block.chainid,</span>
+<span id="L67"><span class="lineNum">      67</span>                 :             :                 address(this)</span>
+<span id="L68"><span class="lineNum">      68</span>                 :             :             )</span>
+<span id="L69"><span class="lineNum">      69</span>                 :             :         );</span>
+<span id="L70"><span class="lineNum">      70</span>                 :             :         executionProxy = new ExecutionProxy();</span>
+<span id="L71"><span class="lineNum">      71</span>                 :             :     }</span>
+<span id="L72"><span class="lineNum">      72</span>                 :             : </span>
+<span id="L73"><span class="lineNum">      73</span>                 :             :     /// @notice Primary method for order execution.</span>
+<span id="L74"><span class="lineNum">      74</span>                 :             :     /// @dev TODO: Analyze whether or not this needs to be non-reentrant</span>
+<span id="L75"><span class="lineNum">      75</span>                 :             :     /// @param order The order to execute.</span>
+<span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC tlaBgGNC">          13 :     function executeOrder(ISettlement.Order calldata order) public {</span></span>
+<span id="L77"><span class="lineNum">      77</span>                 :<span class="tlaGNC">          13 :         ISettlement.Payload memory payload = order.payload;</span></span>
+<span id="L78"><span class="lineNum">      78</span>                 :<span class="tlaGNC">          13 :         address signatory = payload.sender;</span></span>
+<span id="L79"><span class="lineNum">      79</span>                 :             : </span>
+<span id="L80"><span class="lineNum">      80</span>                 :             :         /// @notice Step 1. Verify the integrity of the order.</span>
+<span id="L81"><span class="lineNum">      81</span>                 :             :         /// @dev Verifies that payload.sender signed the order.</span>
+<span id="L82"><span class="lineNum">      82</span>                 :             :         /// @dev Only the order payload is signed.</span>
+<span id="L83"><span class="lineNum">      83</span>                 :             :         /// @dev Once an order is signed anyone who has the signature can fulfil the order.</span>
+<span id="L84"><span class="lineNum">      84</span>                 :             :         /// @dev In the case of smart contracts sender must implement EIP-1271 isVerified method.</span>
+<span id="L85"><span class="lineNum">      85</span>                 :<span class="tlaGNC">          13 :         bytes memory orderUid = _verify(order);</span></span>
+<span id="L86"><span class="lineNum">      86</span>                 :             : </span>
+<span id="L87"><span class="lineNum">      87</span>                 :             :         /// @notice Step 2. Execute optional contract pre-swap hooks.</span>
+<span id="L88"><span class="lineNum">      88</span>                 :<span class="tlaGNC">          10 :         _execute(payload.sender, order.payload.hooks.preHooks);</span></span>
+<span id="L89"><span class="lineNum">      89</span>                 :             : </span>
+<span id="L90"><span class="lineNum">      90</span>                 :             :         /// @notice Step 3. Optimistically transfer funds from payload.sender to msg.sender (order executor).</span>
+<span id="L91"><span class="lineNum">      91</span>                 :             :         /// @dev Payload.sender must approve settlement.</span>
+<span id="L92"><span class="lineNum">      92</span>                 :             :         /// @dev If settlement already has `fromAmount` of `inputToken` send balance from Settlement.</span>
+<span id="L93"><span class="lineNum">      93</span>                 :             :         /// Otherwise send balance from payload.sender. The reason we do this is because the user may specify</span>
+<span id="L94"><span class="lineNum">      94</span>                 :             :         /// pre-swap hooks such as withdrawing from a vault (and sending tokens to Settlement) before executing the swap.</span>
+<span id="L95"><span class="lineNum">      95</span>                 :<span class="tlaGNC">          10 :         uint256 inputTokenBalanceSettlement = IERC20(payload.fromToken)</span></span>
+<span id="L96"><span class="lineNum">      96</span>                 :             :             .balanceOf(address(this));</span>
+<span id="L97"><span class="lineNum">      97</span>                 :             : </span>
+<span id="L98"><span class="lineNum">      98</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">          10 :         if (inputTokenBalanceSettlement &gt;= payload.fromAmount) {</span></span>
+<span id="L99"><span class="lineNum">      99</span>                 :<span class="tlaGNC">           1 :             IERC20(payload.fromToken).transfer(msg.sender, payload.fromAmount);</span></span>
+<span id="L100"><span class="lineNum">     100</span>                 :             :         } else {</span>
+<span id="L101"><span class="lineNum">     101</span>                 :<span class="tlaGNC">           9 :             IERC20(payload.fromToken).transferFrom(</span></span>
+<span id="L102"><span class="lineNum">     102</span>                 :             :                 signatory,</span>
+<span id="L103"><span class="lineNum">     103</span>                 :             :                 msg.sender,</span>
+<span id="L104"><span class="lineNum">     104</span>                 :             :                 payload.fromAmount</span>
+<span id="L105"><span class="lineNum">     105</span>                 :             :             );</span>
+<span id="L106"><span class="lineNum">     106</span>                 :             :         }</span>
+<span id="L107"><span class="lineNum">     107</span>                 :             : </span>
+<span id="L108"><span class="lineNum">     108</span>                 :             :         /// @notice Step 4. Order executor executes the swap and is required to send funds to payload.recipient.</span>
+<span id="L109"><span class="lineNum">     109</span>                 :             :         /// @dev Order executors can be completely custom, or the generic order executor can be used.</span>
+<span id="L110"><span class="lineNum">     110</span>                 :             :         /// @dev Solver configurable metadata about the order is sent to the order executor hook.</span>
+<span id="L111"><span class="lineNum">     111</span>                 :             :         /// @dev Settlement does not care how the solver executes the order, all Settlement cares about is that</span>
+<span id="L112"><span class="lineNum">     112</span>                 :             :         /// the user receives the minimum amount of tokens the signer agreed to.</span>
+<span id="L113"><span class="lineNum">     113</span>                 :             :         /// @dev Record output token balance before so we can ensure recipient</span>
+<span id="L114"><span class="lineNum">     114</span>                 :             :         /// received at least the agreed upon number of output tokens.</span>
+<span id="L115"><span class="lineNum">     115</span>                 :<span class="tlaGNC">          10 :         uint256 outputTokenBalanceBefore = IERC20(payload.toToken).balanceOf(</span></span>
+<span id="L116"><span class="lineNum">     116</span>                 :             :             payload.recipient</span>
+<span id="L117"><span class="lineNum">     117</span>                 :             :         );</span>
+<span id="L118"><span class="lineNum">     118</span>                 :<span class="tlaGNC">          10 :         ISolver(msg.sender).hook(order.data);</span></span>
+<span id="L119"><span class="lineNum">     119</span>                 :             : </span>
+<span id="L120"><span class="lineNum">     120</span>                 :             :         /// @notice Step 5. Make sure payload.recipient receives the agreed upon amount of tokens.</span>
+<span id="L121"><span class="lineNum">     121</span>                 :<span class="tlaGNC">           9 :         uint256 outputTokenBalanceAfter = IERC20(payload.toToken).balanceOf(</span></span>
+<span id="L122"><span class="lineNum">     122</span>                 :             :             payload.recipient</span>
+<span id="L123"><span class="lineNum">     123</span>                 :             :         );</span>
+<span id="L124"><span class="lineNum">     124</span>                 :<span class="tlaGNC">           9 :         uint256 balanceDelta = outputTokenBalanceAfter -</span></span>
+<span id="L125"><span class="lineNum">     125</span>                 :             :             outputTokenBalanceBefore;</span>
+<span id="L126"><span class="lineNum">     126</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 8 times"> + </span>]:<span class="tlaGNC">           9 :         require(balanceDelta &gt;= payload.toAmount, &quot;Order not filled&quot;);</span></span>
+<span id="L127"><span class="lineNum">     127</span>                 :<span class="tlaGNC">           8 :         filledAmount[orderUid] = balanceDelta;</span></span>
+<span id="L128"><span class="lineNum">     128</span>                 :             : </span>
+<span id="L129"><span class="lineNum">     129</span>                 :             :         /// @notice Step 6. Execute optional contract post-swap hooks.</span>
+<span id="L130"><span class="lineNum">     130</span>                 :             :         /// @dev These are signer authenticated post-swap hooks. These hooks</span>
+<span id="L131"><span class="lineNum">     131</span>                 :             :         /// happen after step 5 because the user may wish to perform an action</span>
+<span id="L132"><span class="lineNum">     132</span>                 :             :         /// (such as deposit into a vault or reinvest/compound) with the swapped funds.</span>
+<span id="L133"><span class="lineNum">     133</span>                 :<span class="tlaGNC">           8 :         _execute(signatory, order.payload.hooks.postHooks);</span></span>
+<span id="L134"><span class="lineNum">     134</span>                 :             : </span>
+<span id="L135"><span class="lineNum">     135</span>                 :             :         /// @dev Emit OrderExecuted</span>
+<span id="L136"><span class="lineNum">     136</span>                 :<span class="tlaGNC">           7 :         emit OrderExecuted(</span></span>
+<span id="L137"><span class="lineNum">     137</span>                 :             :             tx.origin,</span>
+<span id="L138"><span class="lineNum">     138</span>                 :             :             msg.sender,</span>
+<span id="L139"><span class="lineNum">     139</span>                 :             :             signatory,</span>
+<span id="L140"><span class="lineNum">     140</span>                 :             :             payload.recipient,</span>
+<span id="L141"><span class="lineNum">     141</span>                 :             :             payload.fromToken,</span>
+<span id="L142"><span class="lineNum">     142</span>                 :             :             payload.toToken,</span>
+<span id="L143"><span class="lineNum">     143</span>                 :             :             payload.fromAmount,</span>
+<span id="L144"><span class="lineNum">     144</span>                 :             :             balanceDelta</span>
+<span id="L145"><span class="lineNum">     145</span>                 :             :         );</span>
+<span id="L146"><span class="lineNum">     146</span>                 :             :     }</span>
+<span id="L147"><span class="lineNum">     147</span>                 :             : </span>
+<span id="L148"><span class="lineNum">     148</span>                 :             :     /// @notice Pass hook execution interactions to execution proxy to be executed.</span>
+<span id="L149"><span class="lineNum">     149</span>                 :             :     /// @param interactions The interactions to execute.</span>
+<span id="L150"><span class="lineNum">     150</span>                 :<span class="tlaGNC">          18 :     function _execute(</span></span>
+<span id="L151"><span class="lineNum">     151</span>                 :             :         address signatory,</span>
+<span id="L152"><span class="lineNum">     152</span>                 :             :         ISettlement.Interaction[] memory interactions</span>
+<span id="L153"><span class="lineNum">     153</span>                 :             :     ) internal {</span>
+<span id="L154"><span class="lineNum">     154</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">          18 :         if (interactions.length &gt; 0) {</span></span>
+<span id="L155"><span class="lineNum">     155</span>                 :<span class="tlaGNC">           3 :             executionProxy.execute(signatory, interactions);</span></span>
+<span id="L156"><span class="lineNum">     156</span>                 :             :         }</span>
+<span id="L157"><span class="lineNum">     157</span>                 :             :     }</span>
+<span id="L158"><span class="lineNum">     158</span>                 :             : </span>
+<span id="L159"><span class="lineNum">     159</span>                 :             :     /// @notice Order verification.</span>
+<span id="L160"><span class="lineNum">     160</span>                 :             :     /// @dev Verify the order.</span>
+<span id="L161"><span class="lineNum">     161</span>                 :             :     /// @dev Signature type is auto-detected based on signature's v.</span>
+<span id="L162"><span class="lineNum">     162</span>                 :             :     /// see: Gnosis Safe implementation.</span>
+<span id="L163"><span class="lineNum">     163</span>                 :             :     /// @dev Supports:</span>
+<span id="L164"><span class="lineNum">     164</span>                 :             :     /// - EIP-712 (Structured EOA signatures)</span>
+<span id="L165"><span class="lineNum">     165</span>                 :             :     /// - EIP-1271 (Contract based signatures)</span>
+<span id="L166"><span class="lineNum">     166</span>                 :             :     /// - EthSign (Non-structured EOA signatures)</span>
+<span id="L167"><span class="lineNum">     167</span>                 :             :     /// - Presign (Anyone can presign a digest)</span>
+<span id="L168"><span class="lineNum">     168</span>                 :             :     /// @param order Complete signed order.</span>
+<span id="L169"><span class="lineNum">     169</span>                 :             :     /// @return orderUid New order UID.</span>
+<span id="L170"><span class="lineNum">     170</span>                 :<span class="tlaGNC">          13 :     function _verify(</span></span>
+<span id="L171"><span class="lineNum">     171</span>                 :             :         ISettlement.Order calldata order</span>
+<span id="L172"><span class="lineNum">     172</span>                 :             :     ) internal view returns (bytes memory orderUid) {</span>
+<span id="L173"><span class="lineNum">     173</span>                 :<span class="tlaGNC">          13 :         bytes32 digest = buildDigest(order.payload);</span></span>
+<span id="L174"><span class="lineNum">     174</span>                 :<span class="tlaGNC">          13 :         address signatory = recoverSigner(</span></span>
+<span id="L175"><span class="lineNum">     175</span>                 :             :             order.payload.scheme,</span>
+<span id="L176"><span class="lineNum">     176</span>                 :             :             digest,</span>
+<span id="L177"><span class="lineNum">     177</span>                 :             :             order.signature</span>
+<span id="L178"><span class="lineNum">     178</span>                 :             :         );</span>
+<span id="L179"><span class="lineNum">     179</span>                 :             : </span>
+<span id="L180"><span class="lineNum">     180</span>                 :             :         /// @dev Regardless of authentication type any user/contract can decide</span>
+<span id="L181"><span class="lineNum">     181</span>                 :             :         /// if they would like to delegate quote selection to a decentralized</span>
+<span id="L182"><span class="lineNum">     182</span>                 :             :         /// driver or if they wish to select the best quote themselves. If</span>
+<span id="L183"><span class="lineNum">     183</span>                 :             :         /// driver address is set the order can only be executed once multisig</span>
+<span id="L184"><span class="lineNum">     184</span>                 :             :         /// threshold of the driver is met and signed. Driver selection is left</span>
+<span id="L185"><span class="lineNum">     185</span>                 :             :         /// to the order submitter or alternatively the default driver can be used.</span>
+<span id="L186"><span class="lineNum">     186</span>                 :             :         /// Custom driver selection means the order submitter does not need to trust any</span>
+<span id="L187"><span class="lineNum">     187</span>                 :             :         /// party with quote selection. If desired the user's company can run a decentralized</span>
+<span id="L188"><span class="lineNum">     188</span>                 :             :         /// driver network themselves. This also gives users complete control over how</span>
+<span id="L189"><span class="lineNum">     189</span>                 :             :         /// and when an order is authenticated to swap. If no driver address is selected</span>
+<span id="L190"><span class="lineNum">     190</span>                 :             :         /// the user is either self selecting the driver (and must give their signature only</span>
+<span id="L191"><span class="lineNum">     191</span>                 :             :         /// to the solver who offers the best quote) or the order will be treated like a</span>
+<span id="L192"><span class="lineNum">     192</span>                 :             :         /// limit order, where the order can be executed by anyone so long as the conditions</span>
+<span id="L193"><span class="lineNum">     193</span>                 :             :         /// of the signed payload are met.</span>
+<span id="L194"><span class="lineNum">     194</span>                 :<span class="tlaGNC">          13 :         address driver = order.payload.driver;</span></span>
+<span id="L195"><span class="lineNum">     195</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaUNC" title="Branch 1 was not executed"> # </span>]:<span class="tlaGNC">          13 :         if (driver != address(0)) {</span></span>
+<span id="L196"><span class="lineNum">     196</span>                 :<span class="tlaUNC tlaBgUNC">           0 :             IMultisigOrderManager(driver).checkNSignatures(</span></span>
+<span id="L197"><span class="lineNum">     197</span>                 :             :                 digest,</span>
+<span id="L198"><span class="lineNum">     198</span>                 :             :                 order.multisigSignature</span>
+<span id="L199"><span class="lineNum">     199</span>                 :             :             );</span>
+<span id="L200"><span class="lineNum">     200</span>                 :             :         }</span>
+<span id="L201"><span class="lineNum">     201</span>                 :<span class="tlaGNC tlaBgGNC">          13 :         orderUid = new bytes(OrderLib._UID_LENGTH);</span></span>
+<span id="L202"><span class="lineNum">     202</span>                 :<span class="tlaGNC">          13 :         orderUid.packOrderUidParams(digest, signatory, order.payload.deadline);</span></span>
+<span id="L203"><span class="lineNum">     203</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 12 times"> + </span>]:<span class="tlaGNC">          13 :         require(filledAmount[orderUid] == 0, &quot;Order already filled&quot;);</span></span>
+<span id="L204"><span class="lineNum">     204</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 11 times"> + </span>]:<span class="tlaGNC">          12 :         require(signatory == order.payload.sender, &quot;Invalid signer&quot;);</span></span>
+<span id="L205"><span class="lineNum">     205</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 10 times"> + </span>]:<span class="tlaGNC">          11 :         require(block.timestamp &lt;= order.payload.deadline, &quot;Deadline expired&quot;);</span></span>
+<span id="L206"><span class="lineNum">     206</span>                 :             :     }</span>
+<span id="L207"><span class="lineNum">     207</span>                 :             : </span>
+<span id="L208"><span class="lineNum">     208</span>                 :             :     /// @notice Building the digest hash.</span>
+<span id="L209"><span class="lineNum">     209</span>                 :             :     /// @dev Message digest hash consists of type hash, domain separator and struct hash.</span>
+<span id="L210"><span class="lineNum">     210</span>                 :<span class="tlaGNC">           8 :     function buildDigest(</span></span>
+<span id="L211"><span class="lineNum">     211</span>                 :             :         ISettlement.Payload memory _payload</span>
+<span id="L212"><span class="lineNum">     212</span>                 :             :     ) public view returns (bytes32 orderDigest) {</span>
+<span id="L213"><span class="lineNum">     213</span>                 :<span class="tlaGNC">          21 :         bytes32 typeHash = TYPE_HASH;</span></span>
+<span id="L214"><span class="lineNum">     214</span>                 :<span class="tlaGNC">          21 :         bytes32 structHash = keccak256(</span></span>
+<span id="L215"><span class="lineNum">     215</span>                 :             :             abi.encodePacked(typeHash, abi.encode(_payload))</span>
+<span id="L216"><span class="lineNum">     216</span>                 :             :         );</span>
+<span id="L217"><span class="lineNum">     217</span>                 :<span class="tlaGNC">          21 :         orderDigest = keccak256(</span></span>
+<span id="L218"><span class="lineNum">     218</span>                 :             :             abi.encodePacked(&quot;\x19\x01&quot;, domainSeparator, structHash)</span>
+<span id="L219"><span class="lineNum">     219</span>                 :             :         );</span>
+<span id="L220"><span class="lineNum">     220</span>                 :             :     }</span>
+<span id="L221"><span class="lineNum">     221</span>                 :             : }</span>
+<span id="L222"><span class="lineNum">     222</span>                 :             : </span>
+<span id="L223"><span class="lineNum">     223</span>                 :             : /// @title Execution proxy.</span>
+<span id="L224"><span class="lineNum">     224</span>                 :             : /// @notice Simple contract used to execute pre-swap and post-swap hooks.</span>
+<span id="L225"><span class="lineNum">     225</span>                 :             : /// @dev This is necessary because we cannot allow Settlement to execute arbitrary transaction</span>
+<span id="L226"><span class="lineNum">     226</span>                 :             : /// payloads directly since Settlement may have token approvals.</span>
+<span id="L227"><span class="lineNum">     227</span>                 :             : contract ExecutionProxy {</span>
+<span id="L228"><span class="lineNum">     228</span>                 :             :     address public immutable settlement;</span>
+<span id="L229"><span class="lineNum">     229</span>                 :             : </span>
+<span id="L230"><span class="lineNum">     230</span>                 :             :     /// @dev Set settlement address.</span>
+<span id="L231"><span class="lineNum">     231</span>                 :             :     constructor() {</span>
+<span id="L232"><span class="lineNum">     232</span>                 :             :         settlement = msg.sender;</span>
 <span id="L233"><span class="lineNum">     233</span>                 :             :     }</span>
-<span id="L234"><span class="lineNum">     234</span>                 :             : }</span>
+<span id="L234"><span class="lineNum">     234</span>                 :             : </span>
+<span id="L235"><span class="lineNum">     235</span>                 :             :     /// @notice Executed user defined interactions signed by sender.</span>
+<span id="L236"><span class="lineNum">     236</span>                 :             :     /// @dev Sender has been authenticated by signature recovery.</span>
+<span id="L237"><span class="lineNum">     237</span>                 :             :     /// @dev Something very important to consider here is that we are appending</span>
+<span id="L238"><span class="lineNum">     238</span>                 :             :     /// the authenticated sender (signer) to the end of each interaction calldata.</span>
+<span id="L239"><span class="lineNum">     239</span>                 :             :     /// The reason this is done is to allow the payload signatory to be</span>
+<span id="L240"><span class="lineNum">     240</span>                 :             :     /// authenticated in interaction endpoints. If your interaction endpoint</span>
+<span id="L241"><span class="lineNum">     241</span>                 :             :     /// needs to read signer it can do so by reading the last 20 bytes of calldata.</span>
+<span id="L242"><span class="lineNum">     242</span>                 :             :     /// What this means is that if your interaction endpoint explicitly relies on</span>
+<span id="L243"><span class="lineNum">     243</span>                 :             :     /// calldata length you will need to account for the additional 20 address bytes.</span>
+<span id="L244"><span class="lineNum">     244</span>                 :             :     /// For example: signatory := shr(96, calldataload(sub(calldatasize(), 20))).</span>
+<span id="L245"><span class="lineNum">     245</span>                 :<span class="tlaGNC">           4 :     function execute(</span></span>
+<span id="L246"><span class="lineNum">     246</span>                 :             :         address sender,</span>
+<span id="L247"><span class="lineNum">     247</span>                 :             :         ISettlement.Interaction[] memory interactions</span>
+<span id="L248"><span class="lineNum">     248</span>                 :             :     ) external {</span>
+<span id="L249"><span class="lineNum">     249</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 3 times"> + </span>]:<span class="tlaGNC">           4 :         require(msg.sender == settlement, &quot;Only settlement&quot;);</span></span>
+<span id="L250"><span class="lineNum">     250</span>                 :<span class="tlaGNC">           3 :         for (uint256 i; i &lt; interactions.length; i++) {</span></span>
+<span id="L251"><span class="lineNum">     251</span>                 :<span class="tlaGNC">           3 :             ISettlement.Interaction memory interaction = interactions[i];</span></span>
+<span id="L252"><span class="lineNum">     252</span>                 :<span class="tlaGNC">           3 :             (bool success, ) = interaction.target.call{</span></span>
+<span id="L253"><span class="lineNum">     253</span>                 :             :                 value: interaction.value</span>
+<span id="L254"><span class="lineNum">     254</span>                 :             :             }(abi.encodePacked(interaction.callData, sender));</span>
+<span id="L255"><span class="lineNum">     255</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">           3 :             require(success, &quot;Execution proxy interaction failed&quot;);</span></span>
+<span id="L256"><span class="lineNum">     256</span>                 :             :         }</span>
+<span id="L257"><span class="lineNum">     257</span>                 :             :     }</span>
+<span id="L258"><span class="lineNum">     258</span>                 :             : }</span>
         </pre>
               </td>
             </tr>
