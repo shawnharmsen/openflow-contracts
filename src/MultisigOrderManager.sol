@@ -155,7 +155,7 @@ contract MultisigOrderManager {
     /// @dev Can only initialize once.
     /// @param _settlement New settlement address.
     function initialize(address _settlement) external {
-        require(settlement == address(0));
+        require(settlement == address(0), "Already initialized");
         settlement = _settlement;
     }
 }

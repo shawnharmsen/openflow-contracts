@@ -25,7 +25,7 @@ contract Eip712Test is Storage {
     }
 
     function testOrderExecutionEip712() external {
-        // Get quote
+        /// @dev Get quote.
         uint256 fromAmount = 1 * 1e6;
         UniswapV2Aggregator.Quote memory quote = uniswapAggregator.quote(
             fromAmount,
@@ -34,7 +34,7 @@ contract Eip712Test is Storage {
         );
         uint256 toAmount = (quote.quoteAmount * 95) / 100;
 
-        // Build executor data
+        /// @dev Build executor data.
         bytes memory executorData = abi.encode(
             OrderExecutor.Data({
                 fromToken: fromToken,

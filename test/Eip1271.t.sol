@@ -4,7 +4,7 @@ import "./support/Storage.sol";
 
 contract Eip1271Test is Storage {
     function testOrderExecutionEip1271() external {
-        // Get quote
+        /// @dev Get quote.
         IERC20 fromToken = IERC20(strategy.reward());
         IERC20 toToken = IERC20(strategy.asset());
         uint256 fromAmount = strategy.estimatedEarnings();
@@ -27,7 +27,7 @@ contract Eip1271Test is Storage {
             (ISettlement.Payload)
         );
 
-        // Build executor data
+        /// @dev Build executor data.
         bytes memory executorData = abi.encode(
             OrderExecutor.Data({
                 fromToken: fromToken,
@@ -46,10 +46,10 @@ contract Eip1271Test is Storage {
             })
         );
 
-        // Build digest
+        /// @dev Build digest.
         bytes32 digest = settlement.buildDigest(decodedPayload);
 
-        // Sign and execute order
+        /// @dev Sign and execute order.
         bytes memory signature1 = _sign(_USER_A_PRIVATE_KEY, digest);
         bytes memory signature2 = _sign(_USER_B_PRIVATE_KEY, digest);
         bytes memory signatures = abi.encodePacked(signature1, signature2);
@@ -60,10 +60,10 @@ contract Eip1271Test is Storage {
             payload: decodedPayload
         });
 
-        // Build after swap hook
+        /// @dev Build after swap hook
         ISettlement.Interaction[][2] memory solverInteractions;
 
-        // Execute order
+        /// @dev Execute order.
         executor.executeOrder(order, solverInteractions);
     }
 }

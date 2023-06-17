@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.19;
+import "forge-std/Test.sol";
 import "./support/Storage.sol";
 
-contract EthSignTest is Storage {
+/// @notice Most Settlement tests happen in other files. This file is primarily
+/// for general negative test cases.
+contract SettlementTest is Storage {
     uint256 public constant INITIAL_TOKEN_AMOUNT = 100 * 1e6;
     IERC20 public fromToken = IERC20(usdc);
     IERC20 public toToken = IERC20(weth);
 
-    function testOrderExecutionEthSign() external {
+    function testBadSolver() external {
         startHoax(address(userA));
 
         /// @dev Give user A from token.
@@ -64,7 +67,7 @@ contract EthSignTest is Storage {
                 toToken: toToken,
                 fromAmount: fromAmount,
                 toAmount: toAmount,
-                recipient: address(userA),
+                recipient: address(tx.origin), // Solver tries to steal tokens. It should fail.
                 target: address(uniswapAggregator),
                 payload: abi.encodeWithSelector(
                     UniswapV2Aggregator.executeOrder.selector,
@@ -81,6 +84,7 @@ contract EthSignTest is Storage {
             payload: payload
         });
         ISettlement.Interaction[][2] memory solverInteractions;
+        vm.expectRevert("Order not filled");
         executor.executeOrder(order, solverInteractions);
     }
 }

@@ -24,7 +24,7 @@ contract HooksTest is Storage {
     }
 
     function testZapIn() external {
-        // Get quote
+        /// @dev Get quote.
         uint256 fromAmount = INITIAL_TOKEN_AMOUNT;
         UniswapV2Aggregator.Quote memory quote = uniswapAggregator.quote(
             fromAmount,
@@ -68,7 +68,7 @@ contract HooksTest is Storage {
         bytes32 digest = settlement.buildDigest(payload);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(_USER_A_PRIVATE_KEY, digest);
 
-        // Build executor data
+        /// @dev Build executor data.
         bytes memory executorData = abi.encode(
             OrderExecutor.Data({
                 fromToken: IERC20(payload.fromToken),
@@ -144,7 +144,7 @@ contract HooksTest is Storage {
         // Give user A some vault token
         deal(address(vault), userA, 1e18); // One share
 
-        // Get quote
+        /// @dev Get quote.
         uint256 fromAmount = (vault.balanceOf(userA) * vault.pricePerShare()) /
             1e18;
         UniswapV2Aggregator.Quote memory quote = uniswapAggregator.quote(
@@ -167,7 +167,7 @@ contract HooksTest is Storage {
             hooks: hooks
         });
 
-        // Build executor data
+        /// @dev Build executor data.
         bytes memory executorData = abi.encode(
             OrderExecutor.Data({
                 fromToken: IERC20(payload.fromToken),
@@ -207,7 +207,7 @@ contract HooksTest is Storage {
     }
 
     function testBadHook() external {
-        // Get quote
+        /// @dev Get quote.
         uint256 fromAmount = INITIAL_TOKEN_AMOUNT;
         UniswapV2Aggregator.Quote memory quote = uniswapAggregator.quote(
             fromAmount,
@@ -247,7 +247,7 @@ contract HooksTest is Storage {
         bytes32 digest = settlement.buildDigest(payload);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(_USER_A_PRIVATE_KEY, digest);
 
-        // Build executor data
+        /// @dev Build executor data.
         bytes memory executorData = abi.encode(
             OrderExecutor.Data({
                 fromToken: IERC20(payload.fromToken),
@@ -277,7 +277,7 @@ contract HooksTest is Storage {
         // Change to user B
         changePrank(userB);
 
-        // Execute order
+        /// @dev Execute order.
         ISettlement.Interaction[][2] memory solverInteractions;
         vm.expectRevert("Execution proxy interaction failed");
         executor.executeOrder(order, solverInteractions);

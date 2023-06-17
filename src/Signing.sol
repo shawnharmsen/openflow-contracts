@@ -67,8 +67,6 @@ contract Signing {
         owner = _ecdsaRecover(digest, signature);
     }
 
-    event Log(bytes byt22);
-
     /// @notice Extract forward and validate signature for EIP-1271.
     /// @dev See "Contract Signature" section of https://docs.safe.global/learn/safe-core/safe-core-protocol/signatures
     /// @dev Code comes from Gnosis Safe: https://github.com/safe-global/safe-contracts/blob/main/contracts/Safe.sol

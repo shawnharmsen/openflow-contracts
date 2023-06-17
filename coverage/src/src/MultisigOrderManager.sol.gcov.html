@@ -4,7 +4,7 @@
 
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-  <title>LCOV - lcov.info - src/src/MultisigOrderManager.sol</title>
+  <title>LCOV - lcov.info.pruned - src/src/MultisigOrderManager.sol</title>
   <link rel="stylesheet" type="text/css" href="../../gcov.css">
 </head>
 
@@ -28,30 +28,30 @@
           </tr>
           <tr>
             <td class="headerItem">Test:</td>
-            <td class="headerValue">lcov.info</td>
+            <td class="headerValue">lcov.info.pruned</td>
             <td></td>
             <td class="headerItem">Lines:</td>
-            <td class="headerCovTableEntryLo">36.0&nbsp;%</td>
+            <td class="headerCovTableEntryLo">72.0&nbsp;%</td>
             <td class="headerCovTableEntry">25</td>
-            <td class="headerCovTableEntry">9</td>
+            <td class="headerCovTableEntry">18</td>
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2023-06-17 01:14:36</td>
+            <td class="headerValue">2023-06-17 02:42:02</td>
             <td></td>
             <td class="headerItem">Functions:</td>
-            <td class="headerCovTableEntryLo">33.3&nbsp;%</td>
+            <td class="headerCovTableEntryMed">77.8&nbsp;%</td>
             <td class="headerCovTableEntry">9</td>
-            <td class="headerCovTableEntry">3</td>
+            <td class="headerCovTableEntry">7</td>
           </tr>
           <tr>
             <td></td>
             <td></td>
             <td></td>
             <td class="headerItem">Branches:</td>
-            <td class="headerCovTableEntryLo">0.0&nbsp;%</td>
+            <td class="headerCovTableEntryMed">80.0&nbsp;%</td>
             <td class="headerCovTableEntry">10</td>
-            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">8</td>
           </tr>
                   <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
                 </table>
@@ -200,34 +200,34 @@
 <span id="L129"><span class="lineNum">     129</span>                 :             :     /// @param _signers An array of signer addresses.</span>
 <span id="L130"><span class="lineNum">     130</span>                 :             :     /// @param _status If true, all signers in the array will be approved.</span>
 <span id="L131"><span class="lineNum">     131</span>                 :             :     /// If false all signers in the array will be unapproved.</span>
-<span id="L132"><span class="lineNum">     132</span>                 :<span class="tlaUNC tlaBgUNC">           0 :     function setSigners(address[] memory _signers, bool _status) external {</span></span>
-<span id="L133"><span class="lineNum">     133</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaUNC" title="Branch 1 was not executed"> # </span>]:<span class="tlaUNC">           0 :         require(msg.sender == owner, &quot;Only owner&quot;);</span></span>
-<span id="L134"><span class="lineNum">     134</span>                 :<span class="tlaUNC">           0 :         for (uint256 signerIdx; signerIdx &lt; _signers.length; signerIdx++) {</span></span>
-<span id="L135"><span class="lineNum">     135</span>                 :<span class="tlaUNC">           0 :             signers[_signers[signerIdx]] = _status;</span></span>
+<span id="L132"><span class="lineNum">     132</span>                 :<span class="tlaGNC">           2 :     function setSigners(address[] memory _signers, bool _status) external {</span></span>
+<span id="L133"><span class="lineNum">     133</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           2 :         require(msg.sender == owner, &quot;Only owner&quot;);</span></span>
+<span id="L134"><span class="lineNum">     134</span>                 :<span class="tlaGNC">           1 :         for (uint256 signerIdx; signerIdx &lt; _signers.length; signerIdx++) {</span></span>
+<span id="L135"><span class="lineNum">     135</span>                 :<span class="tlaGNC">           2 :             signers[_signers[signerIdx]] = _status;</span></span>
 <span id="L136"><span class="lineNum">     136</span>                 :             :         }</span>
 <span id="L137"><span class="lineNum">     137</span>                 :             :     }</span>
 <span id="L138"><span class="lineNum">     138</span>                 :             : </span>
 <span id="L139"><span class="lineNum">     139</span>                 :             :     /// @notice Set signature threshold.</span>
 <span id="L140"><span class="lineNum">     140</span>                 :             :     /// @dev Only owner is allowed to perform this action.</span>
-<span id="L141"><span class="lineNum">     141</span>                 :<span class="tlaUNC">           0 :     function setSignatureThreshold(uint256 _signatureThreshold) external {</span></span>
-<span id="L142"><span class="lineNum">     142</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaUNC" title="Branch 1 was not executed"> # </span>]:<span class="tlaUNC">           0 :         require(msg.sender == owner, &quot;Only owner&quot;);</span></span>
-<span id="L143"><span class="lineNum">     143</span>                 :<span class="tlaUNC">           0 :         signatureThreshold = _signatureThreshold;</span></span>
+<span id="L141"><span class="lineNum">     141</span>                 :<span class="tlaGNC">           2 :     function setSignatureThreshold(uint256 _signatureThreshold) external {</span></span>
+<span id="L142"><span class="lineNum">     142</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           2 :         require(msg.sender == owner, &quot;Only owner&quot;);</span></span>
+<span id="L143"><span class="lineNum">     143</span>                 :<span class="tlaGNC">           1 :         signatureThreshold = _signatureThreshold;</span></span>
 <span id="L144"><span class="lineNum">     144</span>                 :             :     }</span>
 <span id="L145"><span class="lineNum">     145</span>                 :             : </span>
 <span id="L146"><span class="lineNum">     146</span>                 :             :     /// @notice Select a new owner.</span>
 <span id="L147"><span class="lineNum">     147</span>                 :             :     /// @dev Only owner is allowed to perform this action.</span>
-<span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaUNC">           0 :     function setOwner(address _owner) external {</span></span>
-<span id="L149"><span class="lineNum">     149</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaUNC" title="Branch 1 was not executed"> # </span>]:<span class="tlaUNC">           0 :         require(msg.sender == owner, &quot;Only owner&quot;);</span></span>
-<span id="L150"><span class="lineNum">     150</span>                 :<span class="tlaUNC">           0 :         owner = _owner;</span></span>
+<span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">           2 :     function setOwner(address _owner) external {</span></span>
+<span id="L149"><span class="lineNum">     149</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           2 :         require(msg.sender == owner, &quot;Only owner&quot;);</span></span>
+<span id="L150"><span class="lineNum">     150</span>                 :<span class="tlaGNC">           1 :         owner = _owner;</span></span>
 <span id="L151"><span class="lineNum">     151</span>                 :             :     }</span>
 <span id="L152"><span class="lineNum">     152</span>                 :             : </span>
 <span id="L153"><span class="lineNum">     153</span>                 :             :     /// @notice Initialize order manager.</span>
 <span id="L154"><span class="lineNum">     154</span>                 :             :     /// @dev Sets settlement.</span>
 <span id="L155"><span class="lineNum">     155</span>                 :             :     /// @dev Can only initialize once.</span>
 <span id="L156"><span class="lineNum">     156</span>                 :             :     /// @param _settlement New settlement address.</span>
-<span id="L157"><span class="lineNum">     157</span>                 :<span class="tlaUNC">           0 :     function initialize(address _settlement) external {</span></span>
-<span id="L158"><span class="lineNum">     158</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaUNC" title="Branch 1 was not executed"> # </span>]:<span class="tlaUNC">           0 :         require(settlement == address(0));</span></span>
-<span id="L159"><span class="lineNum">     159</span>                 :<span class="tlaUNC">           0 :         settlement = _settlement;</span></span>
+<span id="L157"><span class="lineNum">     157</span>                 :<span class="tlaGNC">           2 :     function initialize(address _settlement) external {</span></span>
+<span id="L158"><span class="lineNum">     158</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           2 :         require(settlement == address(0), &quot;Already initialized&quot;);</span></span>
+<span id="L159"><span class="lineNum">     159</span>                 :<span class="tlaGNC">           1 :         settlement = _settlement;</span></span>
 <span id="L160"><span class="lineNum">     160</span>                 :             :     }</span>
 <span id="L161"><span class="lineNum">     161</span>                 :             : }</span>
         </pre>

@@ -46,7 +46,7 @@ contract EthSignTest is Storage {
             /// @dev Build digest. Order digest is what will be signed.
             bytes32 digest = settlement.buildDigest(payload);
 
-            // Sign and execute order
+            /// @dev Sign and execute order.
             bytes32 ethSignDigest = keccak256(
                 abi.encodePacked("\x19Ethereum Signed Message:\n32", digest)
             );
