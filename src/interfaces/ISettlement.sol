@@ -49,6 +49,7 @@ interface ISettlement {
     function buildDigest(Payload memory) external view returns (bytes32 digest);
 
     function recoverSigner(
+        Scheme scheme,
         bytes32 digest,
         bytes memory signature
     ) external view returns (address signatory);

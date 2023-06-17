@@ -1,0 +1,240 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - lcov.info - script/script/Eip1271MultisigSwap.s.sol</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="title">LCOV - code coverage report</td></tr>
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+            <tr>
+              <td width="100%">
+                <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="10%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">script/script</a> - Eip1271MultisigSwap.s.sol<span style="font-size: 80%;"> (source / <a href="Eip1271MultisigSwap.s.sol.func-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="5%"></td>
+            <td width="5%" class="headerCovTableHead">Coverage</td>
+            <td width="5%" class="headerCovTableHead" title="Covered + Uncovered code">Total</td>
+            <td width="5%" class="headerCovTableHead" title="Exercised code only">Hit</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">lcov.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntryLo">0.0&nbsp;%</td>
+            <td class="headerCovTableEntry">28</td>
+            <td class="headerCovTableEntry">0</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test Date:</td>
+            <td class="headerValue">2023-06-16 21:13:55</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntryLo">0.0&nbsp;%</td>
+            <td class="headerCovTableEntry">3</td>
+            <td class="headerCovTableEntry">0</td>
+          </tr>
+          <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td class="headerItem">Branches:</td>
+            <td class="headerCovTableEntryHi">-</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+          </tr>
+                  <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+          </table>
+
+          <table cellpadding=0 cellspacing=0 border=0>
+            <tr>
+              <td><br></td>
+            </tr>
+            <tr>
+              <td>
+<pre class="sourceHeading">             Branch data     Line data    Source code</pre>
+<pre class="source">
+<span id="L1"><span class="lineNum">       1</span>                 :             : // SPDX-License-Identifier: UNLICENSED</span>
+<span id="L2"><span class="lineNum">       2</span>                 :             : pragma solidity 0.8.19;</span>
+<span id="L3"><span class="lineNum">       3</span>                 :             : import &quot;forge-std/Test.sol&quot;;</span>
+<span id="L4"><span class="lineNum">       4</span>                 :             : import &quot;forge-std/Script.sol&quot;;</span>
+<span id="L5"><span class="lineNum">       5</span>                 :             : import {IERC20} from &quot;../src/interfaces/IERC20.sol&quot;;</span>
+<span id="L6"><span class="lineNum">       6</span>                 :             : import {Settlement} from &quot;../src/Settlement.sol&quot;;</span>
+<span id="L7"><span class="lineNum">       7</span>                 :             : import {ISettlement} from &quot;../src/interfaces/ISettlement.sol&quot;;</span>
+<span id="L8"><span class="lineNum">       8</span>                 :             : import {Strategy} from &quot;../test/support/Strategy.sol&quot;;</span>
+<span id="L9"><span class="lineNum">       9</span>                 :             : import {MasterChef} from &quot;../test/support/MasterChef.sol&quot;;</span>
+<span id="L10"><span class="lineNum">      10</span>                 :             : import {Oracle} from &quot;../test/support/Oracle.sol&quot;;</span>
+<span id="L11"><span class="lineNum">      11</span>                 :             : import {MultisigOrderManager} from &quot;../src/MultisigOrderManager.sol&quot;;</span>
+<span id="L12"><span class="lineNum">      12</span>                 :             : import {OrderExecutor} from &quot;../src/executors/OrderExecutor.sol&quot;;</span>
+<span id="L13"><span class="lineNum">      13</span>                 :             : import {UniswapV2Aggregator} from &quot;../src/solvers/UniswapV2Aggregator.sol&quot;;</span>
+<span id="L14"><span class="lineNum">      14</span>                 :             : </span>
+<span id="L15"><span class="lineNum">      15</span>                 :             : contract Storage is Script {</span>
+<span id="L16"><span class="lineNum">      16</span>                 :             :     // Hardcoded values. In the future read from broadcast deployment logs</span>
+<span id="L17"><span class="lineNum">      17</span>                 :             :     Strategy public strategy =</span>
+<span id="L18"><span class="lineNum">      18</span>                 :             :         Strategy(0xE4D14B428a22461C1F8A822e86691df381458440);</span>
+<span id="L19"><span class="lineNum">      19</span>                 :             :     Oracle public oracle = Oracle(0x233A3588972DDd57D7F19369FdE8DcEEe88B8e73);</span>
+<span id="L20"><span class="lineNum">      20</span>                 :             :     MasterChef public masterChef =</span>
+<span id="L21"><span class="lineNum">      21</span>                 :             :         MasterChef(0xFE38EE7F7228a1a278FF0d57365563a4c8c54297);</span>
+<span id="L22"><span class="lineNum">      22</span>                 :             :     address public usdc = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;</span>
+<span id="L23"><span class="lineNum">      23</span>                 :             :     address public dai = 0x6B175474E89094C44Da98b954EedeAC495271d0F;</span>
+<span id="L24"><span class="lineNum">      24</span>                 :             :     address public weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;</span>
+<span id="L25"><span class="lineNum">      25</span>                 :             :     Settlement public settlement =</span>
+<span id="L26"><span class="lineNum">      26</span>                 :             :         Settlement(0xD4D94C981Cd3a88E31D4070F5aCDf561084DEe00);</span>
+<span id="L27"><span class="lineNum">      27</span>                 :             :     OrderExecutor public executor =</span>
+<span id="L28"><span class="lineNum">      28</span>                 :             :         OrderExecutor(0x09D2fB1f7f810e0099712fd2993CfFCcc53E7266);</span>
+<span id="L29"><span class="lineNum">      29</span>                 :             :     UniswapV2Aggregator public uniswapAggregator =</span>
+<span id="L30"><span class="lineNum">      30</span>                 :             :         UniswapV2Aggregator(0x5CE348a9E2c7774e92C06c5f352Eb5F5cDD002DA);</span>
+<span id="L31"><span class="lineNum">      31</span>                 :             :     MultisigOrderManager public multisigOrderManager =</span>
+<span id="L32"><span class="lineNum">      32</span>                 :             :         MultisigOrderManager(0x0B40502A7C4f72c8e7547407039f41C43310301C);</span>
+<span id="L33"><span class="lineNum">      33</span>                 :             : </span>
+<span id="L34"><span class="lineNum">      34</span>                 :             :     address public userA;</span>
+<span id="L35"><span class="lineNum">      35</span>                 :             :     address public userB;</span>
+<span id="L36"><span class="lineNum">      36</span>                 :             :     uint256 internal immutable _USER_A_PRIVATE_KEY;</span>
+<span id="L37"><span class="lineNum">      37</span>                 :             :     uint256 internal immutable _USER_B_PRIVATE_KEY;</span>
+<span id="L38"><span class="lineNum">      38</span>                 :             :     uint256 deployerPrivateKey;</span>
+<span id="L39"><span class="lineNum">      39</span>                 :             :     IERC20 fromToken;</span>
+<span id="L40"><span class="lineNum">      40</span>                 :             :     IERC20 toToken;</span>
+<span id="L41"><span class="lineNum">      41</span>                 :             : </span>
+<span id="L42"><span class="lineNum">      42</span>                 :             :     constructor() {</span>
+<span id="L43"><span class="lineNum">      43</span>                 :             :         _USER_A_PRIVATE_KEY = vm.envUint(&quot;PRIVATE_KEY_USER_A&quot;);</span>
+<span id="L44"><span class="lineNum">      44</span>                 :             :         _USER_B_PRIVATE_KEY = vm.envUint(&quot;PRIVATE_KEY_USER_B&quot;);</span>
+<span id="L45"><span class="lineNum">      45</span>                 :             :         userA = vm.addr(_USER_A_PRIVATE_KEY);</span>
+<span id="L46"><span class="lineNum">      46</span>                 :             :         userB = vm.addr(_USER_B_PRIVATE_KEY);</span>
+<span id="L47"><span class="lineNum">      47</span>                 :             :         deployerPrivateKey = vm.envUint(&quot;PRIVATE_KEY&quot;);</span>
+<span id="L48"><span class="lineNum">      48</span>                 :             :         fromToken = IERC20(strategy.reward());</span>
+<span id="L49"><span class="lineNum">      49</span>                 :             :         toToken = IERC20(strategy.asset());</span>
+<span id="L50"><span class="lineNum">      50</span>                 :             :     }</span>
+<span id="L51"><span class="lineNum">      51</span>                 :             : }</span>
+<span id="L52"><span class="lineNum">      52</span>                 :             : </span>
+<span id="L53"><span class="lineNum">      53</span>                 :             : contract Harvest is Storage {</span>
+<span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaUNC tlaBgUNC">           0 :     function run() public {</span></span>
+<span id="L55"><span class="lineNum">      55</span>                 :<span class="tlaUNC">           0 :         vm.startBroadcast(deployerPrivateKey);</span></span>
+<span id="L56"><span class="lineNum">      56</span>                 :<span class="tlaUNC">           0 :         fromToken.transfer(address(masterChef), 1e6);</span></span>
+<span id="L57"><span class="lineNum">      57</span>                 :<span class="tlaUNC">           0 :         masterChef.accrueReward();</span></span>
+<span id="L58"><span class="lineNum">      58</span>                 :<span class="tlaUNC">           0 :         strategy.harvest();</span></span>
+<span id="L59"><span class="lineNum">      59</span>                 :             :     }</span>
+<span id="L60"><span class="lineNum">      60</span>                 :             : }</span>
+<span id="L61"><span class="lineNum">      61</span>                 :             : </span>
+<span id="L62"><span class="lineNum">      62</span>                 :             : contract Swap is Storage {</span>
+<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaUNC">           0 :     function run() public {</span></span>
+<span id="L64"><span class="lineNum">      64</span>                 :<span class="tlaUNC">           0 :         vm.startBroadcast(deployerPrivateKey);</span></span>
+<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaUNC">           0 :         uint256 fromAmount = fromToken.balanceOf(address(strategy));</span></span>
+<span id="L66"><span class="lineNum">      66</span>                 :             : </span>
+<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaUNC">           0 :         UniswapV2Aggregator.Quote memory quote = uniswapAggregator.quote(</span></span>
+<span id="L68"><span class="lineNum">      68</span>                 :             :             fromAmount,</span>
+<span id="L69"><span class="lineNum">      69</span>                 :             :             address(fromToken),</span>
+<span id="L70"><span class="lineNum">      70</span>                 :             :             address(toToken)</span>
+<span id="L71"><span class="lineNum">      71</span>                 :             :         );</span>
+<span id="L72"><span class="lineNum">      72</span>                 :<span class="tlaUNC">           0 :         uint256 slippageBips = 20;</span></span>
+<span id="L73"><span class="lineNum">      73</span>                 :<span class="tlaUNC">           0 :         uint256 toAmount = (quote.quoteAmount * (10000 - slippageBips)) / 10000;</span></span>
+<span id="L74"><span class="lineNum">      74</span>                 :             : </span>
+<span id="L75"><span class="lineNum">      75</span>                 :             :         // Build digest (in reality, do this by looking at signature logs)</span>
+<span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaUNC">           0 :         ISettlement.Interaction[] memory preHooks;</span></span>
+<span id="L77"><span class="lineNum">      77</span>                 :<span class="tlaUNC">           0 :         ISettlement.Interaction[]</span></span>
+<span id="L78"><span class="lineNum">      78</span>                 :<span class="tlaUNC">           0 :             memory postHooks = new ISettlement.Interaction[](1);</span></span>
+<span id="L79"><span class="lineNum">      79</span>                 :<span class="tlaUNC">           0 :         postHooks[0] = ISettlement.Interaction({</span></span>
+<span id="L80"><span class="lineNum">      80</span>                 :             :             target: address(strategy),</span>
+<span id="L81"><span class="lineNum">      81</span>                 :             :             value: 0,</span>
+<span id="L82"><span class="lineNum">      82</span>                 :             :             callData: abi.encodeWithSignature(&quot;updateAccounting()&quot;)</span>
+<span id="L83"><span class="lineNum">      83</span>                 :             :         });</span>
+<span id="L84"><span class="lineNum">      84</span>                 :<span class="tlaUNC">           0 :         ISettlement.Hooks memory hooks = ISettlement.Hooks({</span></span>
+<span id="L85"><span class="lineNum">      85</span>                 :             :             preHooks: preHooks,</span>
+<span id="L86"><span class="lineNum">      86</span>                 :             :             postHooks: postHooks</span>
+<span id="L87"><span class="lineNum">      87</span>                 :             :         });</span>
+<span id="L88"><span class="lineNum">      88</span>                 :<span class="tlaUNC">           0 :         ISettlement.Payload memory decodedPayload = ISettlement.Payload({</span></span>
+<span id="L89"><span class="lineNum">      89</span>                 :             :             fromToken: usdc,</span>
+<span id="L90"><span class="lineNum">      90</span>                 :             :             toToken: dai,</span>
+<span id="L91"><span class="lineNum">      91</span>                 :             :             fromAmount: 2000000,</span>
+<span id="L92"><span class="lineNum">      92</span>                 :             :             toAmount: 1980131121398188226,</span>
+<span id="L93"><span class="lineNum">      93</span>                 :             :             sender: address(strategy),</span>
+<span id="L94"><span class="lineNum">      94</span>                 :             :             recipient: address(strategy),</span>
+<span id="L95"><span class="lineNum">      95</span>                 :             :             deadline: 1686297308,</span>
+<span id="L96"><span class="lineNum">      96</span>                 :             :             scheme: ISettlement.Scheme.Eip1271,</span>
+<span id="L97"><span class="lineNum">      97</span>                 :             :             hooks: hooks</span>
+<span id="L98"><span class="lineNum">      98</span>                 :             :         });</span>
+<span id="L99"><span class="lineNum">      99</span>                 :             : </span>
+<span id="L100"><span class="lineNum">     100</span>                 :             :         // Build executor data</span>
+<span id="L101"><span class="lineNum">     101</span>                 :<span class="tlaUNC">           0 :         bytes memory executorData = abi.encode(</span></span>
+<span id="L102"><span class="lineNum">     102</span>                 :             :             OrderExecutor.Data({</span>
+<span id="L103"><span class="lineNum">     103</span>                 :             :                 fromToken: fromToken,</span>
+<span id="L104"><span class="lineNum">     104</span>                 :             :                 toToken: toToken,</span>
+<span id="L105"><span class="lineNum">     105</span>                 :             :                 fromAmount: fromAmount,</span>
+<span id="L106"><span class="lineNum">     106</span>                 :             :                 toAmount: toAmount,</span>
+<span id="L107"><span class="lineNum">     107</span>                 :             :                 recipient: address(strategy),</span>
+<span id="L108"><span class="lineNum">     108</span>                 :             :                 target: address(uniswapAggregator),</span>
+<span id="L109"><span class="lineNum">     109</span>                 :             :                 payload: abi.encodeWithSelector(</span>
+<span id="L110"><span class="lineNum">     110</span>                 :             :                     UniswapV2Aggregator.executeOrder.selector,</span>
+<span id="L111"><span class="lineNum">     111</span>                 :             :                     quote.routerAddress,</span>
+<span id="L112"><span class="lineNum">     112</span>                 :             :                     quote.path,</span>
+<span id="L113"><span class="lineNum">     113</span>                 :             :                     fromAmount,</span>
+<span id="L114"><span class="lineNum">     114</span>                 :             :                     toAmount</span>
+<span id="L115"><span class="lineNum">     115</span>                 :             :                 )</span>
+<span id="L116"><span class="lineNum">     116</span>                 :             :             })</span>
+<span id="L117"><span class="lineNum">     117</span>                 :             :         );</span>
+<span id="L118"><span class="lineNum">     118</span>                 :             : </span>
+<span id="L119"><span class="lineNum">     119</span>                 :             :         // Build digest</span>
+<span id="L120"><span class="lineNum">     120</span>                 :<span class="tlaUNC">           0 :         bytes32 digest = settlement.buildDigest(decodedPayload);</span></span>
+<span id="L121"><span class="lineNum">     121</span>                 :             : </span>
+<span id="L122"><span class="lineNum">     122</span>                 :             :         // Sign and execute order</span>
+<span id="L123"><span class="lineNum">     123</span>                 :<span class="tlaUNC">           0 :         bytes memory signature1 = _sign(_USER_A_PRIVATE_KEY, digest);</span></span>
+<span id="L124"><span class="lineNum">     124</span>                 :<span class="tlaUNC">           0 :         bytes memory signature2 = _sign(_USER_B_PRIVATE_KEY, digest);</span></span>
+<span id="L125"><span class="lineNum">     125</span>                 :<span class="tlaUNC">           0 :         bytes memory signatures = abi.encodePacked(signature1, signature2);</span></span>
+<span id="L126"><span class="lineNum">     126</span>                 :             : </span>
+<span id="L127"><span class="lineNum">     127</span>                 :             :         // Build order</span>
+<span id="L128"><span class="lineNum">     128</span>                 :             :         // See &quot;Contract Signature&quot; section of https://docs.safe.global/learn/safe-core/safe-core-protocol/signatures</span>
+<span id="L129"><span class="lineNum">     129</span>                 :<span class="tlaUNC">           0 :         bytes32 s = bytes32(uint256(0x60)); // offset - 96. 0x00 is strategy, 0x20 is s, 0x40 is v 0x60 is length 0x 80 is data</span></span>
+<span id="L130"><span class="lineNum">     130</span>                 :<span class="tlaUNC">           0 :         bytes32 v = bytes32(uint256(0)); // type zero - contract sig</span></span>
+<span id="L131"><span class="lineNum">     131</span>                 :<span class="tlaUNC">           0 :         bytes memory encodedSignatures = abi.encodePacked(</span></span>
+<span id="L132"><span class="lineNum">     132</span>                 :             :             abi.encode(strategy, s, v, signatures.length),</span>
+<span id="L133"><span class="lineNum">     133</span>                 :             :             signatures</span>
+<span id="L134"><span class="lineNum">     134</span>                 :             :         );</span>
+<span id="L135"><span class="lineNum">     135</span>                 :<span class="tlaUNC">           0 :         ISettlement.Order memory order = ISettlement.Order({</span></span>
+<span id="L136"><span class="lineNum">     136</span>                 :             :             signature: encodedSignatures,</span>
+<span id="L137"><span class="lineNum">     137</span>                 :             :             data: executorData,</span>
+<span id="L138"><span class="lineNum">     138</span>                 :             :             payload: decodedPayload</span>
+<span id="L139"><span class="lineNum">     139</span>                 :             :         });</span>
+<span id="L140"><span class="lineNum">     140</span>                 :             : </span>
+<span id="L141"><span class="lineNum">     141</span>                 :             :         // Build after swap hook</span>
+<span id="L142"><span class="lineNum">     142</span>                 :<span class="tlaUNC">           0 :         ISettlement.Interaction[][2] memory solverInteractions;</span></span>
+<span id="L143"><span class="lineNum">     143</span>                 :             : </span>
+<span id="L144"><span class="lineNum">     144</span>                 :             :         // Execute order</span>
+<span id="L145"><span class="lineNum">     145</span>                 :<span class="tlaUNC">           0 :         executor.executeOrder(order, solverInteractions);</span></span>
+<span id="L146"><span class="lineNum">     146</span>                 :             :     }</span>
+<span id="L147"><span class="lineNum">     147</span>                 :             : </span>
+<span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaUNC">           0 :     function _sign(</span></span>
+<span id="L149"><span class="lineNum">     149</span>                 :             :         uint256 privateKey,</span>
+<span id="L150"><span class="lineNum">     150</span>                 :             :         bytes32 digest</span>
+<span id="L151"><span class="lineNum">     151</span>                 :             :     ) internal pure returns (bytes memory signature) {</span>
+<span id="L152"><span class="lineNum">     152</span>                 :<span class="tlaUNC">           0 :         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);</span></span>
+<span id="L153"><span class="lineNum">     153</span>                 :<span class="tlaUNC">           0 :         signature = abi.encodePacked(r, s, v);</span></span>
+<span id="L154"><span class="lineNum">     154</span>                 :             :     }</span>
+<span id="L155"><span class="lineNum">     155</span>                 :             : }</span>
+        </pre>
+              </td>
+            </tr>
+          </table>
+          <br>
+
+          <table width="100%" border=0 cellspacing=0 cellpadding=0>
+            <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+            <tr><td class="versionInfo">Generated by: <a href="https://github.com//linux-test-project/lcov" target="_parent">LCOV version 2.0-1</a></td></tr>
+          </table>
+          <br>
+
+</body>
+</html>
