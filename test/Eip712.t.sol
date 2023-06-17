@@ -103,27 +103,37 @@ contract Eip712Test is Storage {
             )
         });
 
-        // Make timestamp invalid
+        /// @dev Test execution proxy auth.
+        vm.expectRevert("Only settlement");
+        executionProxy.execute(address(this), solverInteractions[0]);
+
+        /// @dev Test invalid sender.
+        order.payload.sender = address(this);
+        vm.expectRevert("Invalid signer");
+        executor.executeOrder(order);
+        order.payload.sender = userA;
+
+        /// @dev Test invalid timestamp.
         vm.warp(block.timestamp + 1);
 
-        // Expect order to expire
+        /// @dev Test expired order.
         vm.expectRevert("Deadline expired");
         executor.executeOrder(order);
 
-        // Decrease timestamp
+        /// @dev Fix timestamp.
         vm.warp(block.timestamp - 1);
 
-        // Execute order
+        /// @dev Test order execution.
         executor.executeOrder(order, solverInteractions);
 
-        // Make sure solver is capable of receiving profit
+        /// @dev Make sure solver is capable of receiving profit.
         {
             uint256 solverBalanceAfter = toToken.balanceOf(solver);
             uint256 solverProfit = solverBalanceAfter - solverBalanceBefore;
             require(solverProfit > 0, "Solver had zero profit");
         }
 
-        // Expectations after swap
+        /// @dev Expectations after swap.
         userAFromTokenBalanceBefore = fromToken.balanceOf(userA);
         uint256 userAToTokenBalanceBefore = toToken.balanceOf(userA);
         require(
@@ -135,7 +145,7 @@ contract Eip712Test is Storage {
             "User A should now have token B"
         );
 
-        // Expect revert if solver submits a duplicate order
+        /// @dev Expect revert if solver submits a duplicate order.
         vm.expectRevert("Order already filled");
         executor.executeOrder(order);
     }

@@ -25,7 +25,7 @@ contract HooksTest is Storage {
 
     function testZapIn() external {
         // Get quote
-        uint256 fromAmount = 1 * 1e6;
+        uint256 fromAmount = INITIAL_TOKEN_AMOUNT;
         UniswapV2Aggregator.Quote memory quote = uniswapAggregator.quote(
             fromAmount,
             address(fromToken),
@@ -64,6 +64,10 @@ contract HooksTest is Storage {
             hooks: hooks
         });
 
+        // Sign payload
+        bytes32 digest = settlement.buildDigest(payload);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(_USER_A_PRIVATE_KEY, digest);
+
         // Build executor data
         bytes memory executorData = abi.encode(
             OrderExecutor.Data({
@@ -83,16 +87,12 @@ contract HooksTest is Storage {
             })
         );
 
-        // Build order
+        // Build and sign order
         ISettlement.Order memory order = ISettlement.Order({
             signature: hex"",
             data: executorData,
             payload: payload
         });
-
-        // Sign order
-        bytes32 digest = settlement.buildDigest(order.payload);
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(_USER_A_PRIVATE_KEY, digest);
         order.signature = abi.encodePacked(r, s, v);
 
         // Change to user B
@@ -203,6 +203,83 @@ contract HooksTest is Storage {
 
         // Execute zap out
         ISettlement.Interaction[][2] memory solverInteractions;
+        executor.executeOrder(order, solverInteractions);
+    }
+
+    function testBadHook() external {
+        // Get quote
+        uint256 fromAmount = INITIAL_TOKEN_AMOUNT;
+        UniswapV2Aggregator.Quote memory quote = uniswapAggregator.quote(
+            fromAmount,
+            address(fromToken),
+            address(toToken)
+        );
+        uint256 toAmount = (quote.quoteAmount * 95) / 100;
+
+        // Build invalid hooks
+        ISettlement.Interaction[] memory preHooks;
+        ISettlement.Interaction[]
+            memory postHooks = new ISettlement.Interaction[](1);
+        postHooks[0] = ISettlement.Interaction({
+            target: vaultInteractions,
+            value: 0,
+            callData: "deadbeef"
+        });
+        ISettlement.Hooks memory hooks = ISettlement.Hooks({
+            preHooks: preHooks,
+            postHooks: postHooks
+        });
+
+        // Build paylod
+        ISettlement.Payload memory payload = ISettlement.Payload({
+            fromToken: address(fromToken),
+            toToken: address(toToken),
+            fromAmount: fromAmount,
+            toAmount: toAmount,
+            sender: userA,
+            recipient: vaultInteractions,
+            deadline: uint32(block.timestamp),
+            scheme: ISettlement.Scheme.Eip712,
+            hooks: hooks
+        });
+
+        // Sign payload
+        bytes32 digest = settlement.buildDigest(payload);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(_USER_A_PRIVATE_KEY, digest);
+
+        // Build executor data
+        bytes memory executorData = abi.encode(
+            OrderExecutor.Data({
+                fromToken: IERC20(payload.fromToken),
+                toToken: IERC20(payload.toToken),
+                fromAmount: payload.fromAmount,
+                toAmount: payload.toAmount,
+                recipient: payload.recipient,
+                target: address(uniswapAggregator),
+                payload: abi.encodeWithSelector(
+                    UniswapV2Aggregator.executeOrder.selector,
+                    quote.routerAddress,
+                    quote.path,
+                    payload.fromAmount,
+                    payload.toAmount
+                )
+            })
+        );
+
+        // Build and sign order
+        ISettlement.Order memory order = ISettlement.Order({
+            signature: hex"",
+            data: executorData,
+            payload: payload
+        });
+        order.signature = abi.encodePacked(r, s, v);
+
+        // Change to user B
+        changePrank(userB);
+
+        // Execute order
+        ISettlement.Interaction[][2] memory solverInteractions;
+        vm.expectRevert("Execution proxy interaction failed");
         executor.executeOrder(order, solverInteractions);
     }
 }

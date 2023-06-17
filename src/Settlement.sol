@@ -228,7 +228,7 @@ contract ExecutionProxy {
             (bool success, ) = interaction.target.call{
                 value: interaction.value
             }(abi.encodePacked(interaction.callData, sender));
-            require(success, "Interaction failed");
+            require(success, "Execution proxy interaction failed");
         }
     }
 }
