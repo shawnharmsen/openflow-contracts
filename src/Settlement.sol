@@ -178,15 +178,19 @@ contract Settlement is OrderManager, Signing {
         );
 
         /// @dev Regardless of authentication type any user/contract can decide
-        /// if they would like to delegate quote selection to the decentralized
-        /// driver, or if they wish to select the best quote themselves. If
-        /// requiresMultisig is set to false anyone who has the signature can
-        /// execute the order. This means EOA signers must give their signature
-        /// only to solvers who they wish to allow the execute their order (solvers)
-        /// who provide the best quotes. If this flag is set to false then all
-        /// smart contract orders (EIP-1271 or presign) will be treated as limit
-        /// orders, where anyone who can meet the minimum amount out the swap requires
-        /// can execute the order.
+        /// if they would like to delegate quote selection to a decentralized
+        /// driver or if they wish to select the best quote themselves. If
+        /// driver address is set the order can only be executed once multisig
+        /// threshold of the driver is met and signed. Driver selection is left
+        /// to the order submitter or alternatively the default driver can be used.
+        /// Custom driver selection means the order submitter does not need to trust any
+        /// party with quote selection. If desired the user's company can run a decentralized
+        /// driver network themselves. This also gives users complete control over how
+        /// and when an order is authenticated to swap. If no driver address is selected
+        /// the user is either self selecting the driver (and must give their signature only
+        /// to the solver who offers the best quote) or the order will be treated like a
+        /// limit order, where the order can be executed by anyone so long as the conditions
+        /// of the signed payload are met.
         address driver = order.payload.driver;
         if (driver != address(0)) {
             IMultisigOrderManager(driver).checkNSignatures(
