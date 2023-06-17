@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2023-06-17 03:15:22</td>
+            <td class="headerValue">2023-06-17 04:11:24</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryLo">40.0&nbsp;%</td>
@@ -129,11 +129,11 @@
 <span id="L58"><span class="lineNum">      58</span>                 :             :     /// - 2. The swap has been approved by multisig (to ensure best quote was selected)</span>
 <span id="L59"><span class="lineNum">      59</span>                 :             :     /// @param digest The digest of the order payload</span>
 <span id="L60"><span class="lineNum">      60</span>                 :             :     /// @param signatures Encoded EIP-1271 signatures formatted per Gnosis</span>
-<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC tlaBgGNC">           1 :     function isValidSignature(</span></span>
+<span id="L61"><span class="lineNum">      61</span>                 :<span class="tlaGNC tlaBgGNC">           3 :     function isValidSignature(</span></span>
 <span id="L62"><span class="lineNum">      62</span>                 :             :         bytes32 digest,</span>
 <span id="L63"><span class="lineNum">      63</span>                 :             :         bytes calldata signatures</span>
 <span id="L64"><span class="lineNum">      64</span>                 :             :     ) external returns (bytes4) {</span>
-<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">           1 :         IMultisigOrderManager(_multisigOrderManager).checkNSignatures(</span></span>
+<span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">           3 :         IMultisigOrderManager(_multisigOrderManager).checkNSignatures(</span></span>
 <span id="L66"><span class="lineNum">      66</span>                 :             :             digest,</span>
 <span id="L67"><span class="lineNum">      67</span>                 :             :             signatures</span>
 <span id="L68"><span class="lineNum">      68</span>                 :             :         );</span>

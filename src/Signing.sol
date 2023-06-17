@@ -155,9 +155,7 @@ contract Signing {
     /// ascending numerical order.
     /// For instance `0xA0b8...eB48` > `0x6B17....71d0F`, so the signature for `0xA0b8...eB48` must come first.
     /// @dev Code comes from Gnosis Safe: https://github.com/safe-global/safe-contracts/blob/main/contracts/Safe.sol
-    /// The only change is that we use `recoverSigner()` to calculate signer based on v instead of
-    /// doing this inline. The reason for this is that it lets us recover one signer at a time or
-    /// multiple signers at a time with maximum  with maximum flexibility.
+    /// @dev Use `recoverSigner()` methods wherever possible and use exact Gnosis code when v == 0 (contract signatures)
     /// @param digest The EIP-712 signing digest derived from the order parameters.
     /// @param signatures Packed and encoded multisig signatures payload.
     /// @param requiredSignatures Signature threshold. This is required since we are unable.

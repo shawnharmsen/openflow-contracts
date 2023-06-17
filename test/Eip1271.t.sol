@@ -49,21 +49,21 @@ contract Eip1271Test is Storage {
         /// @dev Build digest.
         bytes32 digest = settlement.buildDigest(decodedPayload);
 
-        /// @dev Sign and execute order.
+        /// @dev Sign order payload.
         bytes memory signature1 = _sign(_USER_A_PRIVATE_KEY, digest);
         bytes memory signature2 = _sign(_USER_B_PRIVATE_KEY, digest);
         bytes memory signatures = abi.encodePacked(signature1, signature2);
+
+        /// @dev Build solver interactions.
+        ISettlement.Interaction[][2] memory solverInteractions;
+
+        /// @dev Execute order.
         bytes memory encodedSignatures = abi.encodePacked(strategy, signatures);
         ISettlement.Order memory order = ISettlement.Order({
             signature: encodedSignatures,
             data: executorData,
             payload: decodedPayload
         });
-
-        /// @dev Build after swap hook
-        ISettlement.Interaction[][2] memory solverInteractions;
-
-        /// @dev Execute order.
         executor.executeOrder(order, solverInteractions);
     }
 }
