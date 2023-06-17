@@ -38,7 +38,7 @@ contract Signing {
         ISettlement.Scheme scheme,
         bytes32 digest,
         bytes memory signature
-    ) public view returns (address owner) {
+    ) public returns (address owner) {
         /// @dev Extract v from signature
         if (scheme == ISettlement.Scheme.Eip1271) {
             /// @dev Contract signature (EIP-1271).
@@ -67,6 +67,8 @@ contract Signing {
         owner = _ecdsaRecover(digest, signature);
     }
 
+    event Log(bytes byt22);
+
     /// @notice Extract forward and validate signature for EIP-1271.
     /// @dev See "Contract Signature" section of https://docs.safe.global/learn/safe-core/safe-core-protocol/signatures
     /// @dev Code comes from Gnosis Safe: https://github.com/safe-global/safe-contracts/blob/main/contracts/Safe.sol
@@ -77,55 +79,18 @@ contract Signing {
         bytes32 digest,
         bytes memory encodedSignature
     ) internal view returns (address owner) {
-        /// @dev Decode signature. v is not needed here since it's already confirmed to be zero
-        (bytes32 r, bytes32 s) = abi.decode(
-            encodedSignature,
-            (bytes32, bytes32)
-        );
-
-        /// @dev When handling contract signatures the address of the contract is encoded into r.
-        owner = address(uint160(uint256(r)));
-
-        /// @dev Check that signature data pointer (s) is not pointing inside
-        /// the static part of the signatures bytes. This check is not completely accurate,
-        /// since it is possible that more signatures than the threshold are send.
-        // Here we only check that the pointer is not pointing inside the
-        /// part that is being processed.
-        require(uint256(s) >= 65, "Signature data pointer is invalid");
-
-        /// @dev Check that signature data pointer (s) is in bounds (points to the length of data -> 32 bytes).
-        require(
-            uint256(s) + 32 <= encodedSignature.length,
-            "Signature data pointer is out of bounds"
-        );
-
-        /// @dev Check if the contract signature is in bounds: start of data is s + 32
-        /// and end is start + signature length.
-        uint256 contractSignatureLen;
+        bytes memory signature;
+        uint256 signatureLength = encodedSignature.length - 20;
         assembly {
-            contractSignatureLen := mload(add(add(encodedSignature, s), 0x20))
+            owner := mload(add(encodedSignature, 20))
+            mstore(add(encodedSignature, 20), signatureLength)
+            signature := add(encodedSignature, 20)
         }
         require(
-            uint256(s) + 32 + contractSignatureLen <= encodedSignature.length,
-            "Signature is out of bounds"
-        );
-
-        /// @dev Check signature.
-        bytes memory contractSignature;
-        assembly {
-            /// @dev The signature data for contract signatures is
-            /// appended to the concatenated signatures and the offset
-            /// is stored in s.
-            contractSignature := add(add(encodedSignature, s), 0x20)
-        }
-        require(
-            ISignatureValidator(owner).isValidSignature(
-                digest,
-                contractSignature
-            ) == _EIP1271_MAGICVALUE,
+            ISignatureValidator(owner).isValidSignature(digest, signature) ==
+                _EIP1271_MAGICVALUE,
             "EIP-1271 signature is invalid"
         );
-        return owner;
     }
 
     /// @notice Recover signature using eth sign.
@@ -230,10 +195,54 @@ contract Signing {
                 v := and(mload(add(signatures, add(signaturePos, 0x41))), 0xff)
             }
             bytes memory signature = abi.encodePacked(r, s, v);
-            // currentOwner = recoverSigner(digest, signature);
             if (v == 0) {
-                /// @dev Contract signature (EIP-1271).
-                currentOwner = _recoverEip1271Signer(digest, signature);
+                /// @dev When handling contract signatures the address of the contract is encoded into r.
+                currentOwner = address(uint160(uint256(r)));
+
+                /// @dev Check that signature data pointer (s) is not pointing inside
+                /// the static part of the signatures bytes. This check is not completely accurate,
+                /// since it is possible that more signatures than the threshold are send.
+                // Here we only check that the pointer is not pointing inside the
+                /// part that is being processed.
+                require(uint256(s) >= 65, "Signature data pointer is invalid");
+
+                /// @dev Check that signature data pointer (s) is in bounds (points to the length of data -> 32 bytes).
+                require(
+                    uint256(s) + 32 <= signature.length,
+                    "Signature data pointer is out of bounds"
+                );
+
+                /// @dev Check if the contract signature is in bounds: start of data is s + 32
+                /// and end is start + signature length.
+                uint256 contractSignatureLen;
+                assembly {
+                    contractSignatureLen := mload(add(add(signature, s), 0x20))
+                }
+                require(
+                    uint256(s) + 32 + contractSignatureLen <= signature.length,
+                    "Signature is out of bounds"
+                );
+
+                /// @dev Check signature.
+                bytes memory contractSignature;
+                assembly {
+                    /// @dev The signature data for contract signatures is
+                    /// appended to the concatenated signatures and the offset
+                    /// is stored in s.
+                    contractSignature := add(add(signature, s), 0x20)
+                }
+
+                /// @dev Perform signature validation on the contract here rather than using
+                /// `_recoverEip1271Signer()` to save gas since we already have all the data
+                /// here and the call is simple.
+                /// @dev currentOwner (r) is set above
+                require(
+                    ISignatureValidator(currentOwner).isValidSignature(
+                        digest,
+                        contractSignature
+                    ) == _EIP1271_MAGICVALUE,
+                    "EIP-1271 signature is invalid"
+                );
             } else if (v == 1) {
                 /// @dev Presigned signature requires order manager as signature storage contract.
                 currentOwner = _recoverPresignedOwner(digest, signature);

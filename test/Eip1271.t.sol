@@ -3,6 +3,8 @@ pragma solidity 0.8.19;
 import "./support/Storage.sol";
 
 contract Eip1271Test is Storage {
+    event Log(bytes byt);
+
     function testOrderExecutionEip1271() external {
         // Get quote
         IERC20 fromToken = IERC20(strategy.reward());
@@ -58,13 +60,16 @@ contract Eip1271Test is Storage {
         // See "Contract Signature" section of https://docs.safe.global/learn/safe-core/safe-core-protocol/signatures
         // {32-bytes signature verifier}{32-bytes data position}{1-byte signature type}{32-bytes length}{n-bytes data}
         // TODO: Test with multiple contract signatures
-        bytes32 s = bytes32(uint256(0x60));
-        bytes1 v = bytes1(uint8(0)); // type zero - contract sig
-        bytes memory encodedSignatures = abi.encodePacked(
-            abi.encode(strategy, s, v),
-            signatures.length,
-            signatures
-        );
+        // bytes32 s = bytes32(uint256(0x60));
+        // bytes1 v = bytes1(uint8(0)); // type zero - contract sig
+        // bytes memory encodedSignatures = abi.encodePacked(
+        //     abi.encode(strategy, s, v),
+        //     signatures.length,
+        //     signatures
+        // );
+
+        bytes memory encodedSignatures = abi.encodePacked(strategy, signatures);
+        emit Log(encodedSignatures);
         ISettlement.Order memory order = ISettlement.Order({
             signature: encodedSignatures,
             data: executorData,

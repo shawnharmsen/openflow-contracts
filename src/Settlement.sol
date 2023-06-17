@@ -167,7 +167,7 @@ contract Settlement is Signing {
     /// @return orderUid New order UID.
     function _verify(
         ISettlement.Order calldata order
-    ) internal view returns (bytes memory orderUid) {
+    ) internal returns (bytes memory orderUid) {
         bytes32 digest = buildDigest(order.payload);
         address signatory = recoverSigner(
             order.payload.scheme,

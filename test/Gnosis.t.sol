@@ -137,18 +137,13 @@ contract GnosisTest is GnosisHelper {
             })
         );
 
-        bytes memory signatures = abi.encodePacked(
-            hex"000000000000000000000000",
+        /// @dev Build order using
+        bytes memory encodedSignature = abi.encodePacked(
             address(safeA),
-            bytes32(uint256(65 * 1)),
-            hex"00",
-            bytes32(uint256(safeASignature.length)),
             safeASignature
         );
-
-        /// @dev Build order using
         ISettlement.Order memory order = ISettlement.Order({
-            signature: signatures,
+            signature: encodedSignature,
             data: executorData,
             payload: payload
         });
