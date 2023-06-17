@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 import {IMultisigOrderManager} from "./interfaces/IMultisigOrderManager.sol";
 import {ISignatureValidator} from "./interfaces/ISignatureValidator.sol";
+import {ISettlement} from "./interfaces/ISettlement.sol";
 
 /// @author OpenFlow
 /// @title Signing Library
@@ -34,18 +35,18 @@ contract Signing {
     /// @param digest Hashed payload digest.
     /// @return owner Returns authenticated owner.
     function recoverSigner(
+        ISettlement.Scheme scheme,
         bytes32 digest,
         bytes memory signature
     ) public view returns (address owner) {
         /// @dev Extract v from signature
-        uint8 v = uint8(signature[64]);
-        if (v == 0) {
+        if (scheme == ISettlement.Scheme.Eip1271) {
             /// @dev Contract signature (EIP-1271).
             owner = _recoverEip1271Signer(digest, signature);
-        } else if (v == 1) {
+        } else if (scheme == ISettlement.Scheme.PreSign) {
             /// @dev Presigned signature requires order manager as signature storage contract.
             owner = _recoverPresignedOwner(digest, signature);
-        } else if (v > 30) {
+        } else if (scheme == ISettlement.Scheme.EthSign) {
             /// @dev EthSign signature. If v > 30 then default va (27,28)
             /// has been adjusted for eth_sign flow.
             owner = _recoverEthSignSigner(digest, signature);
@@ -229,7 +230,22 @@ contract Signing {
                 v := and(mload(add(signatures, add(signaturePos, 0x41))), 0xff)
             }
             bytes memory signature = abi.encodePacked(r, s, v);
-            currentOwner = recoverSigner(digest, signature);
+            // currentOwner = recoverSigner(digest, signature);
+            if (v == 0) {
+                /// @dev Contract signature (EIP-1271).
+                currentOwner = _recoverEip1271Signer(digest, signature);
+            } else if (v == 1) {
+                /// @dev Presigned signature requires order manager as signature storage contract.
+                currentOwner = _recoverPresignedOwner(digest, signature);
+            } else if (v > 30) {
+                /// @dev EthSign signature. If v > 30 then default va (27,28)
+                /// has been adjusted for eth_sign flow.
+                currentOwner = _recoverEthSignSigner(digest, signature);
+            } else {
+                /// @dev EIP-712 signature. Default is the ecrecover flow with the provided data hash.
+                currentOwner = _recoverEip712Signer(digest, signature);
+            }
+
             require(
                 currentOwner > lastOwner,
                 "Invalid signature order or duplicate signature"

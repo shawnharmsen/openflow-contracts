@@ -21,7 +21,7 @@ contract Settlement is Signing {
     using OrderLib for bytes;
 
     /// @dev Prepare constants for building domainSeparator.
-    bytes32 private constant _DOMAIN_NAME = keccak256("Blockswap");
+    bytes32 private constant _DOMAIN_NAME = keccak256("OpenFlow");
     bytes32 private constant _DOMAIN_VERSION = keccak256("v0.0.1");
     bytes32 private constant _DOMAIN_TYPE_HASH =
         keccak256(
@@ -29,7 +29,7 @@ contract Settlement is Signing {
         );
     bytes32 public constant TYPE_HASH =
         keccak256(
-            "Payload(address fromToken,address toToken,uint256 fromAmount,uint256 toAmount,address sender,address recipient,uint256 deadline)"
+            "Payload(address fromToken,address toToken,uint256 fromAmount,uint256 toAmount,address sender,address recipient,uint256 deadline,Scheme scheme,Hooks hooks)"
         );
     bytes32 public immutable domainSeparator;
 
@@ -169,7 +169,11 @@ contract Settlement is Signing {
         ISettlement.Order calldata order
     ) internal view returns (bytes memory orderUid) {
         bytes32 digest = buildDigest(order.payload);
-        address signatory = recoverSigner(digest, order.signature);
+        address signatory = recoverSigner(
+            order.payload.scheme,
+            digest,
+            order.signature
+        );
         orderUid = new bytes(OrderLib._UID_LENGTH);
         orderUid.packOrderUidParams(digest, signatory, order.payload.deadline);
         require(filledAmount[orderUid] == 0, "Order already filled");

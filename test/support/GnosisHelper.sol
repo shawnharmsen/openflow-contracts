@@ -37,7 +37,7 @@ contract GnosisHelper is Storage {
 
     function generateSimpleSignatureBytes(
         address account
-    ) public view returns (bytes memory signatures) {
+    ) public pure returns (bytes memory signatures) {
         bytes memory signatureStart = hex"000000000000000000000000";
         bytes
             memory signatureEnd = hex"000000000000000000000000000000000000000000000000000000000000000001";
@@ -54,7 +54,7 @@ contract GnosisHelper is Storage {
         bytes memory data = abi.encodeWithSelector(
             ISafe.addOwnerWithThreshold.selector,
             owner,
-            2
+            threshold
         );
 
         safe.execTransaction(

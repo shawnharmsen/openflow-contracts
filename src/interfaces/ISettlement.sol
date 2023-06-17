@@ -2,6 +2,13 @@
 pragma solidity 0.8.19;
 
 interface ISettlement {
+    enum Scheme {
+        Eip712,
+        EthSign,
+        Eip1271,
+        PreSign
+    }
+
     struct Order {
         bytes signature;
         bytes data;
@@ -16,6 +23,7 @@ interface ISettlement {
         address sender;
         address recipient;
         uint32 deadline;
+        Scheme scheme;
         Hooks hooks;
     }
 

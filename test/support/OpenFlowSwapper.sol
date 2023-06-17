@@ -115,6 +115,7 @@ contract OpenFlowSwapper {
                 sender: address(this),
                 recipient: address(this),
                 deadline: uint32(block.timestamp + _maxAuctionDuration),
+                scheme: ISettlement.Scheme.Eip1271,
                 hooks: hooks
             })
         );

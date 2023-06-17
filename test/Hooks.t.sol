@@ -60,6 +60,7 @@ contract HooksTest is Storage {
             sender: userA,
             recipient: vaultInteractions,
             deadline: uint32(block.timestamp),
+            scheme: ISettlement.Scheme.Eip712,
             hooks: hooks
         });
 
@@ -162,6 +163,7 @@ contract HooksTest is Storage {
             sender: userA,
             recipient: userA,
             deadline: uint32(block.timestamp),
+            scheme: ISettlement.Scheme.Eip712,
             hooks: hooks
         });
 
