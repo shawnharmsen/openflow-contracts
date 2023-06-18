@@ -34,12 +34,23 @@ contract SigningTest is Storage {
     }
 
     function testEip1271() external {
-        bytes memory signature1 = _sign(_USER_A_PRIVATE_KEY, digest);
-        bytes memory signature2 = _sign(_USER_B_PRIVATE_KEY, digest);
-        bytes memory signatures = abi.encodePacked(signature1, signature2);
+        /// @dev EIP-1271 signature is invalid.
+        address negativeTestCaseSigningContract = address(
+            new NegativeTestCaseSigningContract()
+        );
+        bytes memory encodedSignatures = abi.encodePacked(
+            negativeTestCaseSigningContract
+        );
+        vm.expectRevert("EIP-1271 signature is invalid");
+        settlement.recoverSigner(
+            ISettlement.Scheme.Eip1271,
+            digest,
+            encodedSignatures
+        );
+    }
 
+    function testEip712() external {
         /// @dev Invalid ECDSA signature.
-        bytes memory encodedSignatures = abi.encodePacked(strategy, signatures);
         bytes memory signatureInvalid;
         assembly {
             mstore(signatureInvalid, 65) // 65 empty bytes
@@ -51,23 +62,6 @@ contract SigningTest is Storage {
             signatureInvalid
         );
 
-        /// @dev EIP-1271 signature is invalid.
-        address negativeTestCaseSigningContract = address(
-            new NegativeTestCaseSigningContract()
-        );
-        encodedSignatures = abi.encodePacked(
-            negativeTestCaseSigningContract,
-            signatures
-        );
-        vm.expectRevert("EIP-1271 signature is invalid");
-        settlement.recoverSigner(
-            ISettlement.Scheme.Eip1271,
-            digest,
-            encodedSignatures
-        );
-    }
-
-    function testEip712() external {
         /// @dev Malformed ECDSA signature.
         bytes memory signature1 = _sign(_USER_A_PRIVATE_KEY, digest);
         assembly {
@@ -79,5 +73,47 @@ contract SigningTest is Storage {
             mstore(signature1, 65) // Set signature back to 65 bytes.
         }
         settlement.recoverSigner(ISettlement.Scheme.Eip712, digest, signature1);
+    }
+
+    function testSignatureThreshold() external {
+        /// @dev Build digest.
+        ISettlement.Hooks memory hooks;
+        ISettlement.Payload memory payload = ISettlement.Payload({
+            fromToken: address(0),
+            toToken: address(0),
+            fromAmount: 0,
+            toAmount: 0,
+            sender: userA,
+            recipient: userA,
+            deadline: uint32(block.timestamp),
+            scheme: ISettlement.Scheme.Eip712,
+            driver: address(0),
+            hooks: hooks
+        });
+        digest = settlement.buildDigest(payload);
+
+        /// @dev Sign digest and perform valid threshold check.
+        bytes memory signature1 = _sign(_USER_A_PRIVATE_KEY, digest);
+        bytes memory signature2 = _sign(_USER_B_PRIVATE_KEY, digest);
+        bytes memory signatures = abi.encodePacked(signature1, signature2);
+        driver.checkNSignatures(digest, signatures);
+
+        /// @dev Invalid signature order or duplicate signature.
+        signatures = abi.encodePacked(signature2, signature1);
+        vm.expectRevert("Invalid signature order or duplicate signature");
+        driver.checkNSignatures(digest, signatures);
+
+        /// @dev User A presigns payload.
+        startHoax(userA);
+        settlement.submitOrder(payload);
+        bytes32 r = bytes32(abi.encodePacked(userA));
+        assembly {
+            r := shr(96, r)
+        }
+        bytes32 s;
+        uint8 v = 1;
+        signature1 = abi.encodePacked(r, s, v);
+        signatures = abi.encodePacked(signature1, signature2);
+        driver.checkNSignatures(digest, signatures);
     }
 }

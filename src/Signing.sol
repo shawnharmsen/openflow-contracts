@@ -246,7 +246,10 @@ contract Signing {
                 );
             } else if (v == 1) {
                 /// @dev Presigned signature requires order manager as signature storage contract.
-                currentOwner = _recoverPresignedOwner(digest, signature);
+                currentOwner = _recoverPresignedOwner(
+                    digest,
+                    abi.encodePacked(address(uint160(uint256(r))))
+                );
             } else if (v > 30) {
                 /// @dev EthSign signature. If v > 30 then default va (27,28)
                 /// has been adjusted for eth_sign flow.
