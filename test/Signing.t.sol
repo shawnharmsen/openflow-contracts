@@ -13,23 +13,24 @@ contract SigningTest is Storage {
     bytes32 digest = bytes32(hex"1337");
     bytes32 badDigest = bytes32(hex"deadbeef");
 
+    function testPresign() external {
+        /// @dev Malformed presignature.
+        bytes memory encodedSignatures = abi.encodePacked(strategy, hex"00");
+        vm.expectRevert("Malformed presignature");
+        settlement.recoverSigner(
+            ISettlement.Scheme.PreSign,
+            digest,
+            encodedSignatures
+        );
+    }
+
     function testEip1271() external {
         bytes memory signature1 = _sign(_USER_A_PRIVATE_KEY, digest);
         bytes memory signature2 = _sign(_USER_B_PRIVATE_KEY, digest);
         bytes memory signatures = abi.encodePacked(signature1, signature2);
 
-        /// @dev Digest not approved.
-        bytes memory encodedSignatures = abi.encodePacked(strategy, signatures);
-        encodedSignatures = abi.encodePacked(strategy, signatures);
-        vm.expectRevert("Digest not approved");
-        settlement.recoverSigner(
-            ISettlement.Scheme.Eip1271,
-            digest,
-            encodedSignatures
-        );
-
         /// @dev Invalid ECDSA signature.
-        encodedSignatures = abi.encodePacked(strategy, signatures);
+        bytes memory encodedSignatures = abi.encodePacked(strategy, signatures);
         bytes memory signatureInvalid;
         assembly {
             mstore(signatureInvalid, 65) // 65 empty bytes

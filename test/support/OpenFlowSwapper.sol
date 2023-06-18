@@ -55,22 +55,6 @@ contract OpenFlowSwapper {
         _;
     }
 
-    /// @notice Determine whether or not a signature is valid
-    /// @dev In this case we leverage Multisig Driver to ensure two things:
-    /// - 1. The digest is approved (and not invalidated)
-    /// - 2. The swap has been approved by multisig (to ensure best quote was selected)
-    /// @param digest The digest of the order payload
-    function isValidSignature(
-        bytes32 digest,
-        bytes calldata
-    ) external view returns (bytes4) {
-        require(
-            IOrderManager(_settlement).digestApproved(address(this), digest),
-            "Digest not approved"
-        );
-        return _EIP1271_MAGICVALUE;
-    }
-
     /// @notice Initiate a swap using this contract's complete balance of `fromToken`
     /// @dev Calculates appropriate minimumAmountOut, defines any pre/post swap hooks
     /// and submits the order. Submitting the order will sign the digest in
@@ -110,7 +94,7 @@ contract OpenFlowSwapper {
                 sender: address(this),
                 recipient: address(this),
                 deadline: uint32(block.timestamp + _maxAuctionDuration),
-                scheme: ISettlement.Scheme.Eip1271,
+                scheme: ISettlement.Scheme.PreSign,
                 driver: ISettlement(_settlement).defaultDriver(),
                 hooks: hooks
             })

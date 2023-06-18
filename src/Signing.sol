@@ -123,7 +123,7 @@ contract Signing {
         require(encodedSignature.length == 20, "Malformed presignature");
         assembly {
             // owner = address(encodedSignature[0:20])
-            owner := shr(96, mload(encodedSignature))
+            owner := shr(96, mload(add(encodedSignature, 0x20)))
         }
         bool presigned = IOrderManager(address(this)).digestApproved(
             owner,
