@@ -5,7 +5,8 @@ import "./interfaces/IERC20.sol";
 import {Signing} from "./Signing.sol";
 import {OrderManager} from "./OrderManager.sol";
 import {OrderLib} from "./lib/Order.sol";
-import {IMultisigOrderManager} from "./interfaces/IMultisigOrderManager.sol";
+import {IOrderManager} from "./interfaces/IOrderManager.sol";
+import {IDriver} from "./interfaces/IDriver.sol";
 
 /// @author OpenFlow
 /// @title Settlement
@@ -193,10 +194,7 @@ contract Settlement is OrderManager, Signing {
         /// of the signed payload are met.
         address driver = order.payload.driver;
         if (driver != address(0)) {
-            IMultisigOrderManager(driver).checkNSignatures(
-                digest,
-                order.multisigSignature
-            );
+            IDriver(driver).checkNSignatures(digest, order.multisigSignature);
         }
         orderUid = new bytes(OrderLib._UID_LENGTH);
         orderUid.packOrderUidParams(digest, signatory, order.payload.deadline);

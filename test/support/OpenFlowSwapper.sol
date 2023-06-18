@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 import {IERC20} from "../../src/interfaces/IERC20.sol";
 import {ISettlement} from "../../src/interfaces/ISettlement.sol";
-import {IMultisigOrderManager} from "../../src/interfaces/IMultisigOrderManager.sol";
+import {IOrderManager} from "../../src/interfaces/IOrderManager.sol";
 import {IOracle} from "../../src/interfaces/IOracle.sol";
 import {IStrategy} from "../../test/interfaces/IStrategy.sol";
 
@@ -65,10 +65,7 @@ contract OpenFlowSwapper {
         bytes calldata
     ) external view returns (bytes4) {
         require(
-            IMultisigOrderManager(_settlement).digestApproved(
-                address(this),
-                digest
-            ),
+            IOrderManager(_settlement).digestApproved(address(this), digest),
             "Digest not approved"
         );
         return _EIP1271_MAGICVALUE;
@@ -104,7 +101,7 @@ contract OpenFlowSwapper {
         });
 
         // Swap
-        IMultisigOrderManager(_settlement).submitOrder(
+        IOrderManager(_settlement).submitOrder(
             ISettlement.Payload({
                 fromToken: address(_fromToken),
                 toToken: address(_toToken),

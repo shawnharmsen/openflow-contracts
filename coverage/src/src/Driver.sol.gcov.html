@@ -31,18 +31,18 @@
             <td class="headerValue">lcov.info</td>
             <td></td>
             <td class="headerItem">Lines:</td>
-            <td class="headerCovTableEntryLo">70.0&nbsp;%</td>
+            <td class="headerCovTableEntryMed">80.0&nbsp;%</td>
             <td class="headerCovTableEntry">10</td>
-            <td class="headerCovTableEntry">7</td>
+            <td class="headerCovTableEntry">8</td>
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2023-06-17 17:33:23</td>
+            <td class="headerValue">2023-06-17 18:22:08</td>
             <td></td>
             <td class="headerItem">Functions:</td>
-            <td class="headerCovTableEntryLo">60.0&nbsp;%</td>
+            <td class="headerCovTableEntryMed">80.0&nbsp;%</td>
             <td class="headerCovTableEntry">5</td>
-            <td class="headerCovTableEntry">3</td>
+            <td class="headerCovTableEntry">4</td>
           </tr>
           <tr>
             <td></td>
@@ -114,11 +114,11 @@
 <span id="L43"><span class="lineNum">      43</span>                 :             :     /// @notice Given a digest and encoded signatures, determine if a digest is approved by a</span>
 <span id="L44"><span class="lineNum">      44</span>                 :             :     /// sufficient number of multisig signers.</span>
 <span id="L45"><span class="lineNum">      45</span>                 :             :     /// @dev Reverts if not approved.</span>
-<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaUNC tlaBgUNC">           0 :     function checkNSignatures(</span></span>
+<span id="L46"><span class="lineNum">      46</span>                 :<span class="tlaGNC tlaBgGNC">           1 :     function checkNSignatures(</span></span>
 <span id="L47"><span class="lineNum">      47</span>                 :             :         bytes32 digest,</span>
 <span id="L48"><span class="lineNum">      48</span>                 :             :         bytes memory signatures</span>
 <span id="L49"><span class="lineNum">      49</span>                 :             :     ) external view {</span>
-<span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaUNC">           0 :         ISettlement(settlement).checkNSignatures(</span></span>
+<span id="L50"><span class="lineNum">      50</span>                 :<span class="tlaGNC">           1 :         ISettlement(settlement).checkNSignatures(</span></span>
 <span id="L51"><span class="lineNum">      51</span>                 :             :             address(this),</span>
 <span id="L52"><span class="lineNum">      52</span>                 :             :             digest,</span>
 <span id="L53"><span class="lineNum">      53</span>                 :             :             signatures,</span>
@@ -131,7 +131,7 @@
 <span id="L60"><span class="lineNum">      60</span>                 :             :     /// @param _signers An array of signer addresses.</span>
 <span id="L61"><span class="lineNum">      61</span>                 :             :     /// @param _status If true, all signers in the array will be approved.</span>
 <span id="L62"><span class="lineNum">      62</span>                 :             :     /// If false all signers in the array will be unapproved.</span>
-<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC tlaBgGNC">           2 :     function setSigners(address[] memory _signers, bool _status) external {</span></span>
+<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">           2 :     function setSigners(address[] memory _signers, bool _status) external {</span></span>
 <span id="L64"><span class="lineNum">      64</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           2 :         require(msg.sender == owner, &quot;Only owner&quot;);</span></span>
 <span id="L65"><span class="lineNum">      65</span>                 :<span class="tlaGNC">           1 :         for (uint256 signerIdx; signerIdx &lt; _signers.length; signerIdx++) {</span></span>
 <span id="L66"><span class="lineNum">      66</span>                 :<span class="tlaGNC">           2 :             signers[_signers[signerIdx]] = _status;</span></span>

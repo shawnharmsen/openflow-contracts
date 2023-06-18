@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: BUSL 1.1
 pragma solidity 0.8.19;
-import {IMultisigOrderManager} from "./interfaces/IMultisigOrderManager.sol";
+import {IOrderManager} from "./interfaces/IOrderManager.sol";
 import {ISignatureValidator} from "./interfaces/ISignatureValidator.sol";
 import {ISettlement} from "./interfaces/ISettlement.sol";
+import {IDriver} from "./interfaces/IDriver.sol";
 
 /// @author OpenFlow
 /// @title Signing Library
@@ -124,7 +125,7 @@ contract Signing {
             // owner = address(encodedSignature[0:20])
             owner := shr(96, mload(encodedSignature))
         }
-        bool presigned = IMultisigOrderManager(address(this)).digestApproved(
+        bool presigned = IOrderManager(address(this)).digestApproved(
             owner,
             orderDigest
         );
@@ -262,7 +263,7 @@ contract Signing {
                 "Invalid signature order or duplicate signature"
             );
             require(
-                IMultisigOrderManager(driver).signers(currentOwner),
+                IDriver(driver).signers(currentOwner),
                 "Signer is not approved"
             );
             lastOwner = currentOwner;

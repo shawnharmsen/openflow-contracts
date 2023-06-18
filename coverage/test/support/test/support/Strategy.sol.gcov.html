@@ -31,18 +31,18 @@
             <td class="headerValue">lcov.info</td>
             <td></td>
             <td class="headerItem">Lines:</td>
-            <td class="headerCovTableEntryLo">0.0&nbsp;%</td>
+            <td class="headerCovTableEntryLo">60.0&nbsp;%</td>
             <td class="headerCovTableEntry">5</td>
-            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">3</td>
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2023-06-17 17:33:23</td>
+            <td class="headerValue">2023-06-17 18:22:08</td>
             <td></td>
             <td class="headerItem">Functions:</td>
-            <td class="headerCovTableEntryLo">0.0&nbsp;%</td>
+            <td class="headerCovTableEntryMed">75.0&nbsp;%</td>
             <td class="headerCovTableEntry">4</td>
-            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">3</td>
           </tr>
           <tr>
             <td></td>
@@ -96,18 +96,18 @@
 <span id="L25"><span class="lineNum">      25</span>                 :             :         IERC20(reward).approve(address(_settlement), type(uint256).max);</span>
 <span id="L26"><span class="lineNum">      26</span>                 :             :     }</span>
 <span id="L27"><span class="lineNum">      27</span>                 :             : </span>
-<span id="L28"><span class="lineNum">      28</span>                 :<span class="tlaUNC tlaBgUNC">           0 :     function estimatedEarnings() external view returns (uint256) {</span></span>
-<span id="L29"><span class="lineNum">      29</span>                 :<span class="tlaUNC">           0 :         return IMasterChef(masterChef).rewardOwedByAccount(address(this));</span></span>
+<span id="L28"><span class="lineNum">      28</span>                 :<span class="tlaGNC tlaBgGNC">           1 :     function estimatedEarnings() external view returns (uint256) {</span></span>
+<span id="L29"><span class="lineNum">      29</span>                 :<span class="tlaGNC">           1 :         return IMasterChef(masterChef).rewardOwedByAccount(address(this));</span></span>
 <span id="L30"><span class="lineNum">      30</span>                 :             :     }</span>
 <span id="L31"><span class="lineNum">      31</span>                 :             : </span>
-<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaUNC">           0 :     function harvest() external {</span></span>
-<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaUNC">           0 :         IMasterChef(masterChef).getReward();</span></span>
-<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaUNC">           0 :         _swap();</span></span>
+<span id="L32"><span class="lineNum">      32</span>                 :<span class="tlaGNC">           1 :     function harvest() external {</span></span>
+<span id="L33"><span class="lineNum">      33</span>                 :<span class="tlaGNC">           1 :         IMasterChef(masterChef).getReward();</span></span>
+<span id="L34"><span class="lineNum">      34</span>                 :<span class="tlaGNC">           1 :         _swap();</span></span>
 <span id="L35"><span class="lineNum">      35</span>                 :             :     }</span>
 <span id="L36"><span class="lineNum">      36</span>                 :             : </span>
-<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaUNC">           0 :     function updateAccounting() public {}</span></span>
+<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC">           1 :     function updateAccounting() public {}</span></span>
 <span id="L38"><span class="lineNum">      38</span>                 :             : </span>
-<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaUNC">           0 :     function sweep(address token) external {</span></span>
+<span id="L39"><span class="lineNum">      39</span>                 :<span class="tlaUNC tlaBgUNC">           0 :     function sweep(address token) external {</span></span>
 <span id="L40"><span class="lineNum">      40</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaUNC" title="Branch 1 was not executed"> # </span>]:<span class="tlaUNC">           0 :         require(msg.sender == manager);</span></span>
 <span id="L41"><span class="lineNum">      41</span>                 :<span class="tlaUNC">           0 :         IERC20(token).transfer(manager, IERC20(token).balanceOf(address(this)));</span></span>
 <span id="L42"><span class="lineNum">      42</span>                 :             :     }</span>
