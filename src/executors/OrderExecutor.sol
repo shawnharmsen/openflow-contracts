@@ -33,8 +33,8 @@ contract OrderExecutor {
 
     struct Interaction {
         address target;
+        bytes data;
         uint256 value;
-        bytes callData;
     }
 
     constructor(address _settlement) {
@@ -79,7 +79,7 @@ contract OrderExecutor {
             ISettlement.Interaction memory interaction = interactions[i];
             (bool success, ) = interaction.target.call{
                 value: interaction.value
-            }(interaction.callData);
+            }(interaction.data);
             require(success, "Order executor interaction failed");
         }
     }

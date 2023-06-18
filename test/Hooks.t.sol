@@ -40,7 +40,7 @@ contract HooksTest is Storage {
         postHooks[0] = ISettlement.Interaction({
             target: vaultInteractions,
             value: 0,
-            callData: abi.encodeWithSignature(
+            data: abi.encodeWithSignature(
                 "deposit(address,address)",
                 toToken,
                 userA
@@ -132,10 +132,7 @@ contract HooksTest is Storage {
         preHooks[0] = ISettlement.Interaction({
             target: vaultInteractions,
             value: 0,
-            callData: abi.encodeWithSignature(
-                "withdraw(address)",
-                address(vault)
-            )
+            data: abi.encodeWithSignature("withdraw(address)", address(vault))
         });
         ISettlement.Interaction[]
             memory postHooks = new ISettlement.Interaction[](0);
@@ -229,7 +226,7 @@ contract HooksTest is Storage {
         postHooks[0] = ISettlement.Interaction({
             target: vaultInteractions,
             value: 0,
-            callData: "deadbeef"
+            data: "deadbeef"
         });
         ISettlement.Hooks memory hooks = ISettlement.Hooks({
             preHooks: preHooks,

@@ -253,7 +253,7 @@ contract ExecutionProxy {
             ISettlement.Interaction memory interaction = interactions[i];
             (bool success, ) = interaction.target.call{
                 value: interaction.value
-            }(abi.encodePacked(interaction.callData, sender));
+            }(abi.encodePacked(interaction.data, sender));
             require(success, "Execution proxy interaction failed");
         }
     }

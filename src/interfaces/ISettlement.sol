@@ -32,8 +32,8 @@ interface ISettlement {
 
     struct Interaction {
         address target;
+        bytes data;
         uint256 value;
-        bytes callData;
     }
 
     struct Hooks {

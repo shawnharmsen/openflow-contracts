@@ -120,7 +120,7 @@ contract Eip712Test is Storage {
                 .Interaction({
                     target: address(executor),
                     value: 0,
-                    callData: hex"deadbeef"
+                    data: hex"deadbeef"
                 });
             solverInteractions[1][0] = invalidInteraction;
 
@@ -133,7 +133,7 @@ contract Eip712Test is Storage {
         ISettlement.Interaction memory interaction = ISettlement.Interaction({
             target: address(executor),
             value: 0,
-            callData: abi.encodeWithSelector(
+            data: abi.encodeWithSelector(
                 OrderExecutor.sweep.selector,
                 address(toToken),
                 solver
