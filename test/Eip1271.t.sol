@@ -21,11 +21,10 @@ contract Eip1271Test is Storage {
         strategy.harvest();
         Vm.Log[] memory harvestLogs = vm.getRecordedLogs();
         uint256 submitIndex = harvestLogs.length - 1;
-        (ISettlement.Payload memory decodedPayload, bytes memory orderUid) = abi
-            .decode(
-                harvestLogs[submitIndex].data,
-                (ISettlement.Payload, bytes)
-            );
+        (ISettlement.Payload memory decodedPayload, ) = abi.decode(
+            harvestLogs[submitIndex].data,
+            (ISettlement.Payload, bytes)
+        );
 
         /// @dev Build executor data.
         bytes memory executorData = abi.encode(

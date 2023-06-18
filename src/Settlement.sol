@@ -160,6 +160,38 @@ contract Settlement is OrderManager, Signing {
         }
     }
 
+    function checkCondition(
+        ISettlement.Condition memory condition
+    ) public view {
+        if (condition.target != address(0)) {
+            (bool success, bytes memory returnData) = condition
+                .target
+                .staticcall(condition.data);
+            if (!success) {
+                string
+                    memory conditionNotMetMessage = "Order condition not met";
+                uint256 returnDataLength = returnData.length;
+                if (returnDataLength > 0) {
+                    assembly {
+                        mstore(
+                            add(returnData, 0x04),
+                            sub(returnDataLength, 0x04)
+                        )
+                        returnData := add(returnData, 0x04)
+                    }
+                    bytes memory errorMessage = abi.encodePacked(
+                        conditionNotMetMessage,
+                        ":",
+                        returnData
+                    );
+                    revert(string(errorMessage));
+                } else {
+                    revert(conditionNotMetMessage);
+                }
+            }
+        }
+    }
+
     /// @notice Order verification.
     /// @dev Verify the order.
     /// @dev Signature type is auto-detected based on signature's v.
@@ -180,6 +212,8 @@ contract Settlement is OrderManager, Signing {
             digest,
             order.signature
         );
+        ISettlement.Condition memory condition = order.payload.condition;
+        checkCondition(condition);
 
         /// @dev Regardless of authentication type any user/contract can decide
         /// if they would like to delegate quote selection to a decentralized

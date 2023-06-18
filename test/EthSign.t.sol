@@ -30,6 +30,10 @@ contract EthSignTest is Storage {
         /// @dev Build payload.
         ISettlement.Hooks memory hooks; // Optional pre and post swap hooks.
         ISettlement.Condition memory condition;
+        // ISettlement.Condition memory condition = ISettlement.Condition({
+        //     target: address(new ConditionalOrder()),
+        //     data: abi.encodeWithSignature("checkCondition()")
+        // });
         ISettlement.Payload memory payload = ISettlement.Payload({
             fromToken: address(fromToken),
             toToken: address(toToken),
