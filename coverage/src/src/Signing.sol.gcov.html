@@ -31,27 +31,27 @@
             <td class="headerValue">lcov.info</td>
             <td></td>
             <td class="headerItem">Lines:</td>
-            <td class="headerCovTableEntryLo">74.1&nbsp;%</td>
+            <td class="headerCovTableEntryMed">82.8&nbsp;%</td>
             <td class="headerCovTableEntry">58</td>
-            <td class="headerCovTableEntry">43</td>
+            <td class="headerCovTableEntry">48</td>
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2023-06-17 18:22:08</td>
+            <td class="headerValue">2023-06-17 20:36:29</td>
             <td></td>
             <td class="headerItem">Functions:</td>
-            <td class="headerCovTableEntryMed">85.7&nbsp;%</td>
+            <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
             <td class="headerCovTableEntry">7</td>
-            <td class="headerCovTableEntry">6</td>
+            <td class="headerCovTableEntry">7</td>
           </tr>
           <tr>
             <td></td>
             <td></td>
             <td></td>
             <td class="headerItem">Branches:</td>
-            <td class="headerCovTableEntryLo">47.2&nbsp;%</td>
+            <td class="headerCovTableEntryLo">50.0&nbsp;%</td>
             <td class="headerCovTableEntry">36</td>
-            <td class="headerCovTableEntry">17</td>
+            <td class="headerCovTableEntry">18</td>
           </tr>
                   <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
                 </table>
@@ -74,272 +74,273 @@
 <span id="L3"><span class="lineNum">       3</span>                 :             : import {IOrderManager} from &quot;./interfaces/IOrderManager.sol&quot;;</span>
 <span id="L4"><span class="lineNum">       4</span>                 :             : import {ISignatureValidator} from &quot;./interfaces/ISignatureValidator.sol&quot;;</span>
 <span id="L5"><span class="lineNum">       5</span>                 :             : import {ISettlement} from &quot;./interfaces/ISettlement.sol&quot;;</span>
-<span id="L6"><span class="lineNum">       6</span>                 :             : </span>
-<span id="L7"><span class="lineNum">       7</span>                 :             : /// @author OpenFlow</span>
-<span id="L8"><span class="lineNum">       8</span>                 :             : /// @title Signing Library</span>
-<span id="L9"><span class="lineNum">       9</span>                 :             : /// @notice Responsible for all OpenFlow signature logic.</span>
-<span id="L10"><span class="lineNum">      10</span>                 :             : /// @dev This library is a slightly modified combined version of two battle</span>
-<span id="L11"><span class="lineNum">      11</span>                 :             : /// signing libraries (Gnosis Safe and Cowswap). The intention here is to make an</span>
-<span id="L12"><span class="lineNum">      12</span>                 :             : /// extremely versatile signing lib to handle all major signature types as well as</span>
-<span id="L13"><span class="lineNum">      13</span>                 :             : /// multisig signatures. It handles EIP-712, EIP-1271, EthSign, Presign and Gnosis style</span>
-<span id="L14"><span class="lineNum">      14</span>                 :             : /// multisig signature threshold. Multisig signatures can be comprised of any</span>
-<span id="L15"><span class="lineNum">      15</span>                 :             : /// combination of signature types. Signature type is auto-detected (per Gnosis)</span>
-<span id="L16"><span class="lineNum">      16</span>                 :             : /// based on v value.</span>
-<span id="L17"><span class="lineNum">      17</span>                 :             : contract Signing {</span>
-<span id="L18"><span class="lineNum">      18</span>                 :             :     /// @dev All ECDSA signatures (EIP-712 and EthSign) must be 65 bytes.</span>
-<span id="L19"><span class="lineNum">      19</span>                 :             :     /// @dev Contract signatures (EIP-1271) can be any number of bytes, however</span>
-<span id="L20"><span class="lineNum">      20</span>                 :             :     /// Gnosis-style threshold packed signatures must adhere to the Gnosis contract.</span>
-<span id="L21"><span class="lineNum">      21</span>                 :             :     /// Signature format: {32-bytes owner_1 (r)}{32-bytes signature_offset_1 (s)}{1-byte v_1 (0)}{signature_length_1}{signature_bytes_1}</span>
-<span id="L22"><span class="lineNum">      22</span>                 :             :     uint256 private constant _ECDSA_SIGNATURE_LENGTH = 65;</span>
-<span id="L23"><span class="lineNum">      23</span>                 :             :     bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;</span>
-<span id="L24"><span class="lineNum">      24</span>                 :             :     address public immutable defaultDriver;</span>
-<span id="L25"><span class="lineNum">      25</span>                 :             : </span>
-<span id="L26"><span class="lineNum">      26</span>                 :             :     /// TODO: comments</span>
-<span id="L27"><span class="lineNum">      27</span>                 :             :     constructor(address _defaultDriver) {</span>
-<span id="L28"><span class="lineNum">      28</span>                 :             :         defaultDriver = _defaultDriver;</span>
-<span id="L29"><span class="lineNum">      29</span>                 :             :     }</span>
-<span id="L30"><span class="lineNum">      30</span>                 :             : </span>
-<span id="L31"><span class="lineNum">      31</span>                 :             :     /// @notice Primary signature check endpoint.</span>
-<span id="L32"><span class="lineNum">      32</span>                 :             :     /// @param signature Signature bytes (usually 65 bytes) but in the case of packed</span>
-<span id="L33"><span class="lineNum">      33</span>                 :             :     /// contract signatures actual signature data offset and length may vary.</span>
-<span id="L34"><span class="lineNum">      34</span>                 :             :     /// @param digest Hashed payload digest.</span>
-<span id="L35"><span class="lineNum">      35</span>                 :             :     /// @return owner Returns authenticated owner.</span>
-<span id="L36"><span class="lineNum">      36</span>                 :<span class="tlaGNC tlaBgGNC">           5 :     function recoverSigner(</span></span>
-<span id="L37"><span class="lineNum">      37</span>                 :             :         ISettlement.Scheme scheme,</span>
-<span id="L38"><span class="lineNum">      38</span>                 :             :         bytes32 digest,</span>
-<span id="L39"><span class="lineNum">      39</span>                 :             :         bytes memory signature</span>
-<span id="L40"><span class="lineNum">      40</span>                 :             :     ) public view returns (address owner) {</span>
-<span id="L41"><span class="lineNum">      41</span>                 :             :         /// @dev Extract v from signature</span>
-<span id="L42"><span class="lineNum">      42</span>         [<span class="tlaGBC" title="Branch 0 was taken 4 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 15 times"> + </span>]:<span class="tlaGNC">          19 :         if (scheme == ISettlement.Scheme.Eip1271) {</span></span>
-<span id="L43"><span class="lineNum">      43</span>                 :             :             /// @dev Contract signature (EIP-1271).</span>
-<span id="L44"><span class="lineNum">      44</span>                 :<span class="tlaGNC">           4 :             owner = _recoverEip1271Signer(digest, signature);</span></span>
-<span id="L45"><span class="lineNum">      45</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaGBC" title="Branch 1 was taken 15 times"> + </span>]:<span class="tlaGNC">          15 :         } else if (scheme == ISettlement.Scheme.PreSign) {</span></span>
-<span id="L46"><span class="lineNum">      46</span>                 :             :             /// @dev Presigned signature requires order manager as signature storage contract.</span>
-<span id="L47"><span class="lineNum">      47</span>                 :<span class="tlaUNC tlaBgUNC">           0 :             owner = _recoverPresignedOwner(digest, signature);</span></span>
-<span id="L48"><span class="lineNum">      48</span>         [<span class="tlaGBC" title="Branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 12 times"> + </span>]:<span class="tlaGNC tlaBgGNC">          15 :         } else if (scheme == ISettlement.Scheme.EthSign) {</span></span>
-<span id="L49"><span class="lineNum">      49</span>                 :             :             /// @dev EthSign signature. If v &gt; 30 then default va (27,28)</span>
-<span id="L50"><span class="lineNum">      50</span>                 :             :             /// has been adjusted for eth_sign flow.</span>
-<span id="L51"><span class="lineNum">      51</span>                 :<span class="tlaGNC">           3 :             owner = _recoverEthSignSigner(digest, signature);</span></span>
-<span id="L52"><span class="lineNum">      52</span>                 :             :         } else {</span>
-<span id="L53"><span class="lineNum">      53</span>                 :             :             /// @dev EIP-712 signature. Default is the ecrecover flow with the provided data hash.</span>
-<span id="L54"><span class="lineNum">      54</span>                 :<span class="tlaGNC">          12 :             owner = _recoverEip712Signer(digest, signature);</span></span>
-<span id="L55"><span class="lineNum">      55</span>                 :             :         }</span>
-<span id="L56"><span class="lineNum">      56</span>                 :             :     }</span>
-<span id="L57"><span class="lineNum">      57</span>                 :             : </span>
-<span id="L58"><span class="lineNum">      58</span>                 :             :     /// @notice Recover EIP 712 signer.</span>
-<span id="L59"><span class="lineNum">      59</span>                 :             :     /// @param digest Hashed payload digest.</span>
-<span id="L60"><span class="lineNum">      60</span>                 :             :     /// @param signature Signature bytes.</span>
-<span id="L61"><span class="lineNum">      61</span>                 :             :     /// @return owner Signature owner.</span>
-<span id="L62"><span class="lineNum">      62</span>                 :<span class="tlaGNC">          13 :     function _recoverEip712Signer(</span></span>
-<span id="L63"><span class="lineNum">      63</span>                 :             :         bytes32 digest,</span>
-<span id="L64"><span class="lineNum">      64</span>                 :             :         bytes memory signature</span>
-<span id="L65"><span class="lineNum">      65</span>                 :             :     ) internal pure returns (address owner) {</span>
-<span id="L66"><span class="lineNum">      66</span>                 :<span class="tlaGNC">          13 :         owner = _ecdsaRecover(digest, signature);</span></span>
-<span id="L67"><span class="lineNum">      67</span>                 :             :     }</span>
-<span id="L68"><span class="lineNum">      68</span>                 :             : </span>
-<span id="L69"><span class="lineNum">      69</span>                 :             :     /// @notice Extract forward and validate signature for EIP-1271.</span>
-<span id="L70"><span class="lineNum">      70</span>                 :             :     /// @dev See &quot;Contract Signature&quot; section of https://docs.safe.global/learn/safe-core/safe-core-protocol/signatures</span>
-<span id="L71"><span class="lineNum">      71</span>                 :             :     /// @dev Code comes from Gnosis Safe: https://github.com/safe-global/safe-contracts/blob/main/contracts/Safe.sol</span>
-<span id="L72"><span class="lineNum">      72</span>                 :             :     /// @param digest Hashed payload digest.</span>
-<span id="L73"><span class="lineNum">      73</span>                 :             :     /// @param encodedSignature Encoded signature.</span>
-<span id="L74"><span class="lineNum">      74</span>                 :             :     /// @return owner Signature owner.</span>
-<span id="L75"><span class="lineNum">      75</span>                 :<span class="tlaGNC">           4 :     function _recoverEip1271Signer(</span></span>
-<span id="L76"><span class="lineNum">      76</span>                 :             :         bytes32 digest,</span>
-<span id="L77"><span class="lineNum">      77</span>                 :             :         bytes memory encodedSignature</span>
-<span id="L78"><span class="lineNum">      78</span>                 :             :     ) internal view returns (address owner) {</span>
-<span id="L79"><span class="lineNum">      79</span>                 :<span class="tlaGNC">           4 :         bytes memory signature;</span></span>
-<span id="L80"><span class="lineNum">      80</span>                 :<span class="tlaGNC">           4 :         uint256 signatureLength = encodedSignature.length - 20;</span></span>
-<span id="L81"><span class="lineNum">      81</span>                 :             :         assembly {</span>
-<span id="L82"><span class="lineNum">      82</span>                 :<span class="tlaGNC">           4 :             owner := mload(add(encodedSignature, 20))</span></span>
-<span id="L83"><span class="lineNum">      83</span>                 :             :             mstore(add(encodedSignature, 20), signatureLength)</span>
-<span id="L84"><span class="lineNum">      84</span>                 :<span class="tlaGNC">           4 :             signature := add(encodedSignature, 20)</span></span>
-<span id="L85"><span class="lineNum">      85</span>                 :             :         }</span>
-<span id="L86"><span class="lineNum">      86</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">           4 :         require(</span></span>
-<span id="L87"><span class="lineNum">      87</span>                 :             :             ISignatureValidator(owner).isValidSignature(digest, signature) ==</span>
-<span id="L88"><span class="lineNum">      88</span>                 :             :                 _EIP1271_MAGICVALUE,</span>
-<span id="L89"><span class="lineNum">      89</span>                 :             :             &quot;EIP-1271 signature is invalid&quot;</span>
-<span id="L90"><span class="lineNum">      90</span>                 :             :         );</span>
-<span id="L91"><span class="lineNum">      91</span>                 :             :     }</span>
-<span id="L92"><span class="lineNum">      92</span>                 :             : </span>
-<span id="L93"><span class="lineNum">      93</span>                 :             :     /// @notice Recover signature using eth sign.</span>
-<span id="L94"><span class="lineNum">      94</span>                 :             :     /// @dev Uses ecdsaRecover with &quot;Ethereum Signed Message&quot; prefixed.</span>
-<span id="L95"><span class="lineNum">      95</span>                 :             :     /// @param digest Hashed payload digest.</span>
-<span id="L96"><span class="lineNum">      96</span>                 :             :     /// @param signature Signature.</span>
-<span id="L97"><span class="lineNum">      97</span>                 :             :     /// @return owner Signature owner.</span>
-<span id="L98"><span class="lineNum">      98</span>                 :<span class="tlaGNC">           4 :     function _recoverEthSignSigner(</span></span>
-<span id="L99"><span class="lineNum">      99</span>                 :             :         bytes32 digest,</span>
-<span id="L100"><span class="lineNum">     100</span>                 :             :         bytes memory signature</span>
-<span id="L101"><span class="lineNum">     101</span>                 :             :     ) internal pure returns (address owner) {</span>
-<span id="L102"><span class="lineNum">     102</span>                 :             :         // The signed message is encoded as:</span>
-<span id="L103"><span class="lineNum">     103</span>                 :             :         // `&quot;\x19Ethereum Signed Message:\n&quot; || length || data`, where</span>
-<span id="L104"><span class="lineNum">     104</span>                 :             :         // the length is a constant (32 bytes) and the data is defined as:</span>
-<span id="L105"><span class="lineNum">     105</span>                 :             :         // `orderDigest`.</span>
-<span id="L106"><span class="lineNum">     106</span>                 :<span class="tlaGNC">           4 :         bytes32 ethSignDigest = keccak256(</span></span>
-<span id="L107"><span class="lineNum">     107</span>                 :             :             abi.encodePacked(&quot;\x19Ethereum Signed Message:\n32&quot;, digest)</span>
-<span id="L108"><span class="lineNum">     108</span>                 :             :         );</span>
-<span id="L109"><span class="lineNum">     109</span>                 :<span class="tlaGNC">           4 :         owner = _ecdsaRecover(ethSignDigest, signature);</span></span>
-<span id="L110"><span class="lineNum">     110</span>                 :             :     }</span>
-<span id="L111"><span class="lineNum">     111</span>                 :             : </span>
-<span id="L112"><span class="lineNum">     112</span>                 :             :     /// @notice Verifies the order has been pre-signed. The signature is the</span>
-<span id="L113"><span class="lineNum">     113</span>                 :             :     /// address of the signer of the order.</span>
-<span id="L114"><span class="lineNum">     114</span>                 :             :     /// @param orderDigest The EIP-712 signing digest derived from the order</span>
-<span id="L115"><span class="lineNum">     115</span>                 :             :     /// parameters.</span>
-<span id="L116"><span class="lineNum">     116</span>                 :             :     /// @param encodedSignature The pre-sign signature reprenting the order UID.</span>
-<span id="L117"><span class="lineNum">     117</span>                 :             :     /// @return owner The address of the signer.</span>
-<span id="L118"><span class="lineNum">     118</span>                 :<span class="tlaUNC tlaBgUNC">           0 :     function _recoverPresignedOwner(</span></span>
-<span id="L119"><span class="lineNum">     119</span>                 :             :         bytes32 orderDigest,</span>
-<span id="L120"><span class="lineNum">     120</span>                 :             :         bytes memory encodedSignature</span>
-<span id="L121"><span class="lineNum">     121</span>                 :             :     ) internal view returns (address owner) {</span>
-<span id="L122"><span class="lineNum">     122</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaUNC" title="Branch 1 was not executed"> # </span>]:<span class="tlaUNC">           0 :         require(encodedSignature.length == 20, &quot;Malformed presignature&quot;);</span></span>
-<span id="L123"><span class="lineNum">     123</span>                 :             :         assembly {</span>
-<span id="L124"><span class="lineNum">     124</span>                 :             :             // owner = address(encodedSignature[0:20])</span>
-<span id="L125"><span class="lineNum">     125</span>                 :<span class="tlaUNC">           0 :             owner := shr(96, mload(encodedSignature))</span></span>
-<span id="L126"><span class="lineNum">     126</span>                 :             :         }</span>
-<span id="L127"><span class="lineNum">     127</span>                 :<span class="tlaUNC">           0 :         bool presigned = IOrderManager(address(this)).digestApproved(</span></span>
-<span id="L128"><span class="lineNum">     128</span>                 :             :             owner,</span>
-<span id="L129"><span class="lineNum">     129</span>                 :             :             orderDigest</span>
-<span id="L130"><span class="lineNum">     130</span>                 :             :         );</span>
-<span id="L131"><span class="lineNum">     131</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaUNC" title="Branch 1 was not executed"> # </span>]:<span class="tlaUNC">           0 :         require(presigned, &quot;Order not presigned&quot;);</span></span>
-<span id="L132"><span class="lineNum">     132</span>                 :             :     }</span>
-<span id="L133"><span class="lineNum">     133</span>                 :             : </span>
-<span id="L134"><span class="lineNum">     134</span>                 :             :     /// @notice Utility for recovering signature using ecrecover.</span>
-<span id="L135"><span class="lineNum">     135</span>                 :             :     /// @dev Signature length is expected to be exactly 65 bytes.</span>
-<span id="L136"><span class="lineNum">     136</span>                 :             :     /// @param message Signed messed.</span>
-<span id="L137"><span class="lineNum">     137</span>                 :             :     /// @param signature Signature.</span>
-<span id="L138"><span class="lineNum">     138</span>                 :             :     /// @return signer Returns signer (signature owner).</span>
-<span id="L139"><span class="lineNum">     139</span>                 :<span class="tlaGNC tlaBgGNC">          17 :     function _ecdsaRecover(</span></span>
-<span id="L140"><span class="lineNum">     140</span>                 :             :         bytes32 message,</span>
-<span id="L141"><span class="lineNum">     141</span>                 :             :         bytes memory signature</span>
-<span id="L142"><span class="lineNum">     142</span>                 :             :     ) internal pure returns (address signer) {</span>
-<span id="L143"><span class="lineNum">     143</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 16 times"> + </span>]:<span class="tlaGNC">          17 :         require(</span></span>
-<span id="L144"><span class="lineNum">     144</span>                 :             :             signature.length == _ECDSA_SIGNATURE_LENGTH,</span>
-<span id="L145"><span class="lineNum">     145</span>                 :             :             &quot;Malformed ECDSA signature&quot;</span>
-<span id="L146"><span class="lineNum">     146</span>                 :             :         );</span>
-<span id="L147"><span class="lineNum">     147</span>                 :<span class="tlaGNC">          16 :         (bytes32 r, bytes32 s) = abi.decode(signature, (bytes32, bytes32));</span></span>
-<span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">          16 :         uint8 v = uint8(signature[64]);</span></span>
-<span id="L149"><span class="lineNum">     149</span>                 :             : </span>
-<span id="L150"><span class="lineNum">     150</span>                 :<span class="tlaGNC">          16 :         signer = ecrecover(message, v, r, s);</span></span>
-<span id="L151"><span class="lineNum">     151</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 15 times"> + </span>]:<span class="tlaGNC">          16 :         require(signer != address(0), &quot;Invalid ECDSA signature&quot;);</span></span>
-<span id="L152"><span class="lineNum">     152</span>                 :             :     }</span>
-<span id="L153"><span class="lineNum">     153</span>                 :             : </span>
-<span id="L154"><span class="lineNum">     154</span>                 :             :     /// @notice Gnosis style signature threshold check.</span>
-<span id="L155"><span class="lineNum">     155</span>                 :             :     /// @dev Since the EIP-1271 does an external call, be mindful of reentrancy attacks.</span>
-<span id="L156"><span class="lineNum">     156</span>                 :             :     /// @dev Reverts if signature threshold is not passed.</span>
-<span id="L157"><span class="lineNum">     157</span>                 :             :     /// @dev Signatures must be packed such that the decimal values of the derived signers are in</span>
-<span id="L158"><span class="lineNum">     158</span>                 :             :     /// ascending numerical order.</span>
-<span id="L159"><span class="lineNum">     159</span>                 :             :     /// For instance `0xA0b8...eB48` &gt; `0x6B17....71d0F`, so the signature for `0xA0b8...eB48` must come first.</span>
-<span id="L160"><span class="lineNum">     160</span>                 :             :     /// @dev Code comes from Gnosis Safe: https://github.com/safe-global/safe-contracts/blob/main/contracts/Safe.sol</span>
-<span id="L161"><span class="lineNum">     161</span>                 :             :     /// @dev Use `recoverSigner()` methods wherever possible and use exact Gnosis code when v == 0 (contract signatures)</span>
-<span id="L162"><span class="lineNum">     162</span>                 :             :     /// @param digest The EIP-712 signing digest derived from the order parameters.</span>
-<span id="L163"><span class="lineNum">     163</span>                 :             :     /// @param signatures Packed and encoded multisig signatures payload.</span>
-<span id="L164"><span class="lineNum">     164</span>                 :             :     /// @param requiredSignatures Signature threshold. This is required since we are unable.</span>
-<span id="L165"><span class="lineNum">     165</span>                 :             :     /// to easily determine the number of signatures from the signature payload alone.</span>
-<span id="L166"><span class="lineNum">     166</span>                 :<span class="tlaGNC">           1 :     function checkNSignatures(</span></span>
-<span id="L167"><span class="lineNum">     167</span>                 :             :         address driver,</span>
-<span id="L168"><span class="lineNum">     168</span>                 :             :         bytes32 digest,</span>
-<span id="L169"><span class="lineNum">     169</span>                 :             :         bytes memory signatures,</span>
-<span id="L170"><span class="lineNum">     170</span>                 :             :         uint256 requiredSignatures</span>
-<span id="L171"><span class="lineNum">     171</span>                 :             :     ) public view {</span>
-<span id="L172"><span class="lineNum">     172</span>                 :             :         /// @dev Check that the provided signature data is not too short</span>
-<span id="L173"><span class="lineNum">     173</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :         require(</span></span>
-<span id="L174"><span class="lineNum">     174</span>                 :             :             signatures.length &gt;= requiredSignatures * 65,</span>
-<span id="L175"><span class="lineNum">     175</span>                 :             :             &quot;Not enough signatures provided&quot;</span>
-<span id="L176"><span class="lineNum">     176</span>                 :             :         );</span>
-<span id="L177"><span class="lineNum">     177</span>                 :             : </span>
-<span id="L178"><span class="lineNum">     178</span>                 :             :         /// @dev There cannot be an owner with address 0.</span>
-<span id="L179"><span class="lineNum">     179</span>                 :<span class="tlaGNC">           1 :         address lastOwner = address(0);</span></span>
-<span id="L180"><span class="lineNum">     180</span>                 :<span class="tlaGNC">           1 :         address currentOwner;</span></span>
-<span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">           1 :         uint256 signatureIdx;</span></span>
-<span id="L182"><span class="lineNum">     182</span>                 :<span class="tlaGNC">           1 :         bytes32 r;</span></span>
-<span id="L183"><span class="lineNum">     183</span>                 :<span class="tlaGNC">           1 :         bytes32 s;</span></span>
-<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">           1 :         uint8 v;</span></span>
-<span id="L185"><span class="lineNum">     185</span>                 :             :         for (</span>
-<span id="L186"><span class="lineNum">     186</span>                 :<span class="tlaGNC">           1 :             signatureIdx = 0;</span></span>
-<span id="L187"><span class="lineNum">     187</span>                 :<span class="tlaGNC">           3 :             signatureIdx &lt; requiredSignatures;</span></span>
-<span id="L188"><span class="lineNum">     188</span>                 :<span class="tlaGNC">           2 :             signatureIdx++</span></span>
-<span id="L189"><span class="lineNum">     189</span>                 :             :         ) {</span>
-<span id="L190"><span class="lineNum">     190</span>                 :             :             // From Gnosis `signatureSplit` method</span>
-<span id="L191"><span class="lineNum">     191</span>                 :             :             assembly {</span>
-<span id="L192"><span class="lineNum">     192</span>                 :             :                 let signaturePos := mul(0x41, signatureIdx)</span>
-<span id="L193"><span class="lineNum">     193</span>                 :<span class="tlaGNC">           2 :                 r := mload(add(signatures, add(signaturePos, 0x20)))</span></span>
-<span id="L194"><span class="lineNum">     194</span>                 :<span class="tlaGNC">           2 :                 s := mload(add(signatures, add(signaturePos, 0x40)))</span></span>
-<span id="L195"><span class="lineNum">     195</span>                 :<span class="tlaGNC">           2 :                 v := and(mload(add(signatures, add(signaturePos, 0x41))), 0xff)</span></span>
-<span id="L196"><span class="lineNum">     196</span>                 :             :             }</span>
-<span id="L197"><span class="lineNum">     197</span>                 :<span class="tlaGNC">           2 :             bytes memory signature = abi.encodePacked(r, s, v);</span></span>
-<span id="L198"><span class="lineNum">     198</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaUNC" title="Branch 1 was not executed"> # </span>]:<span class="tlaGNC">           2 :             if (v == 0) {</span></span>
-<span id="L199"><span class="lineNum">     199</span>                 :             :                 /// @dev When handling contract signatures the address of the contract is encoded into r.</span>
-<span id="L200"><span class="lineNum">     200</span>                 :<span class="tlaUNC tlaBgUNC">           0 :                 currentOwner = address(uint160(uint256(r)));</span></span>
-<span id="L201"><span class="lineNum">     201</span>                 :             : </span>
-<span id="L202"><span class="lineNum">     202</span>                 :             :                 /// @dev Check that signature data pointer (s) is not pointing inside</span>
-<span id="L203"><span class="lineNum">     203</span>                 :             :                 /// the static part of the signatures bytes. This check is not completely accurate,</span>
-<span id="L204"><span class="lineNum">     204</span>                 :             :                 /// since it is possible that more signatures than the threshold are send.</span>
-<span id="L205"><span class="lineNum">     205</span>                 :             :                 // Here we only check that the pointer is not pointing inside the</span>
-<span id="L206"><span class="lineNum">     206</span>                 :             :                 /// part that is being processed.</span>
-<span id="L207"><span class="lineNum">     207</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaUNC" title="Branch 1 was not executed"> # </span>]:<span class="tlaUNC">           0 :                 require(uint256(s) &gt;= 65, &quot;Signature data pointer is invalid&quot;);</span></span>
-<span id="L208"><span class="lineNum">     208</span>                 :             : </span>
-<span id="L209"><span class="lineNum">     209</span>                 :             :                 /// @dev Check that signature data pointer (s) is in bounds (points to the length of data -&gt; 32 bytes).</span>
-<span id="L210"><span class="lineNum">     210</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaUNC" title="Branch 1 was not executed"> # </span>]:<span class="tlaUNC">           0 :                 require(</span></span>
-<span id="L211"><span class="lineNum">     211</span>                 :             :                     uint256(s) + 32 &lt;= signature.length,</span>
-<span id="L212"><span class="lineNum">     212</span>                 :             :                     &quot;Signature data pointer is out of bounds&quot;</span>
-<span id="L213"><span class="lineNum">     213</span>                 :             :                 );</span>
-<span id="L214"><span class="lineNum">     214</span>                 :             : </span>
-<span id="L215"><span class="lineNum">     215</span>                 :             :                 /// @dev Check if the contract signature is in bounds: start of data is s + 32</span>
-<span id="L216"><span class="lineNum">     216</span>                 :             :                 /// and end is start + signature length.</span>
-<span id="L217"><span class="lineNum">     217</span>                 :<span class="tlaUNC">           0 :                 uint256 contractSignatureLen;</span></span>
-<span id="L218"><span class="lineNum">     218</span>                 :             :                 assembly {</span>
-<span id="L219"><span class="lineNum">     219</span>                 :<span class="tlaUNC">           0 :                     contractSignatureLen := mload(add(add(signature, s), 0x20))</span></span>
-<span id="L220"><span class="lineNum">     220</span>                 :             :                 }</span>
-<span id="L221"><span class="lineNum">     221</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaUNC" title="Branch 1 was not executed"> # </span>]:<span class="tlaUNC">           0 :                 require(</span></span>
-<span id="L222"><span class="lineNum">     222</span>                 :             :                     uint256(s) + 32 + contractSignatureLen &lt;= signature.length,</span>
-<span id="L223"><span class="lineNum">     223</span>                 :             :                     &quot;Signature is out of bounds&quot;</span>
-<span id="L224"><span class="lineNum">     224</span>                 :             :                 );</span>
-<span id="L225"><span class="lineNum">     225</span>                 :             : </span>
-<span id="L226"><span class="lineNum">     226</span>                 :             :                 /// @dev Check signature.</span>
-<span id="L227"><span class="lineNum">     227</span>                 :<span class="tlaUNC">           0 :                 bytes memory contractSignature;</span></span>
-<span id="L228"><span class="lineNum">     228</span>                 :             :                 assembly {</span>
-<span id="L229"><span class="lineNum">     229</span>                 :             :                     /// @dev The signature data for contract signatures is</span>
-<span id="L230"><span class="lineNum">     230</span>                 :             :                     /// appended to the concatenated signatures and the offset</span>
-<span id="L231"><span class="lineNum">     231</span>                 :             :                     /// is stored in s.</span>
-<span id="L232"><span class="lineNum">     232</span>                 :<span class="tlaUNC">           0 :                     contractSignature := add(add(signature, s), 0x20)</span></span>
-<span id="L233"><span class="lineNum">     233</span>                 :             :                 }</span>
-<span id="L234"><span class="lineNum">     234</span>                 :             : </span>
-<span id="L235"><span class="lineNum">     235</span>                 :             :                 /// @dev Perform signature validation on the contract here rather than using</span>
-<span id="L236"><span class="lineNum">     236</span>                 :             :                 /// `_recoverEip1271Signer()` to save gas since we already have all the data</span>
-<span id="L237"><span class="lineNum">     237</span>                 :             :                 /// here and the call is simple.</span>
-<span id="L238"><span class="lineNum">     238</span>                 :             :                 /// @dev currentOwner (r) is set above</span>
-<span id="L239"><span class="lineNum">     239</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaUNC" title="Branch 1 was not executed"> # </span>]:<span class="tlaUNC">           0 :                 require(</span></span>
-<span id="L240"><span class="lineNum">     240</span>                 :             :                     ISignatureValidator(currentOwner).isValidSignature(</span>
-<span id="L241"><span class="lineNum">     241</span>                 :             :                         digest,</span>
-<span id="L242"><span class="lineNum">     242</span>                 :             :                         contractSignature</span>
-<span id="L243"><span class="lineNum">     243</span>                 :             :                     ) == _EIP1271_MAGICVALUE,</span>
-<span id="L244"><span class="lineNum">     244</span>                 :             :                     &quot;EIP-1271 signature is invalid&quot;</span>
-<span id="L245"><span class="lineNum">     245</span>                 :             :                 );</span>
-<span id="L246"><span class="lineNum">     246</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaGBC" title="Branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC tlaBgGNC">           2 :             } else if (v == 1) {</span></span>
-<span id="L247"><span class="lineNum">     247</span>                 :             :                 /// @dev Presigned signature requires order manager as signature storage contract.</span>
-<span id="L248"><span class="lineNum">     248</span>                 :<span class="tlaUNC tlaBgUNC">           0 :                 currentOwner = _recoverPresignedOwner(digest, signature);</span></span>
-<span id="L249"><span class="lineNum">     249</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC tlaBgGNC">           2 :             } else if (v &gt; 30) {</span></span>
-<span id="L250"><span class="lineNum">     250</span>                 :             :                 /// @dev EthSign signature. If v &gt; 30 then default va (27,28)</span>
-<span id="L251"><span class="lineNum">     251</span>                 :             :                 /// has been adjusted for eth_sign flow.</span>
-<span id="L252"><span class="lineNum">     252</span>                 :<span class="tlaGNC">           1 :                 uint8 adjustedV = v - 4;</span></span>
-<span id="L253"><span class="lineNum">     253</span>                 :<span class="tlaGNC">           1 :                 signature = abi.encodePacked(r, s, adjustedV);</span></span>
-<span id="L254"><span class="lineNum">     254</span>                 :<span class="tlaGNC">           1 :                 currentOwner = _recoverEthSignSigner(digest, signature);</span></span>
-<span id="L255"><span class="lineNum">     255</span>                 :             :             } else {</span>
-<span id="L256"><span class="lineNum">     256</span>                 :             :                 /// @dev Default to EDCSA ecrecover flow with the provided data hash.</span>
-<span id="L257"><span class="lineNum">     257</span>                 :<span class="tlaGNC">           1 :                 currentOwner = _recoverEip712Signer(digest, signature);</span></span>
-<span id="L258"><span class="lineNum">     258</span>                 :             :             }</span>
-<span id="L259"><span class="lineNum">     259</span>                 :             : </span>
-<span id="L260"><span class="lineNum">     260</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaGBC" title="Branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">           2 :             require(</span></span>
-<span id="L261"><span class="lineNum">     261</span>                 :             :                 currentOwner &gt; lastOwner,</span>
-<span id="L262"><span class="lineNum">     262</span>                 :             :                 &quot;Invalid signature order or duplicate signature&quot;</span>
-<span id="L263"><span class="lineNum">     263</span>                 :             :             );</span>
-<span id="L264"><span class="lineNum">     264</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaGBC" title="Branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">           2 :             require(</span></span>
-<span id="L265"><span class="lineNum">     265</span>                 :             :                 IOrderManager(driver).signers(currentOwner),</span>
-<span id="L266"><span class="lineNum">     266</span>                 :             :                 &quot;Signer is not approved&quot;</span>
-<span id="L267"><span class="lineNum">     267</span>                 :             :             );</span>
-<span id="L268"><span class="lineNum">     268</span>                 :<span class="tlaGNC">           2 :             lastOwner = currentOwner;</span></span>
-<span id="L269"><span class="lineNum">     269</span>                 :             :         }</span>
-<span id="L270"><span class="lineNum">     270</span>                 :             :     }</span>
-<span id="L271"><span class="lineNum">     271</span>                 :             : }</span>
+<span id="L6"><span class="lineNum">       6</span>                 :             : import {IDriver} from &quot;./interfaces/IDriver.sol&quot;;</span>
+<span id="L7"><span class="lineNum">       7</span>                 :             : </span>
+<span id="L8"><span class="lineNum">       8</span>                 :             : /// @author OpenFlow</span>
+<span id="L9"><span class="lineNum">       9</span>                 :             : /// @title Signing Library</span>
+<span id="L10"><span class="lineNum">      10</span>                 :             : /// @notice Responsible for all OpenFlow signature logic.</span>
+<span id="L11"><span class="lineNum">      11</span>                 :             : /// @dev This library is a slightly modified combined version of two battle</span>
+<span id="L12"><span class="lineNum">      12</span>                 :             : /// signing libraries (Gnosis Safe and Cowswap). The intention here is to make an</span>
+<span id="L13"><span class="lineNum">      13</span>                 :             : /// extremely versatile signing lib to handle all major signature types as well as</span>
+<span id="L14"><span class="lineNum">      14</span>                 :             : /// multisig signatures. It handles EIP-712, EIP-1271, EthSign, Presign and Gnosis style</span>
+<span id="L15"><span class="lineNum">      15</span>                 :             : /// multisig signature threshold. Multisig signatures can be comprised of any</span>
+<span id="L16"><span class="lineNum">      16</span>                 :             : /// combination of signature types. Signature type is auto-detected (per Gnosis)</span>
+<span id="L17"><span class="lineNum">      17</span>                 :             : /// based on v value.</span>
+<span id="L18"><span class="lineNum">      18</span>                 :             : contract Signing {</span>
+<span id="L19"><span class="lineNum">      19</span>                 :             :     /// @dev All ECDSA signatures (EIP-712 and EthSign) must be 65 bytes.</span>
+<span id="L20"><span class="lineNum">      20</span>                 :             :     /// @dev Contract signatures (EIP-1271) can be any number of bytes, however</span>
+<span id="L21"><span class="lineNum">      21</span>                 :             :     /// Gnosis-style threshold packed signatures must adhere to the Gnosis contract.</span>
+<span id="L22"><span class="lineNum">      22</span>                 :             :     /// Signature format: {32-bytes owner_1 (r)}{32-bytes signature_offset_1 (s)}{1-byte v_1 (0)}{signature_length_1}{signature_bytes_1}</span>
+<span id="L23"><span class="lineNum">      23</span>                 :             :     uint256 private constant _ECDSA_SIGNATURE_LENGTH = 65;</span>
+<span id="L24"><span class="lineNum">      24</span>                 :             :     bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;</span>
+<span id="L25"><span class="lineNum">      25</span>                 :             :     address public immutable defaultDriver;</span>
+<span id="L26"><span class="lineNum">      26</span>                 :             : </span>
+<span id="L27"><span class="lineNum">      27</span>                 :             :     /// TODO: comments</span>
+<span id="L28"><span class="lineNum">      28</span>                 :             :     constructor(address _defaultDriver) {</span>
+<span id="L29"><span class="lineNum">      29</span>                 :             :         defaultDriver = _defaultDriver;</span>
+<span id="L30"><span class="lineNum">      30</span>                 :             :     }</span>
+<span id="L31"><span class="lineNum">      31</span>                 :             : </span>
+<span id="L32"><span class="lineNum">      32</span>                 :             :     /// @notice Primary signature check endpoint.</span>
+<span id="L33"><span class="lineNum">      33</span>                 :             :     /// @param signature Signature bytes (usually 65 bytes) but in the case of packed</span>
+<span id="L34"><span class="lineNum">      34</span>                 :             :     /// contract signatures actual signature data offset and length may vary.</span>
+<span id="L35"><span class="lineNum">      35</span>                 :             :     /// @param digest Hashed payload digest.</span>
+<span id="L36"><span class="lineNum">      36</span>                 :             :     /// @return owner Returns authenticated owner.</span>
+<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC tlaBgGNC">           2 :     function recoverSigner(</span></span>
+<span id="L38"><span class="lineNum">      38</span>                 :             :         ISettlement.Scheme scheme,</span>
+<span id="L39"><span class="lineNum">      39</span>                 :             :         bytes32 digest,</span>
+<span id="L40"><span class="lineNum">      40</span>                 :             :         bytes memory signature</span>
+<span id="L41"><span class="lineNum">      41</span>                 :             :     ) public view returns (address owner) {</span>
+<span id="L42"><span class="lineNum">      42</span>                 :             :         /// @dev Extract v from signature</span>
+<span id="L43"><span class="lineNum">      43</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 15 times"> + </span>]:<span class="tlaGNC">          16 :         if (scheme == ISettlement.Scheme.Eip1271) {</span></span>
+<span id="L44"><span class="lineNum">      44</span>                 :             :             /// @dev Contract signature (EIP-1271).</span>
+<span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">           1 :             owner = _recoverEip1271Signer(digest, signature);</span></span>
+<span id="L46"><span class="lineNum">      46</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 14 times"> + </span>]:<span class="tlaGNC">          15 :         } else if (scheme == ISettlement.Scheme.PreSign) {</span></span>
+<span id="L47"><span class="lineNum">      47</span>                 :             :             /// @dev Presigned signature requires order manager as signature storage contract.</span>
+<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">           1 :             owner = _recoverPresignedOwner(digest, signature);</span></span>
+<span id="L49"><span class="lineNum">      49</span>         [<span class="tlaGBC" title="Branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 11 times"> + </span>]:<span class="tlaGNC">          14 :         } else if (scheme == ISettlement.Scheme.EthSign) {</span></span>
+<span id="L50"><span class="lineNum">      50</span>                 :             :             /// @dev EthSign signature. If v &gt; 30 then default va (27,28)</span>
+<span id="L51"><span class="lineNum">      51</span>                 :             :             /// has been adjusted for eth_sign flow.</span>
+<span id="L52"><span class="lineNum">      52</span>                 :<span class="tlaGNC">           3 :             owner = _recoverEthSignSigner(digest, signature);</span></span>
+<span id="L53"><span class="lineNum">      53</span>                 :             :         } else {</span>
+<span id="L54"><span class="lineNum">      54</span>                 :             :             /// @dev EIP-712 signature. Default is the ecrecover flow with the provided data hash.</span>
+<span id="L55"><span class="lineNum">      55</span>                 :<span class="tlaGNC">          11 :             owner = _recoverEip712Signer(digest, signature);</span></span>
+<span id="L56"><span class="lineNum">      56</span>                 :             :         }</span>
+<span id="L57"><span class="lineNum">      57</span>                 :             :     }</span>
+<span id="L58"><span class="lineNum">      58</span>                 :             : </span>
+<span id="L59"><span class="lineNum">      59</span>                 :             :     /// @notice Recover EIP 712 signer.</span>
+<span id="L60"><span class="lineNum">      60</span>                 :             :     /// @param digest Hashed payload digest.</span>
+<span id="L61"><span class="lineNum">      61</span>                 :             :     /// @param signature Signature bytes.</span>
+<span id="L62"><span class="lineNum">      62</span>                 :             :     /// @return owner Signature owner.</span>
+<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">          12 :     function _recoverEip712Signer(</span></span>
+<span id="L64"><span class="lineNum">      64</span>                 :             :         bytes32 digest,</span>
+<span id="L65"><span class="lineNum">      65</span>                 :             :         bytes memory signature</span>
+<span id="L66"><span class="lineNum">      66</span>                 :             :     ) internal pure returns (address owner) {</span>
+<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">          12 :         owner = _ecdsaRecover(digest, signature);</span></span>
+<span id="L68"><span class="lineNum">      68</span>                 :             :     }</span>
+<span id="L69"><span class="lineNum">      69</span>                 :             : </span>
+<span id="L70"><span class="lineNum">      70</span>                 :             :     /// @notice Extract forward and validate signature for EIP-1271.</span>
+<span id="L71"><span class="lineNum">      71</span>                 :             :     /// @dev See &quot;Contract Signature&quot; section of https://docs.safe.global/learn/safe-core/safe-core-protocol/signatures</span>
+<span id="L72"><span class="lineNum">      72</span>                 :             :     /// @dev Code comes from Gnosis Safe: https://github.com/safe-global/safe-contracts/blob/main/contracts/Safe.sol</span>
+<span id="L73"><span class="lineNum">      73</span>                 :             :     /// @param digest Hashed payload digest.</span>
+<span id="L74"><span class="lineNum">      74</span>                 :             :     /// @param encodedSignature Encoded signature.</span>
+<span id="L75"><span class="lineNum">      75</span>                 :             :     /// @return owner Signature owner.</span>
+<span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC">           1 :     function _recoverEip1271Signer(</span></span>
+<span id="L77"><span class="lineNum">      77</span>                 :             :         bytes32 digest,</span>
+<span id="L78"><span class="lineNum">      78</span>                 :             :         bytes memory encodedSignature</span>
+<span id="L79"><span class="lineNum">      79</span>                 :             :     ) internal view returns (address owner) {</span>
+<span id="L80"><span class="lineNum">      80</span>                 :<span class="tlaGNC">           1 :         bytes memory signature;</span></span>
+<span id="L81"><span class="lineNum">      81</span>                 :<span class="tlaGNC">           1 :         uint256 signatureLength = encodedSignature.length - 20;</span></span>
+<span id="L82"><span class="lineNum">      82</span>                 :             :         assembly {</span>
+<span id="L83"><span class="lineNum">      83</span>                 :<span class="tlaGNC">           1 :             owner := mload(add(encodedSignature, 20))</span></span>
+<span id="L84"><span class="lineNum">      84</span>                 :             :             mstore(add(encodedSignature, 20), signatureLength)</span>
+<span id="L85"><span class="lineNum">      85</span>                 :<span class="tlaGNC">           1 :             signature := add(encodedSignature, 20)</span></span>
+<span id="L86"><span class="lineNum">      86</span>                 :             :         }</span>
+<span id="L87"><span class="lineNum">      87</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :         require(</span></span>
+<span id="L88"><span class="lineNum">      88</span>                 :             :             ISignatureValidator(owner).isValidSignature(digest, signature) ==</span>
+<span id="L89"><span class="lineNum">      89</span>                 :             :                 _EIP1271_MAGICVALUE,</span>
+<span id="L90"><span class="lineNum">      90</span>                 :             :             &quot;EIP-1271 signature is invalid&quot;</span>
+<span id="L91"><span class="lineNum">      91</span>                 :             :         );</span>
+<span id="L92"><span class="lineNum">      92</span>                 :             :     }</span>
+<span id="L93"><span class="lineNum">      93</span>                 :             : </span>
+<span id="L94"><span class="lineNum">      94</span>                 :             :     /// @notice Recover signature using eth sign.</span>
+<span id="L95"><span class="lineNum">      95</span>                 :             :     /// @dev Uses ecdsaRecover with &quot;Ethereum Signed Message&quot; prefixed.</span>
+<span id="L96"><span class="lineNum">      96</span>                 :             :     /// @param digest Hashed payload digest.</span>
+<span id="L97"><span class="lineNum">      97</span>                 :             :     /// @param signature Signature.</span>
+<span id="L98"><span class="lineNum">      98</span>                 :             :     /// @return owner Signature owner.</span>
+<span id="L99"><span class="lineNum">      99</span>                 :<span class="tlaGNC">           4 :     function _recoverEthSignSigner(</span></span>
+<span id="L100"><span class="lineNum">     100</span>                 :             :         bytes32 digest,</span>
+<span id="L101"><span class="lineNum">     101</span>                 :             :         bytes memory signature</span>
+<span id="L102"><span class="lineNum">     102</span>                 :             :     ) internal pure returns (address owner) {</span>
+<span id="L103"><span class="lineNum">     103</span>                 :             :         // The signed message is encoded as:</span>
+<span id="L104"><span class="lineNum">     104</span>                 :             :         // `&quot;\x19Ethereum Signed Message:\n&quot; || length || data`, where</span>
+<span id="L105"><span class="lineNum">     105</span>                 :             :         // the length is a constant (32 bytes) and the data is defined as:</span>
+<span id="L106"><span class="lineNum">     106</span>                 :             :         // `orderDigest`.</span>
+<span id="L107"><span class="lineNum">     107</span>                 :<span class="tlaGNC">           4 :         bytes32 ethSignDigest = keccak256(</span></span>
+<span id="L108"><span class="lineNum">     108</span>                 :             :             abi.encodePacked(&quot;\x19Ethereum Signed Message:\n32&quot;, digest)</span>
+<span id="L109"><span class="lineNum">     109</span>                 :             :         );</span>
+<span id="L110"><span class="lineNum">     110</span>                 :<span class="tlaGNC">           4 :         owner = _ecdsaRecover(ethSignDigest, signature);</span></span>
+<span id="L111"><span class="lineNum">     111</span>                 :             :     }</span>
+<span id="L112"><span class="lineNum">     112</span>                 :             : </span>
+<span id="L113"><span class="lineNum">     113</span>                 :             :     /// @notice Verifies the order has been pre-signed. The signature is the</span>
+<span id="L114"><span class="lineNum">     114</span>                 :             :     /// address of the signer of the order.</span>
+<span id="L115"><span class="lineNum">     115</span>                 :             :     /// @param orderDigest The EIP-712 signing digest derived from the order</span>
+<span id="L116"><span class="lineNum">     116</span>                 :             :     /// parameters.</span>
+<span id="L117"><span class="lineNum">     117</span>                 :             :     /// @param encodedSignature The pre-sign signature reprenting the order UID.</span>
+<span id="L118"><span class="lineNum">     118</span>                 :             :     /// @return owner The address of the signer.</span>
+<span id="L119"><span class="lineNum">     119</span>                 :<span class="tlaGNC">           1 :     function _recoverPresignedOwner(</span></span>
+<span id="L120"><span class="lineNum">     120</span>                 :             :         bytes32 orderDigest,</span>
+<span id="L121"><span class="lineNum">     121</span>                 :             :         bytes memory encodedSignature</span>
+<span id="L122"><span class="lineNum">     122</span>                 :             :     ) internal view returns (address owner) {</span>
+<span id="L123"><span class="lineNum">     123</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :         require(encodedSignature.length == 20, &quot;Malformed presignature&quot;);</span></span>
+<span id="L124"><span class="lineNum">     124</span>                 :             :         assembly {</span>
+<span id="L125"><span class="lineNum">     125</span>                 :             :             // owner = address(encodedSignature[0:20])</span>
+<span id="L126"><span class="lineNum">     126</span>                 :<span class="tlaGNC">           1 :             owner := shr(96, mload(add(encodedSignature, 0x20)))</span></span>
+<span id="L127"><span class="lineNum">     127</span>                 :             :         }</span>
+<span id="L128"><span class="lineNum">     128</span>                 :<span class="tlaGNC">           1 :         bool presigned = IOrderManager(address(this)).digestApproved(</span></span>
+<span id="L129"><span class="lineNum">     129</span>                 :             :             owner,</span>
+<span id="L130"><span class="lineNum">     130</span>                 :             :             orderDigest</span>
+<span id="L131"><span class="lineNum">     131</span>                 :             :         );</span>
+<span id="L132"><span class="lineNum">     132</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :         require(presigned, &quot;Order not presigned&quot;);</span></span>
+<span id="L133"><span class="lineNum">     133</span>                 :             :     }</span>
+<span id="L134"><span class="lineNum">     134</span>                 :             : </span>
+<span id="L135"><span class="lineNum">     135</span>                 :             :     /// @notice Utility for recovering signature using ecrecover.</span>
+<span id="L136"><span class="lineNum">     136</span>                 :             :     /// @dev Signature length is expected to be exactly 65 bytes.</span>
+<span id="L137"><span class="lineNum">     137</span>                 :             :     /// @param message Signed messed.</span>
+<span id="L138"><span class="lineNum">     138</span>                 :             :     /// @param signature Signature.</span>
+<span id="L139"><span class="lineNum">     139</span>                 :             :     /// @return signer Returns signer (signature owner).</span>
+<span id="L140"><span class="lineNum">     140</span>                 :<span class="tlaGNC">          16 :     function _ecdsaRecover(</span></span>
+<span id="L141"><span class="lineNum">     141</span>                 :             :         bytes32 message,</span>
+<span id="L142"><span class="lineNum">     142</span>                 :             :         bytes memory signature</span>
+<span id="L143"><span class="lineNum">     143</span>                 :             :     ) internal pure returns (address signer) {</span>
+<span id="L144"><span class="lineNum">     144</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 15 times"> + </span>]:<span class="tlaGNC">          16 :         require(</span></span>
+<span id="L145"><span class="lineNum">     145</span>                 :             :             signature.length == _ECDSA_SIGNATURE_LENGTH,</span>
+<span id="L146"><span class="lineNum">     146</span>                 :             :             &quot;Malformed ECDSA signature&quot;</span>
+<span id="L147"><span class="lineNum">     147</span>                 :             :         );</span>
+<span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">          15 :         (bytes32 r, bytes32 s) = abi.decode(signature, (bytes32, bytes32));</span></span>
+<span id="L149"><span class="lineNum">     149</span>                 :<span class="tlaGNC">          15 :         uint8 v = uint8(signature[64]);</span></span>
+<span id="L150"><span class="lineNum">     150</span>                 :             : </span>
+<span id="L151"><span class="lineNum">     151</span>                 :<span class="tlaGNC">          15 :         signer = ecrecover(message, v, r, s);</span></span>
+<span id="L152"><span class="lineNum">     152</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaGBC" title="Branch 1 was taken 15 times"> + </span>]:<span class="tlaGNC">          15 :         require(signer != address(0), &quot;Invalid ECDSA signature&quot;);</span></span>
+<span id="L153"><span class="lineNum">     153</span>                 :             :     }</span>
+<span id="L154"><span class="lineNum">     154</span>                 :             : </span>
+<span id="L155"><span class="lineNum">     155</span>                 :             :     /// @notice Gnosis style signature threshold check.</span>
+<span id="L156"><span class="lineNum">     156</span>                 :             :     /// @dev Since the EIP-1271 does an external call, be mindful of reentrancy attacks.</span>
+<span id="L157"><span class="lineNum">     157</span>                 :             :     /// @dev Reverts if signature threshold is not passed.</span>
+<span id="L158"><span class="lineNum">     158</span>                 :             :     /// @dev Signatures must be packed such that the decimal values of the derived signers are in</span>
+<span id="L159"><span class="lineNum">     159</span>                 :             :     /// ascending numerical order.</span>
+<span id="L160"><span class="lineNum">     160</span>                 :             :     /// For instance `0xA0b8...eB48` &gt; `0x6B17....71d0F`, so the signature for `0xA0b8...eB48` must come first.</span>
+<span id="L161"><span class="lineNum">     161</span>                 :             :     /// @dev Code comes from Gnosis Safe: https://github.com/safe-global/safe-contracts/blob/main/contracts/Safe.sol</span>
+<span id="L162"><span class="lineNum">     162</span>                 :             :     /// @dev Use `recoverSigner()` methods wherever possible and use exact Gnosis code when v == 0 (contract signatures)</span>
+<span id="L163"><span class="lineNum">     163</span>                 :             :     /// @param digest The EIP-712 signing digest derived from the order parameters.</span>
+<span id="L164"><span class="lineNum">     164</span>                 :             :     /// @param signatures Packed and encoded multisig signatures payload.</span>
+<span id="L165"><span class="lineNum">     165</span>                 :             :     /// @param requiredSignatures Signature threshold. This is required since we are unable.</span>
+<span id="L166"><span class="lineNum">     166</span>                 :             :     /// to easily determine the number of signatures from the signature payload alone.</span>
+<span id="L167"><span class="lineNum">     167</span>                 :<span class="tlaGNC">           1 :     function checkNSignatures(</span></span>
+<span id="L168"><span class="lineNum">     168</span>                 :             :         address driver,</span>
+<span id="L169"><span class="lineNum">     169</span>                 :             :         bytes32 digest,</span>
+<span id="L170"><span class="lineNum">     170</span>                 :             :         bytes memory signatures,</span>
+<span id="L171"><span class="lineNum">     171</span>                 :             :         uint256 requiredSignatures</span>
+<span id="L172"><span class="lineNum">     172</span>                 :             :     ) public view {</span>
+<span id="L173"><span class="lineNum">     173</span>                 :             :         /// @dev Check that the provided signature data is not too short</span>
+<span id="L174"><span class="lineNum">     174</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :         require(</span></span>
+<span id="L175"><span class="lineNum">     175</span>                 :             :             signatures.length &gt;= requiredSignatures * 65,</span>
+<span id="L176"><span class="lineNum">     176</span>                 :             :             &quot;Not enough signatures provided&quot;</span>
+<span id="L177"><span class="lineNum">     177</span>                 :             :         );</span>
+<span id="L178"><span class="lineNum">     178</span>                 :             : </span>
+<span id="L179"><span class="lineNum">     179</span>                 :             :         /// @dev There cannot be an owner with address 0.</span>
+<span id="L180"><span class="lineNum">     180</span>                 :<span class="tlaGNC">           1 :         address lastOwner = address(0);</span></span>
+<span id="L181"><span class="lineNum">     181</span>                 :<span class="tlaGNC">           1 :         address currentOwner;</span></span>
+<span id="L182"><span class="lineNum">     182</span>                 :<span class="tlaGNC">           1 :         uint256 signatureIdx;</span></span>
+<span id="L183"><span class="lineNum">     183</span>                 :<span class="tlaGNC">           1 :         bytes32 r;</span></span>
+<span id="L184"><span class="lineNum">     184</span>                 :<span class="tlaGNC">           1 :         bytes32 s;</span></span>
+<span id="L185"><span class="lineNum">     185</span>                 :<span class="tlaGNC">           1 :         uint8 v;</span></span>
+<span id="L186"><span class="lineNum">     186</span>                 :             :         for (</span>
+<span id="L187"><span class="lineNum">     187</span>                 :<span class="tlaGNC">           1 :             signatureIdx = 0;</span></span>
+<span id="L188"><span class="lineNum">     188</span>                 :<span class="tlaGNC">           3 :             signatureIdx &lt; requiredSignatures;</span></span>
+<span id="L189"><span class="lineNum">     189</span>                 :<span class="tlaGNC">           2 :             signatureIdx++</span></span>
+<span id="L190"><span class="lineNum">     190</span>                 :             :         ) {</span>
+<span id="L191"><span class="lineNum">     191</span>                 :             :             // From Gnosis `signatureSplit` method</span>
+<span id="L192"><span class="lineNum">     192</span>                 :             :             assembly {</span>
+<span id="L193"><span class="lineNum">     193</span>                 :             :                 let signaturePos := mul(0x41, signatureIdx)</span>
+<span id="L194"><span class="lineNum">     194</span>                 :<span class="tlaGNC">           2 :                 r := mload(add(signatures, add(signaturePos, 0x20)))</span></span>
+<span id="L195"><span class="lineNum">     195</span>                 :<span class="tlaGNC">           2 :                 s := mload(add(signatures, add(signaturePos, 0x40)))</span></span>
+<span id="L196"><span class="lineNum">     196</span>                 :<span class="tlaGNC">           2 :                 v := and(mload(add(signatures, add(signaturePos, 0x41))), 0xff)</span></span>
+<span id="L197"><span class="lineNum">     197</span>                 :             :             }</span>
+<span id="L198"><span class="lineNum">     198</span>                 :<span class="tlaGNC">           2 :             bytes memory signature = abi.encodePacked(r, s, v);</span></span>
+<span id="L199"><span class="lineNum">     199</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaUNC" title="Branch 1 was not executed"> # </span>]:<span class="tlaGNC">           2 :             if (v == 0) {</span></span>
+<span id="L200"><span class="lineNum">     200</span>                 :             :                 /// @dev When handling contract signatures the address of the contract is encoded into r.</span>
+<span id="L201"><span class="lineNum">     201</span>                 :<span class="tlaUNC tlaBgUNC">           0 :                 currentOwner = address(uint160(uint256(r)));</span></span>
+<span id="L202"><span class="lineNum">     202</span>                 :             : </span>
+<span id="L203"><span class="lineNum">     203</span>                 :             :                 /// @dev Check that signature data pointer (s) is not pointing inside</span>
+<span id="L204"><span class="lineNum">     204</span>                 :             :                 /// the static part of the signatures bytes. This check is not completely accurate,</span>
+<span id="L205"><span class="lineNum">     205</span>                 :             :                 /// since it is possible that more signatures than the threshold are send.</span>
+<span id="L206"><span class="lineNum">     206</span>                 :             :                 // Here we only check that the pointer is not pointing inside the</span>
+<span id="L207"><span class="lineNum">     207</span>                 :             :                 /// part that is being processed.</span>
+<span id="L208"><span class="lineNum">     208</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaUNC" title="Branch 1 was not executed"> # </span>]:<span class="tlaUNC">           0 :                 require(uint256(s) &gt;= 65, &quot;Signature data pointer is invalid&quot;);</span></span>
+<span id="L209"><span class="lineNum">     209</span>                 :             : </span>
+<span id="L210"><span class="lineNum">     210</span>                 :             :                 /// @dev Check that signature data pointer (s) is in bounds (points to the length of data -&gt; 32 bytes).</span>
+<span id="L211"><span class="lineNum">     211</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaUNC" title="Branch 1 was not executed"> # </span>]:<span class="tlaUNC">           0 :                 require(</span></span>
+<span id="L212"><span class="lineNum">     212</span>                 :             :                     uint256(s) + 32 &lt;= signature.length,</span>
+<span id="L213"><span class="lineNum">     213</span>                 :             :                     &quot;Signature data pointer is out of bounds&quot;</span>
+<span id="L214"><span class="lineNum">     214</span>                 :             :                 );</span>
+<span id="L215"><span class="lineNum">     215</span>                 :             : </span>
+<span id="L216"><span class="lineNum">     216</span>                 :             :                 /// @dev Check if the contract signature is in bounds: start of data is s + 32</span>
+<span id="L217"><span class="lineNum">     217</span>                 :             :                 /// and end is start + signature length.</span>
+<span id="L218"><span class="lineNum">     218</span>                 :<span class="tlaUNC">           0 :                 uint256 contractSignatureLen;</span></span>
+<span id="L219"><span class="lineNum">     219</span>                 :             :                 assembly {</span>
+<span id="L220"><span class="lineNum">     220</span>                 :<span class="tlaUNC">           0 :                     contractSignatureLen := mload(add(add(signature, s), 0x20))</span></span>
+<span id="L221"><span class="lineNum">     221</span>                 :             :                 }</span>
+<span id="L222"><span class="lineNum">     222</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaUNC" title="Branch 1 was not executed"> # </span>]:<span class="tlaUNC">           0 :                 require(</span></span>
+<span id="L223"><span class="lineNum">     223</span>                 :             :                     uint256(s) + 32 + contractSignatureLen &lt;= signature.length,</span>
+<span id="L224"><span class="lineNum">     224</span>                 :             :                     &quot;Signature is out of bounds&quot;</span>
+<span id="L225"><span class="lineNum">     225</span>                 :             :                 );</span>
+<span id="L226"><span class="lineNum">     226</span>                 :             : </span>
+<span id="L227"><span class="lineNum">     227</span>                 :             :                 /// @dev Check signature.</span>
+<span id="L228"><span class="lineNum">     228</span>                 :<span class="tlaUNC">           0 :                 bytes memory contractSignature;</span></span>
+<span id="L229"><span class="lineNum">     229</span>                 :             :                 assembly {</span>
+<span id="L230"><span class="lineNum">     230</span>                 :             :                     /// @dev The signature data for contract signatures is</span>
+<span id="L231"><span class="lineNum">     231</span>                 :             :                     /// appended to the concatenated signatures and the offset</span>
+<span id="L232"><span class="lineNum">     232</span>                 :             :                     /// is stored in s.</span>
+<span id="L233"><span class="lineNum">     233</span>                 :<span class="tlaUNC">           0 :                     contractSignature := add(add(signature, s), 0x20)</span></span>
+<span id="L234"><span class="lineNum">     234</span>                 :             :                 }</span>
+<span id="L235"><span class="lineNum">     235</span>                 :             : </span>
+<span id="L236"><span class="lineNum">     236</span>                 :             :                 /// @dev Perform signature validation on the contract here rather than using</span>
+<span id="L237"><span class="lineNum">     237</span>                 :             :                 /// `_recoverEip1271Signer()` to save gas since we already have all the data</span>
+<span id="L238"><span class="lineNum">     238</span>                 :             :                 /// here and the call is simple.</span>
+<span id="L239"><span class="lineNum">     239</span>                 :             :                 /// @dev currentOwner (r) is set above</span>
+<span id="L240"><span class="lineNum">     240</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaUNC" title="Branch 1 was not executed"> # </span>]:<span class="tlaUNC">           0 :                 require(</span></span>
+<span id="L241"><span class="lineNum">     241</span>                 :             :                     ISignatureValidator(currentOwner).isValidSignature(</span>
+<span id="L242"><span class="lineNum">     242</span>                 :             :                         digest,</span>
+<span id="L243"><span class="lineNum">     243</span>                 :             :                         contractSignature</span>
+<span id="L244"><span class="lineNum">     244</span>                 :             :                     ) == _EIP1271_MAGICVALUE,</span>
+<span id="L245"><span class="lineNum">     245</span>                 :             :                     &quot;EIP-1271 signature is invalid&quot;</span>
+<span id="L246"><span class="lineNum">     246</span>                 :             :                 );</span>
+<span id="L247"><span class="lineNum">     247</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaGBC" title="Branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC tlaBgGNC">           2 :             } else if (v == 1) {</span></span>
+<span id="L248"><span class="lineNum">     248</span>                 :             :                 /// @dev Presigned signature requires order manager as signature storage contract.</span>
+<span id="L249"><span class="lineNum">     249</span>                 :<span class="tlaUNC tlaBgUNC">           0 :                 currentOwner = _recoverPresignedOwner(digest, signature);</span></span>
+<span id="L250"><span class="lineNum">     250</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC tlaBgGNC">           2 :             } else if (v &gt; 30) {</span></span>
+<span id="L251"><span class="lineNum">     251</span>                 :             :                 /// @dev EthSign signature. If v &gt; 30 then default va (27,28)</span>
+<span id="L252"><span class="lineNum">     252</span>                 :             :                 /// has been adjusted for eth_sign flow.</span>
+<span id="L253"><span class="lineNum">     253</span>                 :<span class="tlaGNC">           1 :                 uint8 adjustedV = v - 4;</span></span>
+<span id="L254"><span class="lineNum">     254</span>                 :<span class="tlaGNC">           1 :                 signature = abi.encodePacked(r, s, adjustedV);</span></span>
+<span id="L255"><span class="lineNum">     255</span>                 :<span class="tlaGNC">           1 :                 currentOwner = _recoverEthSignSigner(digest, signature);</span></span>
+<span id="L256"><span class="lineNum">     256</span>                 :             :             } else {</span>
+<span id="L257"><span class="lineNum">     257</span>                 :             :                 /// @dev Default to EDCSA ecrecover flow with the provided data hash.</span>
+<span id="L258"><span class="lineNum">     258</span>                 :<span class="tlaGNC">           1 :                 currentOwner = _recoverEip712Signer(digest, signature);</span></span>
+<span id="L259"><span class="lineNum">     259</span>                 :             :             }</span>
+<span id="L260"><span class="lineNum">     260</span>                 :             : </span>
+<span id="L261"><span class="lineNum">     261</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaGBC" title="Branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">           2 :             require(</span></span>
+<span id="L262"><span class="lineNum">     262</span>                 :             :                 currentOwner &gt; lastOwner,</span>
+<span id="L263"><span class="lineNum">     263</span>                 :             :                 &quot;Invalid signature order or duplicate signature&quot;</span>
+<span id="L264"><span class="lineNum">     264</span>                 :             :             );</span>
+<span id="L265"><span class="lineNum">     265</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaGBC" title="Branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">           2 :             require(</span></span>
+<span id="L266"><span class="lineNum">     266</span>                 :             :                 IDriver(driver).signers(currentOwner),</span>
+<span id="L267"><span class="lineNum">     267</span>                 :             :                 &quot;Signer is not approved&quot;</span>
+<span id="L268"><span class="lineNum">     268</span>                 :             :             );</span>
+<span id="L269"><span class="lineNum">     269</span>                 :<span class="tlaGNC">           2 :             lastOwner = currentOwner;</span></span>
+<span id="L270"><span class="lineNum">     270</span>                 :             :         }</span>
+<span id="L271"><span class="lineNum">     271</span>                 :             :     }</span>
+<span id="L272"><span class="lineNum">     272</span>                 :             : }</span>
         </pre>
               </td>
             </tr>
