@@ -86,7 +86,7 @@ contract Settlement is OrderManager, Signing {
         /// @dev Only the order payload is signed.
         /// @dev Once an order is signed anyone who has the signature can fulfil the order.
         /// @dev In the case of smart contracts sender must implement EIP-1271 isVerified method.
-        bytes memory orderUid = _verify(order);
+        bytes memory orderUid = verify(order);
 
         /// @notice Step 2. Execute optional contract pre-swap hooks.
         _execute(payload.sender, order.payload.hooks.preHooks);
@@ -171,9 +171,9 @@ contract Settlement is OrderManager, Signing {
     /// - Presign (Anyone can presign a digest)
     /// @param order Complete signed order.
     /// @return orderUid New order UID.
-    function _verify(
+    function verify(
         ISettlement.Order calldata order
-    ) internal view returns (bytes memory orderUid) {
+    ) public view returns (bytes memory orderUid) {
         bytes32 digest = buildDigest(order.payload);
         address signatory = recoverSigner(
             order.payload.scheme,
@@ -236,7 +236,7 @@ contract ExecutionProxy {
 
     /// @notice Executed user defined interactions signed by sender.
     /// @dev Sender has been authenticated by signature recovery.
-    /// @dev Something very important to consider here is that we are appending
+    /// @dev Something important to consider here is that we are appending
     /// the authenticated sender (signer) to the end of each interaction calldata.
     /// The reason this is done is to allow the payload signatory to be
     /// authenticated in interaction endpoints. If your interaction endpoint

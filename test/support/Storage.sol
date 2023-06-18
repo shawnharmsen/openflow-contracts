@@ -7,7 +7,7 @@ import {ISettlement} from "../../src/interfaces/ISettlement.sol";
 import {Strategy} from "../support/Strategy.sol";
 import {MasterChef} from "../support/MasterChef.sol";
 import {Oracle} from "../support/Oracle.sol";
-import {IOpenFlowSwapper} from "../../src/interfaces/IOpenFlowSwapper.sol";
+import {IOpenFlowSdk} from "../../src/interfaces/IOpenFlowSdk.sol";
 import {Driver} from "../../src/Driver.sol";
 import {OrderExecutor} from "../../src/executors/OrderExecutor.sol";
 import {UniswapV2Aggregator} from "../../src/solvers/UniswapV2Aggregator.sol";
