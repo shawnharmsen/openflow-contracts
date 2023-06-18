@@ -22,6 +22,15 @@ contract SigningTest is Storage {
             digest,
             encodedSignatures
         );
+
+        /// @dev Order not presigned.
+        encodedSignatures = abi.encodePacked(strategy);
+        vm.expectRevert("Order not presigned");
+        settlement.recoverSigner(
+            ISettlement.Scheme.PreSign,
+            digest,
+            encodedSignatures
+        );
     }
 
     function testEip1271() external {
