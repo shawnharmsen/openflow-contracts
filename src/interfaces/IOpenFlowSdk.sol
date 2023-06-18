@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import {ISettlement} from "../../src/interfaces/ISettlement.sol";
 
-interface IOpenFlowSdk {
+interface IOpenflowSdk {
     struct SwapConfig {
         address driver; // Driver is responsible for authenticating quote selection
         address oracle; // Oracle is responsible for determining minimum amount out for an order

@@ -8,7 +8,7 @@ import {OrderLib} from "./lib/Order.sol";
 import {IOrderManager} from "./interfaces/IOrderManager.sol";
 import {IDriver} from "./interfaces/IDriver.sol";
 
-/// @author OpenFlow
+/// @author Openflow
 /// @title Settlement
 /// @dev Settlement is the primary contract for swap execution. The concept is simple.
 /// - User approves Settlement to spend fromToken
@@ -24,7 +24,7 @@ contract Settlement is OrderManager, Signing {
     using OrderLib for bytes;
 
     /// @dev Prepare constants for building domainSeparator.
-    bytes32 private constant _DOMAIN_NAME = keccak256("OpenFlow");
+    bytes32 private constant _DOMAIN_NAME = keccak256("Openflow");
     bytes32 private constant _DOMAIN_VERSION = keccak256("v0.0.1");
     bytes32 private constant _DOMAIN_TYPE_HASH =
         keccak256(

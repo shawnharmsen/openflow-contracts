@@ -2,9 +2,9 @@
 pragma solidity 0.8.19;
 import {IERC20} from "../../src/interfaces/IERC20.sol";
 import {IMasterChef} from "../../src/interfaces/IMasterChef.sol";
-import {OpenFlowSdk} from "../../src/OpenFlowSdk.sol";
+import {OpenflowSdk} from "../../src/OpenflowSdk.sol";
 
-contract Strategy is OpenFlowSdk {
+contract Strategy is OpenflowSdk {
     address public masterChef;
     address public asset; // Underlying want token is DAI
     address public reward; // Reward is USDC
@@ -14,7 +14,7 @@ contract Strategy is OpenFlowSdk {
         address _reward,
         address _masterChef,
         address _settlement
-    ) OpenFlowSdk(_settlement) {
+    ) OpenflowSdk(_settlement) {
         asset = _asset;
         reward = _reward;
         masterChef = _masterChef;

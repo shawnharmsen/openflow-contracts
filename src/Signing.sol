@@ -5,9 +5,9 @@ import {ISignatureValidator} from "./interfaces/ISignatureValidator.sol";
 import {ISettlement} from "./interfaces/ISettlement.sol";
 import {IDriver} from "./interfaces/IDriver.sol";
 
-/// @author OpenFlow
+/// @author Openflow
 /// @title Signing Library
-/// @notice Responsible for all OpenFlow signature logic.
+/// @notice Responsible for all Openflow signature logic.
 /// @dev This library is a slightly modified combined version of two battle
 /// signing libraries (Gnosis Safe and Cowswap). The intention here is to make an
 /// extremely versatile signing lib to handle all major signature types as well as

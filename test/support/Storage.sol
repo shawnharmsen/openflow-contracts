@@ -7,7 +7,7 @@ import {ISettlement} from "../../src/interfaces/ISettlement.sol";
 import {Strategy} from "../support/Strategy.sol";
 import {MasterChef} from "../support/MasterChef.sol";
 import {Oracle} from "../support/Oracle.sol";
-import {IOpenFlowSdk} from "../../src/interfaces/IOpenFlowSdk.sol";
+import {IOpenflowSdk} from "../../src/interfaces/IOpenflowSdk.sol";
 import {Driver} from "../../src/Driver.sol";
 import {OrderExecutor} from "../../src/executors/OrderExecutor.sol";
 import {UniswapV2Aggregator} from "../../src/solvers/UniswapV2Aggregator.sol";
@@ -49,8 +49,6 @@ contract Storage is Test {
         vaultInteractions = address(
             new YearnVaultInteractions(address(settlement))
         );
-        uint32 auctionDuration = 60 * 5; // 5 minutes for example
-        uint256 slippageBips = 150; // 1.5% - Large slippage for test reliability
         strategy = new Strategy(
             dai,
             usdc,

@@ -157,7 +157,7 @@ contract GnosisTest is GnosisHelper {
         executor.executeOrder(order, solverInteractions);
     }
 
-    /// @dev Sample simple Gnosis Safe signing without OpenFlow (for reference)
+    /// @dev Sample simple Gnosis Safe signing without Openflow (for reference)
     function testSafeEip1271SimpleSign() external {
         bytes
             memory orderDigest = hex"9de4c55938fc5d093859fb29a973a31dfd516c76d39063470be94ad8518874a0";
@@ -186,7 +186,7 @@ contract GnosisTest is GnosisHelper {
         );
     }
 
-    /// @dev Sample complex Gnosis Safe signing without OpenFlow (for reference)
+    /// @dev Sample complex Gnosis Safe signing without Openflow (for reference)
     function testSafeEip1271ComplexSign() external {
         bytes
             memory orderDigest = hex"9de4c55938fc5d093859fb29a973a31dfd516c76d39063470be94ad8518874a0";

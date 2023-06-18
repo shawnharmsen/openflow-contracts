@@ -1,6 +1,6 @@
-# OpenFlow Settlement
+# Openflow Settlement
 
-OpenFlow is the world's first fully decentralized massively-multichain dex aggregator
+Openflow is the world's first fully decentralized massively-multichain dex aggregator
 
 ## Usage
 

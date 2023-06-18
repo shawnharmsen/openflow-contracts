@@ -5,9 +5,9 @@ import {ISettlement} from "./interfaces/ISettlement.sol";
 import {IOrderManager} from "./interfaces/IOrderManager.sol";
 import {IOracle} from "./interfaces/IOracle.sol";
 import {IStrategy} from "../test/interfaces/IStrategy.sol";
-import {IOpenFlowSdk} from "./interfaces/IOpenFlowSdk.sol";
+import {IOpenflowSdk} from "./interfaces/IOpenflowSdk.sol";
 
-contract OpenFlowSdkStorage is IOpenFlowSdk {
+contract OpenflowSdkStorage is IOpenflowSdk {
     address public settlement;
     address public manager;
     SwapConfig public swapConfig;
@@ -33,8 +33,8 @@ contract OpenFlowSdkStorage is IOpenFlowSdk {
     }
 }
 
-contract OpenFlowSdk is OpenFlowSdkStorage {
-    constructor(address _settlement) OpenFlowSdkStorage(_settlement) {}
+contract OpenflowSdk is OpenflowSdkStorage {
+    constructor(address _settlement) OpenflowSdkStorage(_settlement) {}
 
     /******************************************
      * READ

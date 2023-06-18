@@ -5,9 +5,9 @@ import {IERC20} from "../src/interfaces/IERC20.sol";
 import {ISettlement} from "../src/interfaces/ISettlement.sol";
 import {OrderLib} from "../src/lib/Order.sol";
 
-/// @author OpenFlow
+/// @author Openflow
 /// @title Multisig Driver
-/// @notice This contract manages the signing logic for OpenFlow multisig authenticated swap auctions.
+/// @notice This contract manages the signing logic for Openflow multisig authenticated swap auctions.
 contract Driver {
     /// @dev OrderLib is used to generate and decode unique UIDs per order.
     /// A UID consists of digest hash, owner and validTo.
