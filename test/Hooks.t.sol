@@ -52,6 +52,7 @@ contract HooksTest is Storage {
         });
 
         // Build paylod
+        ISettlement.Condition memory condition;
         ISettlement.Payload memory payload = ISettlement.Payload({
             fromToken: address(fromToken),
             toToken: address(toToken),
@@ -62,6 +63,7 @@ contract HooksTest is Storage {
             validFrom: uint32(block.timestamp),
             validTo: uint32(block.timestamp),
             scheme: ISettlement.Scheme.Eip712,
+            condition: condition,
             driver: address(0),
             hooks: hooks
         });
@@ -155,6 +157,7 @@ contract HooksTest is Storage {
         uint256 toAmount = (quote.quoteAmount * 95) / 100;
 
         // Build paylod
+        ISettlement.Condition memory condition;
         ISettlement.Payload memory payload = ISettlement.Payload({
             fromToken: address(fromToken),
             toToken: address(toToken),
@@ -165,6 +168,7 @@ contract HooksTest is Storage {
             validFrom: uint32(block.timestamp),
             validTo: uint32(block.timestamp),
             scheme: ISettlement.Scheme.Eip712,
+            condition: condition,
             driver: address(0),
             hooks: hooks
         });
@@ -234,6 +238,7 @@ contract HooksTest is Storage {
         });
 
         // Build paylod
+        ISettlement.Condition memory condition;
         ISettlement.Payload memory payload = ISettlement.Payload({
             fromToken: address(fromToken),
             toToken: address(toToken),
@@ -243,6 +248,7 @@ contract HooksTest is Storage {
             recipient: vaultInteractions,
             validFrom: uint32(block.timestamp),
             validTo: uint32(block.timestamp),
+            condition: condition,
             scheme: ISettlement.Scheme.Eip712,
             driver: address(0),
             hooks: hooks

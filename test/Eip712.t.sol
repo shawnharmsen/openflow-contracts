@@ -54,24 +54,22 @@ contract Eip712Test is Storage {
         );
 
         // Build order
-        ISettlement.Hooks memory hooks;
+        ISettlement.Payload memory payload;
+        payload.fromToken = address(fromToken);
+        payload.toToken = address(toToken);
+        payload.fromAmount = fromAmount;
+        payload.toAmount = toAmount;
+        payload.sender = userA;
+        payload.recipient = userA;
+        payload.validFrom = uint32(block.timestamp);
+        payload.validTo = uint32(block.timestamp);
+        payload.scheme = ISettlement.Scheme.Eip712;
+        payload.driver = address(0);
         ISettlement.Order memory order = ISettlement.Order({
             signature: hex"",
             multisigSignature: hex"",
             data: executorData,
-            payload: ISettlement.Payload({
-                fromToken: address(fromToken),
-                toToken: address(toToken),
-                fromAmount: fromAmount,
-                toAmount: toAmount,
-                sender: userA,
-                recipient: userA,
-                validFrom: uint32(block.timestamp),
-                validTo: uint32(block.timestamp),
-                scheme: ISettlement.Scheme.Eip712,
-                driver: address(0),
-                hooks: hooks
-            })
+            payload: payload
         });
 
         // Sign order

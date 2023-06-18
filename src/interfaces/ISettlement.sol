@@ -27,6 +27,7 @@ interface ISettlement {
         uint32 validTo;
         address driver;
         Scheme scheme;
+        Condition condition;
         Hooks hooks;
     }
 
@@ -39,6 +40,11 @@ interface ISettlement {
     struct Hooks {
         Interaction[] preHooks;
         Interaction[] postHooks;
+    }
+
+    struct Condition {
+        address target;
+        bytes data;
     }
 
     function checkNSignatures(

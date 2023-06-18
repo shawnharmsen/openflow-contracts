@@ -8,7 +8,6 @@ contract Strategy is OpenFlowSdk {
     address public masterChef;
     address public asset; // Underlying want token is DAI
     address public reward; // Reward is USDC
-    address public manager;
 
     constructor(
         address _asset,
@@ -19,7 +18,6 @@ contract Strategy is OpenFlowSdk {
         asset = _asset;
         reward = _reward;
         masterChef = _masterChef;
-        manager = msg.sender;
         IERC20(reward).approve(address(_settlement), type(uint256).max);
     }
 
@@ -30,12 +28,5 @@ contract Strategy is OpenFlowSdk {
     function harvest() external {
         IMasterChef(masterChef).getReward();
         _swap(reward, asset);
-    }
-
-    function updateAccounting() public {}
-
-    function sweep(address token) external {
-        require(msg.sender == manager);
-        IERC20(token).transfer(manager, IERC20(token).balanceOf(address(this)));
     }
 }

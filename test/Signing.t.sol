@@ -78,6 +78,7 @@ contract SigningTest is Storage {
     function testSignatureThreshold() external {
         /// @dev Build digest.
         ISettlement.Hooks memory hooks;
+        ISettlement.Condition memory condition;
         ISettlement.Payload memory payload = ISettlement.Payload({
             fromToken: address(0),
             toToken: address(0),
@@ -88,6 +89,7 @@ contract SigningTest is Storage {
             validFrom: uint32(block.timestamp),
             validTo: uint32(block.timestamp),
             scheme: ISettlement.Scheme.Eip712,
+            condition: condition,
             driver: address(0),
             hooks: hooks
         });

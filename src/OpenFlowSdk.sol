@@ -8,7 +8,8 @@ import {IStrategy} from "../test/interfaces/IStrategy.sol";
 import {IOpenFlowSdk} from "./interfaces/IOpenFlowSdk.sol";
 
 contract OpenFlowSdkStorage is IOpenFlowSdk {
-    address settlement;
+    address public settlement;
+    address public manager;
     SwapConfig public swapConfig;
 
     constructor(address _settlement) {
@@ -16,6 +17,7 @@ contract OpenFlowSdkStorage is IOpenFlowSdk {
         swapConfig.driver = ISettlement(_settlement).defaultDriver();
         swapConfig.oracle = ISettlement(_settlement).defaultOracle();
         swapConfig.slippageBips = 150;
+        manager = msg.sender;
     }
 
     function setSwapConfig(SwapConfig memory _swapConfig) external onlyManager {
@@ -24,7 +26,7 @@ contract OpenFlowSdkStorage is IOpenFlowSdk {
 
     modifier onlyManager() {
         require(
-            msg.sender == IStrategy(address(this)).manager(),
+            msg.sender == manager,
             "Only the swap manager can call this function."
         );
         _;
@@ -94,6 +96,7 @@ contract OpenFlowSdk is OpenFlowSdkStorage {
         uint32 validTo,
         ISettlement.Hooks memory hooks
     ) internal {
+        ISettlement.Condition memory condition;
         IOrderManager(settlement).submitOrder(
             ISettlement.Payload({
                 fromToken: fromToken,
@@ -105,6 +108,7 @@ contract OpenFlowSdk is OpenFlowSdkStorage {
                 validFrom: validFrom,
                 validTo: validTo,
                 scheme: ISettlement.Scheme.PreSign,
+                condition: condition,
                 driver: swapConfig.driver,
                 hooks: hooks
             })

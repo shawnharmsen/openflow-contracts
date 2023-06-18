@@ -32,6 +32,7 @@ contract SettlementTest is Storage {
 
         /// @dev Build payload.
         ISettlement.Hooks memory hooks; // Optional pre and post swap hooks.
+        ISettlement.Condition memory condition;
         ISettlement.Payload memory payload = ISettlement.Payload({
             fromToken: address(fromToken),
             toToken: address(toToken),
@@ -42,6 +43,7 @@ contract SettlementTest is Storage {
             validFrom: uint32(block.timestamp),
             validTo: uint32(block.timestamp),
             scheme: ISettlement.Scheme.EthSign,
+            condition: condition,
             driver: address(0),
             hooks: hooks
         });
