@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2023-06-17 20:36:29</td>
+            <td class="headerValue">2023-06-17 20:50:55</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -49,9 +49,9 @@
             <td></td>
             <td></td>
             <td class="headerItem">Branches:</td>
-            <td class="headerCovTableEntryLo">50.0&nbsp;%</td>
+            <td class="headerCovTableEntryLo">58.3&nbsp;%</td>
             <td class="headerCovTableEntry">36</td>
-            <td class="headerCovTableEntry">18</td>
+            <td class="headerCovTableEntry">21</td>
           </tr>
                   <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
                 </table>
@@ -105,25 +105,25 @@
 <span id="L34"><span class="lineNum">      34</span>                 :             :     /// contract signatures actual signature data offset and length may vary.</span>
 <span id="L35"><span class="lineNum">      35</span>                 :             :     /// @param digest Hashed payload digest.</span>
 <span id="L36"><span class="lineNum">      36</span>                 :             :     /// @return owner Returns authenticated owner.</span>
-<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC tlaBgGNC">           2 :     function recoverSigner(</span></span>
+<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC tlaBgGNC">           5 :     function recoverSigner(</span></span>
 <span id="L38"><span class="lineNum">      38</span>                 :             :         ISettlement.Scheme scheme,</span>
 <span id="L39"><span class="lineNum">      39</span>                 :             :         bytes32 digest,</span>
 <span id="L40"><span class="lineNum">      40</span>                 :             :         bytes memory signature</span>
 <span id="L41"><span class="lineNum">      41</span>                 :             :     ) public view returns (address owner) {</span>
 <span id="L42"><span class="lineNum">      42</span>                 :             :         /// @dev Extract v from signature</span>
-<span id="L43"><span class="lineNum">      43</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 15 times"> + </span>]:<span class="tlaGNC">          16 :         if (scheme == ISettlement.Scheme.Eip1271) {</span></span>
+<span id="L43"><span class="lineNum">      43</span>         [<span class="tlaGBC" title="Branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 17 times"> + </span>]:<span class="tlaGNC">          19 :         if (scheme == ISettlement.Scheme.Eip1271) {</span></span>
 <span id="L44"><span class="lineNum">      44</span>                 :             :             /// @dev Contract signature (EIP-1271).</span>
-<span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">           1 :             owner = _recoverEip1271Signer(digest, signature);</span></span>
-<span id="L46"><span class="lineNum">      46</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 14 times"> + </span>]:<span class="tlaGNC">          15 :         } else if (scheme == ISettlement.Scheme.PreSign) {</span></span>
+<span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">           2 :             owner = _recoverEip1271Signer(digest, signature);</span></span>
+<span id="L46"><span class="lineNum">      46</span>         [<span class="tlaGBC" title="Branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 15 times"> + </span>]:<span class="tlaGNC">          17 :         } else if (scheme == ISettlement.Scheme.PreSign) {</span></span>
 <span id="L47"><span class="lineNum">      47</span>                 :             :             /// @dev Presigned signature requires order manager as signature storage contract.</span>
-<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">           1 :             owner = _recoverPresignedOwner(digest, signature);</span></span>
-<span id="L49"><span class="lineNum">      49</span>         [<span class="tlaGBC" title="Branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 11 times"> + </span>]:<span class="tlaGNC">          14 :         } else if (scheme == ISettlement.Scheme.EthSign) {</span></span>
+<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">           2 :             owner = _recoverPresignedOwner(digest, signature);</span></span>
+<span id="L49"><span class="lineNum">      49</span>         [<span class="tlaGBC" title="Branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 12 times"> + </span>]:<span class="tlaGNC">          15 :         } else if (scheme == ISettlement.Scheme.EthSign) {</span></span>
 <span id="L50"><span class="lineNum">      50</span>                 :             :             /// @dev EthSign signature. If v &gt; 30 then default va (27,28)</span>
 <span id="L51"><span class="lineNum">      51</span>                 :             :             /// has been adjusted for eth_sign flow.</span>
 <span id="L52"><span class="lineNum">      52</span>                 :<span class="tlaGNC">           3 :             owner = _recoverEthSignSigner(digest, signature);</span></span>
 <span id="L53"><span class="lineNum">      53</span>                 :             :         } else {</span>
 <span id="L54"><span class="lineNum">      54</span>                 :             :             /// @dev EIP-712 signature. Default is the ecrecover flow with the provided data hash.</span>
-<span id="L55"><span class="lineNum">      55</span>                 :<span class="tlaGNC">          11 :             owner = _recoverEip712Signer(digest, signature);</span></span>
+<span id="L55"><span class="lineNum">      55</span>                 :<span class="tlaGNC">          12 :             owner = _recoverEip712Signer(digest, signature);</span></span>
 <span id="L56"><span class="lineNum">      56</span>                 :             :         }</span>
 <span id="L57"><span class="lineNum">      57</span>                 :             :     }</span>
 <span id="L58"><span class="lineNum">      58</span>                 :             : </span>
@@ -131,11 +131,11 @@
 <span id="L60"><span class="lineNum">      60</span>                 :             :     /// @param digest Hashed payload digest.</span>
 <span id="L61"><span class="lineNum">      61</span>                 :             :     /// @param signature Signature bytes.</span>
 <span id="L62"><span class="lineNum">      62</span>                 :             :     /// @return owner Signature owner.</span>
-<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">          12 :     function _recoverEip712Signer(</span></span>
+<span id="L63"><span class="lineNum">      63</span>                 :<span class="tlaGNC">          13 :     function _recoverEip712Signer(</span></span>
 <span id="L64"><span class="lineNum">      64</span>                 :             :         bytes32 digest,</span>
 <span id="L65"><span class="lineNum">      65</span>                 :             :         bytes memory signature</span>
 <span id="L66"><span class="lineNum">      66</span>                 :             :     ) internal pure returns (address owner) {</span>
-<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">          12 :         owner = _ecdsaRecover(digest, signature);</span></span>
+<span id="L67"><span class="lineNum">      67</span>                 :<span class="tlaGNC">          13 :         owner = _ecdsaRecover(digest, signature);</span></span>
 <span id="L68"><span class="lineNum">      68</span>                 :             :     }</span>
 <span id="L69"><span class="lineNum">      69</span>                 :             : </span>
 <span id="L70"><span class="lineNum">      70</span>                 :             :     /// @notice Extract forward and validate signature for EIP-1271.</span>
@@ -144,18 +144,18 @@
 <span id="L73"><span class="lineNum">      73</span>                 :             :     /// @param digest Hashed payload digest.</span>
 <span id="L74"><span class="lineNum">      74</span>                 :             :     /// @param encodedSignature Encoded signature.</span>
 <span id="L75"><span class="lineNum">      75</span>                 :             :     /// @return owner Signature owner.</span>
-<span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC">           1 :     function _recoverEip1271Signer(</span></span>
+<span id="L76"><span class="lineNum">      76</span>                 :<span class="tlaGNC">           2 :     function _recoverEip1271Signer(</span></span>
 <span id="L77"><span class="lineNum">      77</span>                 :             :         bytes32 digest,</span>
 <span id="L78"><span class="lineNum">      78</span>                 :             :         bytes memory encodedSignature</span>
 <span id="L79"><span class="lineNum">      79</span>                 :             :     ) internal view returns (address owner) {</span>
-<span id="L80"><span class="lineNum">      80</span>                 :<span class="tlaGNC">           1 :         bytes memory signature;</span></span>
-<span id="L81"><span class="lineNum">      81</span>                 :<span class="tlaGNC">           1 :         uint256 signatureLength = encodedSignature.length - 20;</span></span>
+<span id="L80"><span class="lineNum">      80</span>                 :<span class="tlaGNC">           2 :         bytes memory signature;</span></span>
+<span id="L81"><span class="lineNum">      81</span>                 :<span class="tlaGNC">           2 :         uint256 signatureLength = encodedSignature.length - 20;</span></span>
 <span id="L82"><span class="lineNum">      82</span>                 :             :         assembly {</span>
-<span id="L83"><span class="lineNum">      83</span>                 :<span class="tlaGNC">           1 :             owner := mload(add(encodedSignature, 20))</span></span>
+<span id="L83"><span class="lineNum">      83</span>                 :<span class="tlaGNC">           2 :             owner := mload(add(encodedSignature, 20))</span></span>
 <span id="L84"><span class="lineNum">      84</span>                 :             :             mstore(add(encodedSignature, 20), signatureLength)</span>
-<span id="L85"><span class="lineNum">      85</span>                 :<span class="tlaGNC">           1 :             signature := add(encodedSignature, 20)</span></span>
+<span id="L85"><span class="lineNum">      85</span>                 :<span class="tlaGNC">           2 :             signature := add(encodedSignature, 20)</span></span>
 <span id="L86"><span class="lineNum">      86</span>                 :             :         }</span>
-<span id="L87"><span class="lineNum">      87</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :         require(</span></span>
+<span id="L87"><span class="lineNum">      87</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           2 :         require(</span></span>
 <span id="L88"><span class="lineNum">      88</span>                 :             :             ISignatureValidator(owner).isValidSignature(digest, signature) ==</span>
 <span id="L89"><span class="lineNum">      89</span>                 :             :                 _EIP1271_MAGICVALUE,</span>
 <span id="L90"><span class="lineNum">      90</span>                 :             :             &quot;EIP-1271 signature is invalid&quot;</span>
@@ -187,11 +187,11 @@
 <span id="L116"><span class="lineNum">     116</span>                 :             :     /// parameters.</span>
 <span id="L117"><span class="lineNum">     117</span>                 :             :     /// @param encodedSignature The pre-sign signature reprenting the order UID.</span>
 <span id="L118"><span class="lineNum">     118</span>                 :             :     /// @return owner The address of the signer.</span>
-<span id="L119"><span class="lineNum">     119</span>                 :<span class="tlaGNC">           1 :     function _recoverPresignedOwner(</span></span>
+<span id="L119"><span class="lineNum">     119</span>                 :<span class="tlaGNC">           2 :     function _recoverPresignedOwner(</span></span>
 <span id="L120"><span class="lineNum">     120</span>                 :             :         bytes32 orderDigest,</span>
 <span id="L121"><span class="lineNum">     121</span>                 :             :         bytes memory encodedSignature</span>
 <span id="L122"><span class="lineNum">     122</span>                 :             :     ) internal view returns (address owner) {</span>
-<span id="L123"><span class="lineNum">     123</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :         require(encodedSignature.length == 20, &quot;Malformed presignature&quot;);</span></span>
+<span id="L123"><span class="lineNum">     123</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           2 :         require(encodedSignature.length == 20, &quot;Malformed presignature&quot;);</span></span>
 <span id="L124"><span class="lineNum">     124</span>                 :             :         assembly {</span>
 <span id="L125"><span class="lineNum">     125</span>                 :             :             // owner = address(encodedSignature[0:20])</span>
 <span id="L126"><span class="lineNum">     126</span>                 :<span class="tlaGNC">           1 :             owner := shr(96, mload(add(encodedSignature, 0x20)))</span></span>
@@ -208,19 +208,19 @@
 <span id="L137"><span class="lineNum">     137</span>                 :             :     /// @param message Signed messed.</span>
 <span id="L138"><span class="lineNum">     138</span>                 :             :     /// @param signature Signature.</span>
 <span id="L139"><span class="lineNum">     139</span>                 :             :     /// @return signer Returns signer (signature owner).</span>
-<span id="L140"><span class="lineNum">     140</span>                 :<span class="tlaGNC">          16 :     function _ecdsaRecover(</span></span>
+<span id="L140"><span class="lineNum">     140</span>                 :<span class="tlaGNC">          17 :     function _ecdsaRecover(</span></span>
 <span id="L141"><span class="lineNum">     141</span>                 :             :         bytes32 message,</span>
 <span id="L142"><span class="lineNum">     142</span>                 :             :         bytes memory signature</span>
 <span id="L143"><span class="lineNum">     143</span>                 :             :     ) internal pure returns (address signer) {</span>
-<span id="L144"><span class="lineNum">     144</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 15 times"> + </span>]:<span class="tlaGNC">          16 :         require(</span></span>
+<span id="L144"><span class="lineNum">     144</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 16 times"> + </span>]:<span class="tlaGNC">          17 :         require(</span></span>
 <span id="L145"><span class="lineNum">     145</span>                 :             :             signature.length == _ECDSA_SIGNATURE_LENGTH,</span>
 <span id="L146"><span class="lineNum">     146</span>                 :             :             &quot;Malformed ECDSA signature&quot;</span>
 <span id="L147"><span class="lineNum">     147</span>                 :             :         );</span>
-<span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">          15 :         (bytes32 r, bytes32 s) = abi.decode(signature, (bytes32, bytes32));</span></span>
-<span id="L149"><span class="lineNum">     149</span>                 :<span class="tlaGNC">          15 :         uint8 v = uint8(signature[64]);</span></span>
+<span id="L148"><span class="lineNum">     148</span>                 :<span class="tlaGNC">          16 :         (bytes32 r, bytes32 s) = abi.decode(signature, (bytes32, bytes32));</span></span>
+<span id="L149"><span class="lineNum">     149</span>                 :<span class="tlaGNC">          16 :         uint8 v = uint8(signature[64]);</span></span>
 <span id="L150"><span class="lineNum">     150</span>                 :             : </span>
-<span id="L151"><span class="lineNum">     151</span>                 :<span class="tlaGNC">          15 :         signer = ecrecover(message, v, r, s);</span></span>
-<span id="L152"><span class="lineNum">     152</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaGBC" title="Branch 1 was taken 15 times"> + </span>]:<span class="tlaGNC">          15 :         require(signer != address(0), &quot;Invalid ECDSA signature&quot;);</span></span>
+<span id="L151"><span class="lineNum">     151</span>                 :<span class="tlaGNC">          16 :         signer = ecrecover(message, v, r, s);</span></span>
+<span id="L152"><span class="lineNum">     152</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 15 times"> + </span>]:<span class="tlaGNC">          16 :         require(signer != address(0), &quot;Invalid ECDSA signature&quot;);</span></span>
 <span id="L153"><span class="lineNum">     153</span>                 :             :     }</span>
 <span id="L154"><span class="lineNum">     154</span>                 :             : </span>
 <span id="L155"><span class="lineNum">     155</span>                 :             :     /// @notice Gnosis style signature threshold check.</span>
