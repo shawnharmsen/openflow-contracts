@@ -1,6 +1,6 @@
-# Blockswap
+# OpenFlow Settlement
 
-Blockswap is the world's first fully decentralized massively-multichain dex aggregator
+OpenFlow is the world's first fully decentralized massively-multichain dex aggregator
 
 ## Usage
 

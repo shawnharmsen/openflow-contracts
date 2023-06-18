@@ -212,6 +212,8 @@ contract Settlement is OrderManager, Signing {
             digest,
             order.signature
         );
+
+        /// @dev Allow conditional orders.
         ISettlement.Condition memory condition = order.payload.condition;
         checkCondition(condition);
 
