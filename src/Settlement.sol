@@ -32,7 +32,7 @@ contract Settlement is OrderManager, Signing {
         );
     bytes32 public constant TYPE_HASH =
         keccak256(
-            "Payload(address fromToken,address toToken,uint256 fromAmount,uint256 toAmount,address sender,address recipient,uint256 deadline,Scheme scheme,Hooks hooks)"
+            "Payload(address fromToken,address toToken,uint256 fromAmount,uint256 toAmount,address sender,address recipient,uint256 validTo,Scheme scheme,Hooks hooks)"
         );
     bytes32 public immutable domainSeparator;
 
@@ -200,10 +200,11 @@ contract Settlement is OrderManager, Signing {
             IDriver(driver).checkNSignatures(digest, order.multisigSignature);
         }
         orderUid = new bytes(OrderLib._UID_LENGTH);
-        orderUid.packOrderUidParams(digest, signatory, order.payload.deadline);
+        orderUid.packOrderUidParams(digest, signatory, order.payload.validTo);
         require(filledAmount[orderUid] == 0, "Order already filled");
         require(signatory == order.payload.sender, "Invalid signer");
-        require(block.timestamp <= order.payload.deadline, "Deadline expired");
+        require(block.timestamp >= order.payload.validFrom, "Order not ready");
+        require(block.timestamp <= order.payload.validTo, "Deadline expired");
     }
 
     /// @notice Building the digest hash.

@@ -15,7 +15,7 @@ interface IUniswapV2Router {
         uint amountOutMin,
         address[] calldata path,
         address to,
-        uint deadline
+        uint validTo
     ) external;
 
     function WETH() external view returns (address);

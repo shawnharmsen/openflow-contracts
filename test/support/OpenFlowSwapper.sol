@@ -61,7 +61,8 @@ contract OpenFlowSwapper is IOpenFlowSwapper {
                 toAmount: minAmountOut,
                 sender: address(this),
                 recipient: address(this),
-                deadline: uint32(block.timestamp + swapConfig.auctionDuration),
+                validFrom: uint32(block.timestamp),
+                validTo: uint32(block.timestamp + swapConfig.auctionDuration),
                 scheme: ISettlement.Scheme.PreSign,
                 driver: swapConfig.driver,
                 hooks: hooks

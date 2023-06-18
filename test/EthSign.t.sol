@@ -36,7 +36,8 @@ contract EthSignTest is Storage {
             toAmount: toAmount,
             sender: address(userA),
             recipient: address(userA),
-            deadline: uint32(block.timestamp),
+            validFrom: uint32(block.timestamp),
+            validTo: uint32(block.timestamp),
             scheme: ISettlement.Scheme.EthSign,
             driver: address(0),
             hooks: hooks

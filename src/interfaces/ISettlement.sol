@@ -23,8 +23,8 @@ interface ISettlement {
         uint256 toAmount;
         address sender;
         address recipient;
-        // uint32 validFrom;
-        uint32 deadline;
+        uint32 validFrom;
+        uint32 validTo;
         address driver;
         Scheme scheme;
         Hooks hooks;

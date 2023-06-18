@@ -83,7 +83,8 @@ contract GnosisTest is GnosisHelper {
             toAmount: toAmount,
             sender: address(safeA),
             recipient: address(safeA),
-            deadline: uint32(block.timestamp),
+            validFrom: uint32(block.timestamp),
+            validTo: uint32(block.timestamp),
             scheme: ISettlement.Scheme.Eip1271,
             driver: address(0),
             hooks: hooks

@@ -10,7 +10,7 @@ import {OrderLib} from "../src/lib/Order.sol";
 /// @notice This contract manages the signing logic for OpenFlow multisig authenticated swap auctions.
 contract OrderManager {
     /// @dev OrderLib is used to generate and decode unique UIDs per order.
-    /// A UID consists of digest hash, owner and deadline.
+    /// A UID consists of digest hash, owner and validTo.
     using OrderLib for bytes;
 
     address public immutable defaultOracle;
@@ -51,7 +51,7 @@ contract OrderManager {
         uint256 sessionNonce = sessionNonceByAddress[msg.sender];
         approvedHashes[msg.sender][sessionNonce][digest] = true;
         orderUid = new bytes(OrderLib._UID_LENGTH);
-        orderUid.packOrderUidParams(digest, msg.sender, payload.deadline);
+        orderUid.packOrderUidParams(digest, msg.sender, payload.validTo);
         emit SubmitOrder(payload, orderUid);
     }
 

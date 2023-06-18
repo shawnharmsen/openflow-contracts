@@ -10,7 +10,7 @@ import {OrderLib} from "../src/lib/Order.sol";
 /// @notice This contract manages the signing logic for OpenFlow multisig authenticated swap auctions.
 contract Driver {
     /// @dev OrderLib is used to generate and decode unique UIDs per order.
-    /// A UID consists of digest hash, owner and deadline.
+    /// A UID consists of digest hash, owner and validTo.
     using OrderLib for bytes;
 
     /// @dev Settlement contract is used to build a digest hash given a payload.
