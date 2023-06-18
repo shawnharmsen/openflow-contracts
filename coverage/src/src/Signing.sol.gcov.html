@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Test Date:</td>
-            <td class="headerValue">2023-06-17 20:50:55</td>
+            <td class="headerValue">2023-06-17 21:59:19</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntryHi">100.0&nbsp;%</td>
@@ -49,9 +49,9 @@
             <td></td>
             <td></td>
             <td class="headerItem">Branches:</td>
-            <td class="headerCovTableEntryLo">58.3&nbsp;%</td>
+            <td class="headerCovTableEntryLo">61.1&nbsp;%</td>
             <td class="headerCovTableEntry">36</td>
-            <td class="headerCovTableEntry">21</td>
+            <td class="headerCovTableEntry">22</td>
           </tr>
                   <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
                 </table>
@@ -105,18 +105,18 @@
 <span id="L34"><span class="lineNum">      34</span>                 :             :     /// contract signatures actual signature data offset and length may vary.</span>
 <span id="L35"><span class="lineNum">      35</span>                 :             :     /// @param digest Hashed payload digest.</span>
 <span id="L36"><span class="lineNum">      36</span>                 :             :     /// @return owner Returns authenticated owner.</span>
-<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC tlaBgGNC">           5 :     function recoverSigner(</span></span>
+<span id="L37"><span class="lineNum">      37</span>                 :<span class="tlaGNC tlaBgGNC">           6 :     function recoverSigner(</span></span>
 <span id="L38"><span class="lineNum">      38</span>                 :             :         ISettlement.Scheme scheme,</span>
 <span id="L39"><span class="lineNum">      39</span>                 :             :         bytes32 digest,</span>
 <span id="L40"><span class="lineNum">      40</span>                 :             :         bytes memory signature</span>
 <span id="L41"><span class="lineNum">      41</span>                 :             :     ) public view returns (address owner) {</span>
 <span id="L42"><span class="lineNum">      42</span>                 :             :         /// @dev Extract v from signature</span>
-<span id="L43"><span class="lineNum">      43</span>         [<span class="tlaGBC" title="Branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 17 times"> + </span>]:<span class="tlaGNC">          19 :         if (scheme == ISettlement.Scheme.Eip1271) {</span></span>
+<span id="L43"><span class="lineNum">      43</span>         [<span class="tlaGBC" title="Branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 18 times"> + </span>]:<span class="tlaGNC">          20 :         if (scheme == ISettlement.Scheme.Eip1271) {</span></span>
 <span id="L44"><span class="lineNum">      44</span>                 :             :             /// @dev Contract signature (EIP-1271).</span>
 <span id="L45"><span class="lineNum">      45</span>                 :<span class="tlaGNC">           2 :             owner = _recoverEip1271Signer(digest, signature);</span></span>
-<span id="L46"><span class="lineNum">      46</span>         [<span class="tlaGBC" title="Branch 0 was taken 2 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 15 times"> + </span>]:<span class="tlaGNC">          17 :         } else if (scheme == ISettlement.Scheme.PreSign) {</span></span>
+<span id="L46"><span class="lineNum">      46</span>         [<span class="tlaGBC" title="Branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 15 times"> + </span>]:<span class="tlaGNC">          18 :         } else if (scheme == ISettlement.Scheme.PreSign) {</span></span>
 <span id="L47"><span class="lineNum">      47</span>                 :             :             /// @dev Presigned signature requires order manager as signature storage contract.</span>
-<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">           2 :             owner = _recoverPresignedOwner(digest, signature);</span></span>
+<span id="L48"><span class="lineNum">      48</span>                 :<span class="tlaGNC">           3 :             owner = _recoverPresignedOwner(digest, signature);</span></span>
 <span id="L49"><span class="lineNum">      49</span>         [<span class="tlaGBC" title="Branch 0 was taken 3 times"> + </span><span class="tlaGBC" title="Branch 1 was taken 12 times"> + </span>]:<span class="tlaGNC">          15 :         } else if (scheme == ISettlement.Scheme.EthSign) {</span></span>
 <span id="L50"><span class="lineNum">      50</span>                 :             :             /// @dev EthSign signature. If v &gt; 30 then default va (27,28)</span>
 <span id="L51"><span class="lineNum">      51</span>                 :             :             /// has been adjusted for eth_sign flow.</span>
@@ -187,20 +187,20 @@
 <span id="L116"><span class="lineNum">     116</span>                 :             :     /// parameters.</span>
 <span id="L117"><span class="lineNum">     117</span>                 :             :     /// @param encodedSignature The pre-sign signature reprenting the order UID.</span>
 <span id="L118"><span class="lineNum">     118</span>                 :             :     /// @return owner The address of the signer.</span>
-<span id="L119"><span class="lineNum">     119</span>                 :<span class="tlaGNC">           2 :     function _recoverPresignedOwner(</span></span>
+<span id="L119"><span class="lineNum">     119</span>                 :<span class="tlaGNC">           3 :     function _recoverPresignedOwner(</span></span>
 <span id="L120"><span class="lineNum">     120</span>                 :             :         bytes32 orderDigest,</span>
 <span id="L121"><span class="lineNum">     121</span>                 :             :         bytes memory encodedSignature</span>
 <span id="L122"><span class="lineNum">     122</span>                 :             :     ) internal view returns (address owner) {</span>
-<span id="L123"><span class="lineNum">     123</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           2 :         require(encodedSignature.length == 20, &quot;Malformed presignature&quot;);</span></span>
+<span id="L123"><span class="lineNum">     123</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 2 times"> + </span>]:<span class="tlaGNC">           3 :         require(encodedSignature.length == 20, &quot;Malformed presignature&quot;);</span></span>
 <span id="L124"><span class="lineNum">     124</span>                 :             :         assembly {</span>
 <span id="L125"><span class="lineNum">     125</span>                 :             :             // owner = address(encodedSignature[0:20])</span>
-<span id="L126"><span class="lineNum">     126</span>                 :<span class="tlaGNC">           1 :             owner := shr(96, mload(add(encodedSignature, 0x20)))</span></span>
+<span id="L126"><span class="lineNum">     126</span>                 :<span class="tlaGNC">           2 :             owner := shr(96, mload(add(encodedSignature, 0x20)))</span></span>
 <span id="L127"><span class="lineNum">     127</span>                 :             :         }</span>
-<span id="L128"><span class="lineNum">     128</span>                 :<span class="tlaGNC">           1 :         bool presigned = IOrderManager(address(this)).digestApproved(</span></span>
+<span id="L128"><span class="lineNum">     128</span>                 :<span class="tlaGNC">           2 :         bool presigned = IOrderManager(address(this)).digestApproved(</span></span>
 <span id="L129"><span class="lineNum">     129</span>                 :             :             owner,</span>
 <span id="L130"><span class="lineNum">     130</span>                 :             :             orderDigest</span>
 <span id="L131"><span class="lineNum">     131</span>                 :             :         );</span>
-<span id="L132"><span class="lineNum">     132</span>         [<span class="tlaUNC" title="Branch 0 was not executed"> # </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           1 :         require(presigned, &quot;Order not presigned&quot;);</span></span>
+<span id="L132"><span class="lineNum">     132</span>         [<span class="tlaGBC" title="Branch 0 was taken 1 time"> + </span><span class="tlaGBC" title="Branch 1 was taken 1 time"> + </span>]:<span class="tlaGNC">           2 :         require(presigned, &quot;Order not presigned&quot;);</span></span>
 <span id="L133"><span class="lineNum">     133</span>                 :             :     }</span>
 <span id="L134"><span class="lineNum">     134</span>                 :             : </span>
 <span id="L135"><span class="lineNum">     135</span>                 :             :     /// @notice Utility for recovering signature using ecrecover.</span>
