@@ -58,7 +58,10 @@ contract Settlement is OrderManager, Signing {
     );
 
     /// @dev Set domainSeparator and executionProxy.
-    constructor(address _defaultDriver) Signing(_defaultDriver) {
+    constructor(
+        address _defaultDriver,
+        address _defaultOracle
+    ) Signing(_defaultDriver) OrderManager(_defaultOracle) {
         domainSeparator = keccak256(
             abi.encode(
                 _DOMAIN_TYPE_HASH,

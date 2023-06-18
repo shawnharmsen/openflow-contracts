@@ -38,7 +38,7 @@ contract Storage is Test {
         masterChef = new MasterChef();
         oracle = new Oracle();
         driver = new Driver();
-        settlement = new Settlement(address(driver));
+        settlement = new Settlement(address(driver), address(oracle));
         executionProxy = ExecutionProxy(settlement.executionProxy());
         driver.initialize(address(settlement));
         address[] memory signers = new address[](2);
@@ -55,13 +55,7 @@ contract Storage is Test {
             dai,
             usdc,
             address(masterChef),
-            address(driver),
             address(settlement)
-        );
-        IOpenFlowSwapper(address(strategy)).setOracle(address(oracle));
-        IOpenFlowSwapper(address(strategy)).setSlippage(slippageBips);
-        IOpenFlowSwapper(address(strategy)).setMaxAuctionDuration(
-            auctionDuration
         );
 
         masterChef.initialize(address(strategy));

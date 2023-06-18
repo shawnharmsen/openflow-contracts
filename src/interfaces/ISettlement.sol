@@ -23,6 +23,7 @@ interface ISettlement {
         uint256 toAmount;
         address sender;
         address recipient;
+        // uint32 validFrom;
         uint32 deadline;
         address driver;
         Scheme scheme;
@@ -60,6 +61,8 @@ interface ISettlement {
     function executionProxy() external view returns (address executionProxy);
 
     function defaultDriver() external view returns (address driver);
+
+    function defaultOracle() external view returns (address driver);
 }
 
 interface ISolver {

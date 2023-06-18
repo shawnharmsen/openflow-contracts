@@ -5,22 +5,21 @@ import {ISettlement} from "../../src/interfaces/ISettlement.sol";
 import {IOrderManager} from "../../src/interfaces/IOrderManager.sol";
 import {IOracle} from "../../src/interfaces/IOracle.sol";
 import {IStrategy} from "../../test/interfaces/IStrategy.sol";
+import {IOpenFlowSwapper} from "../../src/interfaces/IOpenFlowSwapper.sol";
 
 /// @author OpenFlow
 /// @title OpenFlow Swapper
 /// @notice Implements an example of on-chain swap order submission for OpenFlow multisig authenticated auctions
 /// @dev Responsible submitting swap orders. Supports EIP-1271 signature validation by delegating signature
 /// validation requests to Driver
-contract OpenFlowSwapper {
+contract OpenFlowSwapper is IOpenFlowSwapper {
     /// @dev Magic value per EIP-1271 to be returned upon successful validation
     bytes4 private constant _EIP1271_MAGICVALUE = 0x1626ba7e;
 
     /// @dev TODO: comment
-    address _settlement;
-    address _driver;
+    address internal _settlement;
 
-    /// @dev Oracle responsible for determining minimum amount out for an order
-    address _oracle;
+    SwapConfig public swapConfig;
 
     /// @dev Token to swap from
     address internal _fromToken;
@@ -28,31 +27,13 @@ contract OpenFlowSwapper {
     /// @dev Token to swap to
     address internal _toToken;
 
-    /// @dev Acceptable slippage threshold denoted in BIPs
-    uint256 internal _slippageBips;
-
-    /// @dev Maximum duration for auction
-    uint256 internal _maxAuctionDuration;
-
-    constructor(
-        address driver,
-        address settlement,
-        address fromToken,
-        address toToken
-    ) {
-        _driver = driver;
+    constructor(address settlement, address fromToken, address toToken) {
         _settlement = settlement;
         _fromToken = fromToken;
         _toToken = toToken;
-    }
-
-    /// @notice Only allow strategy manager to configure swap parameters
-    modifier onlyManager() {
-        require(
-            msg.sender == IStrategy(address(this)).manager(),
-            "Only the owner can call this function."
-        );
-        _;
+        swapConfig.driver = ISettlement(settlement).defaultDriver();
+        swapConfig.oracle = ISettlement(settlement).defaultOracle();
+        swapConfig.slippageBips = 150;
     }
 
     /// @notice Initiate a swap using this contract's complete balance of `fromToken`
@@ -62,29 +43,16 @@ contract OpenFlowSwapper {
     function _swap() internal {
         // Determine swap amounts
         uint256 fromAmount = IERC20(_fromToken).balanceOf(address(this));
-        uint256 minAmountOut = IOracle(_oracle)
+        uint256 minAmountOut = IOracle(swapConfig.oracle)
             .calculateEquivalentAmountAfterSlippage(
                 _fromToken,
                 _toToken,
                 fromAmount,
-                _slippageBips
+                swapConfig.slippageBips
             );
 
-        // Create optional posthook
-        ISettlement.Interaction[] memory preHooks;
-        ISettlement.Interaction[]
-            memory postHooks = new ISettlement.Interaction[](1);
-        postHooks[0] = ISettlement.Interaction({
-            target: address(this),
-            value: 0,
-            callData: abi.encodeWithSignature("updateAccounting()")
-        });
-        ISettlement.Hooks memory hooks = ISettlement.Hooks({
-            preHooks: preHooks,
-            postHooks: postHooks
-        });
-
         // Swap
+        ISettlement.Hooks memory hooks;
         IOrderManager(_settlement).submitOrder(
             ISettlement.Payload({
                 fromToken: address(_fromToken),
@@ -93,29 +61,34 @@ contract OpenFlowSwapper {
                 toAmount: minAmountOut,
                 sender: address(this),
                 recipient: address(this),
-                deadline: uint32(block.timestamp + _maxAuctionDuration),
+                deadline: uint32(block.timestamp + swapConfig.auctionDuration),
                 scheme: ISettlement.Scheme.PreSign,
-                driver: ISettlement(_settlement).defaultDriver(),
+                driver: swapConfig.driver,
                 hooks: hooks
             })
         );
     }
 
-    /// @notice Set auction duration
-    /// @param duration (in seconds)
-    function setMaxAuctionDuration(uint256 duration) external onlyManager {
-        _maxAuctionDuration = duration;
+    function invalidateOrder(bytes memory orderUid) external onlyManager {
+        IOrderManager(_settlement).invalidateOrder(orderUid);
     }
 
-    /// @notice Set slippage
-    /// @param slippageBips Amount of allowed slippage
-    function setSlippage(uint256 slippageBips) external onlyManager {
-        _slippageBips = slippageBips;
+    function invalidateAllOrders() external onlyManager {
+        IOrderManager(_settlement).invalidateAllOrders();
     }
 
-    /// @notice Set oracle
-    /// @param oracle Oracle address
-    function setOracle(address oracle) external onlyManager {
-        _oracle = oracle;
+    function setSwapConfig(
+        IOpenFlowSwapper.SwapConfig memory _swapConfig
+    ) external onlyManager {
+        swapConfig = _swapConfig;
+    }
+
+    /// @notice Only allow strategy manager to configure swap parameters
+    modifier onlyManager() {
+        require(
+            msg.sender == IStrategy(address(this)).manager(),
+            "Only the swap manager can call this function."
+        );
+        _;
     }
 }

@@ -13,6 +13,8 @@ contract OrderManager {
     /// A UID consists of digest hash, owner and deadline.
     using OrderLib for bytes;
 
+    address public immutable defaultOracle;
+
     /// @dev approvedHashes[owner][nonce][hash]
     /// Allows a user to validate and invalidate an order.
     mapping(address => mapping(uint256 => mapping(bytes32 => bool)))
@@ -51,6 +53,10 @@ contract OrderManager {
         orderUid = new bytes(OrderLib._UID_LENGTH);
         orderUid.packOrderUidParams(digest, msg.sender, payload.deadline);
         emit SubmitOrder(payload, orderUid);
+    }
+
+    constructor(address _defaultOracle) {
+        defaultOracle = _defaultOracle;
     }
 
     /// @notice Invalidate an order.

@@ -9,9 +9,27 @@ interface IOrderManager {
         bytes32 digest
     ) external view returns (bool approved);
 
-    function submitOrder(ISettlement.Payload memory payload) external;
+    function submitOrder(
+        ISettlement.Payload memory payload
+    ) external returns (bytes memory orderUid);
 
     function invalidateOrder(bytes memory orderUid) external;
 
     function invalidateAllOrders() external;
+}
+
+contract DcaLogic {
+    bytes[] orderUids;
+    uint256 orderUidsLength;
+    mapping(uint256 => bytes) orderUidByIdx;
+
+    function swapWithSteps(
+        address fromToken,
+        address toToken,
+        uint256 targetPrice,
+        uint256 abortPrice,
+        uint256 steps
+    ) external {}
+
+    function checkDcaOrder() external {}
 }

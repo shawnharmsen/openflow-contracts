@@ -3,8 +3,6 @@ pragma solidity 0.8.19;
 import "./support/Storage.sol";
 
 contract Eip1271Test is Storage {
-    event Sig(bytes a, bytes b);
-
     function testOrderExecutionEip1271() external {
         /// @dev Get quote.
         IERC20 fromToken = IERC20(strategy.reward());
@@ -22,12 +20,12 @@ contract Eip1271Test is Storage {
         vm.recordLogs();
         strategy.harvest();
         Vm.Log[] memory harvestLogs = vm.getRecordedLogs();
-
         uint256 submitIndex = harvestLogs.length - 1;
-        ISettlement.Payload memory decodedPayload = abi.decode(
-            harvestLogs[submitIndex].data,
-            (ISettlement.Payload)
-        );
+        (ISettlement.Payload memory decodedPayload, bytes memory orderUid) = abi
+            .decode(
+                harvestLogs[submitIndex].data,
+                (ISettlement.Payload, bytes)
+            );
 
         /// @dev Build executor data.
         bytes memory executorData = abi.encode(
@@ -55,7 +53,7 @@ contract Eip1271Test is Storage {
         bytes memory signature1 = _sign(_USER_A_PRIVATE_KEY, digest);
         bytes memory signature2 = _ethSign(_USER_B_PRIVATE_KEY, digest, 4);
         bytes memory signatures = abi.encodePacked(signature1, signature2);
-        emit Sig(signature1, signature2);
+
         /// @dev Build solver interactions.
         ISettlement.Interaction[][2] memory solverInteractions;
 

@@ -14,14 +14,12 @@ contract Strategy is OpenFlowSwapper {
         address _asset,
         address _reward,
         address _masterChef,
-        address _driver,
         address _settlement
-    ) OpenFlowSwapper(_driver, _settlement, _reward, _asset) {
+    ) OpenFlowSwapper(_settlement, _reward, _asset) {
         asset = _asset;
         reward = _reward;
         masterChef = _masterChef;
         manager = msg.sender;
-
         IERC20(reward).approve(address(_settlement), type(uint256).max);
     }
 

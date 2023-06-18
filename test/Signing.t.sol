@@ -105,7 +105,7 @@ contract SigningTest is Storage {
 
         /// @dev User A presigns payload.
         startHoax(userA);
-        settlement.submitOrder(payload);
+        bytes memory orderUid = settlement.submitOrder(payload);
         bytes32 r = bytes32(abi.encodePacked(userA));
         assembly {
             r := shr(96, r)
@@ -115,5 +115,12 @@ contract SigningTest is Storage {
         signature1 = abi.encodePacked(r, s, v);
         signatures = abi.encodePacked(signature1, signature2);
         driver.checkNSignatures(digest, signatures);
+
+        /// @dev Now invalidate the presigned order
+        settlement.invalidateOrder(orderUid);
+        vm.expectRevert("Order not presigned");
+        driver.checkNSignatures(digest, signatures);
+
+        /// @dev Sign the order again
     }
 }
