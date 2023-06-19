@@ -110,11 +110,11 @@ contract OpenflowSdk is OrderDelegator {
         ISettlement.Payload memory payload
     ) internal onlyManagerOrSender returns (bytes memory orderUid) {
         if (payload.recipient == address(0)) {
-            payload.recipient = sdkOptions.recipient;
+            payload.recipient = options.recipient;
         }
         if (payload.fromAmount == 0) {
             payload.fromAmount = IERC20(payload.fromToken).balanceOf(
-                sdkOptions.sender
+                options.sender
             );
         }
 
@@ -124,7 +124,7 @@ contract OpenflowSdk is OrderDelegator {
             payload.fromAmount
         );
         payload.sender = address(this);
-        if (payload.toAmount == 0 && sdkOptions.oracle != address(0)) {
+        if (payload.toAmount == 0 && options.oracle != address(0)) {
             payload.toAmount = calculateMininumAmountOut(
                 payload.fromToken,
                 payload.toToken,
@@ -135,11 +135,11 @@ contract OpenflowSdk is OrderDelegator {
             payload.validFrom = uint32(block.timestamp);
         }
         if (payload.validTo == 0) {
-            uint256 auctionDuration = sdkOptions.auctionDuration;
+            uint256 auctionDuration = options.auctionDuration;
             payload.validTo = uint32(payload.validFrom + auctionDuration);
         }
         if (payload.driver == address(0)) {
-            payload.driver = sdkOptions.driver;
+            payload.driver = options.driver;
         }
         payload.scheme = ISettlement.Scheme.PreSign;
         orderUid = ISettlement(settlement).submitOrder(payload);
@@ -162,12 +162,12 @@ contract OpenflowSdk is OrderDelegator {
         address toToken,
         uint256 fromAmount
     ) public view returns (uint256 minimumAmountOut) {
-        minimumAmountOut = IOracle(sdkOptions.oracle)
+        minimumAmountOut = IOracle(options.oracle)
             .calculateEquivalentAmountAfterSlippage(
                 fromToken,
                 toToken,
                 fromAmount,
-                sdkOptions.slippageBips
+                options.slippageBips
             );
     }
 }

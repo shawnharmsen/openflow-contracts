@@ -13,7 +13,7 @@ contract SdkStorage {
         address recipient; // Funds will be sent to recipient after swap.
     }
 
-    SdkOptions public sdkOptions;
+    SdkOptions public options;
     address public settlement;
     address public executionProxy;
 
@@ -25,21 +25,21 @@ contract SdkStorage {
     ) {
         settlement = _settlement;
         executionProxy = ISettlement(_settlement).executionProxy();
-        sdkOptions.driver = ISettlement(_settlement).defaultDriver();
-        sdkOptions.oracle = ISettlement(_settlement).defaultOracle();
-        sdkOptions.slippageBips = 150;
-        sdkOptions.manager = _manager;
-        sdkOptions.sender = _sender;
-        sdkOptions.recipient = _recipient;
+        options.driver = ISettlement(_settlement).defaultDriver();
+        options.oracle = ISettlement(_settlement).defaultOracle();
+        options.slippageBips = 150;
+        options.manager = _manager;
+        options.sender = _sender;
+        options.recipient = _recipient;
     }
 
-    function setSwapConfig(SdkOptions memory _swapConfig) public onlyManager {
-        sdkOptions = _swapConfig;
+    function setOptions(SdkOptions memory _options) public onlyManager {
+        options = _options;
     }
 
     modifier onlyManager() {
         require(
-            msg.sender == sdkOptions.manager,
+            msg.sender == options.manager,
             "Only the swap manager can call this function."
         );
         _;
@@ -47,7 +47,7 @@ contract SdkStorage {
 
     modifier onlyManagerOrSender() {
         require(
-            msg.sender == sdkOptions.manager || msg.sender == sdkOptions.sender,
+            msg.sender == options.manager || msg.sender == options.sender,
             "Only the swap manager or sender can call this function."
         );
         _;

@@ -40,7 +40,7 @@ contract OrderDelegator is SdkStorage {
     ) internal view returns (ISettlement.Interaction[] memory appendedHooks) {
         bytes memory transferToSettlementData = abi.encodeWithSignature(
             "transferToSettlement(address,address,uint256)",
-            sdkOptions.sender,
+            options.sender,
             fromToken,
             fromAmount
         );
