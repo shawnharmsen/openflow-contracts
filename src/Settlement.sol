@@ -212,6 +212,9 @@ contract Settlement is OrderManager, Signing {
             digest,
             order.signature
         );
+        require(signatory == order.payload.sender, "Invalid signer");
+        require(block.timestamp >= order.payload.validFrom, "Order not ready");
+        require(block.timestamp <= order.payload.validTo, "Deadline expired");
 
         /// @dev Allow conditional orders.
         ISettlement.Condition memory condition = order.payload.condition;
@@ -238,9 +241,6 @@ contract Settlement is OrderManager, Signing {
         orderUid = new bytes(OrderLib._UID_LENGTH);
         orderUid.packOrderUidParams(digest, signatory, order.payload.validTo);
         require(filledAmount[orderUid] == 0, "Order already filled");
-        require(signatory == order.payload.sender, "Invalid signer");
-        require(block.timestamp >= order.payload.validFrom, "Order not ready");
-        require(block.timestamp <= order.payload.validTo, "Deadline expired");
     }
 
     /// @notice Building the digest hash.

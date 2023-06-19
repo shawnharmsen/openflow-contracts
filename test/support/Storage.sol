@@ -11,13 +11,14 @@ import {Driver} from "../../src/Driver.sol";
 import {OrderExecutor} from "../../src/executors/OrderExecutor.sol";
 import {UniswapV2Aggregator} from "../../src/solvers/UniswapV2Aggregator.sol";
 import {YearnVaultInteractions, IVaultRegistry, IVault} from "../support/YearnVaultInteractions.sol";
+import {OpenflowFactory} from "../../src/OpenflowSdk.sol";
 
 contract Storage is Test {
     Strategy public strategy;
     Oracle public oracle;
     IERC20 public rewardToken;
     MasterChef public masterChef;
-    IVaultRegistry public constant vaultRegistry =
+    IVaultRegistry public vaultRegistry =
         IVaultRegistry(0x50c1a2eA0a861A967D9d0FFE2AE4012c2E053804);
     address public usdc = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
     address public dai = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
@@ -48,11 +49,14 @@ contract Storage is Test {
         vaultInteractions = address(
             new YearnVaultInteractions(address(settlement))
         );
+        OpenflowFactory openflowFactory = new OpenflowFactory(
+            address(settlement)
+        );
         strategy = new Strategy(
             dai,
             usdc,
             address(masterChef),
-            address(settlement)
+            address(openflowFactory)
         );
 
         masterChef.initialize(address(strategy));
