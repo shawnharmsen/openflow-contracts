@@ -1,19 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.19;
 import {ISettlement} from "../interfaces/ISettlement.sol";
+import "../interfaces/IOpenflow.sol";
 
 contract SdkStorage {
-    struct SdkOptions {
-        address driver; // Driver is responsible for authenticating quote selection.
-        address oracle; // Oracle is responsible for determining minimum amount out for an order.
-        uint256 slippageBips; // Acceptable slippage threshold denoted in BIPs.
-        uint256 auctionDuration; // Maximum duration for auction.
-        address manager; // Manager is responsible for managing SDK options.
-        address sender; // Funds will be transferred to settlement from this sender.
-        address recipient; // Funds will be sent to recipient after swap.
-    }
-
-    SdkOptions public options;
+    IOpenflowSdk.Options public options;
     address public settlement;
     address public executionProxy;
 
@@ -33,7 +24,9 @@ contract SdkStorage {
         options.recipient = _recipient;
     }
 
-    function setOptions(SdkOptions memory _options) public onlyManager {
+    function setOptions(
+        IOpenflowSdk.Options memory _options
+    ) public onlyManager {
         options = _options;
     }
 

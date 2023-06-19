@@ -11,7 +11,7 @@ contract Strategy {
     address public asset; // Underlying want token is DAI
     address public reward; // Reward is USDC
     bool public automaticSwapsPaused;
-    IOpenflowSdk public openflowSdk;
+    IOpenflowSdk public sdk;
 
     constructor(
         address _asset,
@@ -24,11 +24,9 @@ contract Strategy {
         reward = _reward;
         masterChef = _masterChef;
 
-        openflowSdk = IOpenflowFactory(_openflowFactory).newSdkInstance(
-            msg.sender
-        );
+        sdk = IOpenflowFactory(_openflowFactory).newSdkInstance(msg.sender);
 
-        IERC20(reward).approve(address(openflowSdk), type(uint256).max);
+        IERC20(reward).approve(address(sdk), type(uint256).max);
     }
 
     function estimatedEarnings() external view returns (uint256) {
@@ -42,6 +40,6 @@ contract Strategy {
 
     function harvest() external {
         IMasterChef(masterChef).getReward();
-        openflowSdk.swap(reward, asset);
+        sdk.swap(reward, asset);
     }
 }

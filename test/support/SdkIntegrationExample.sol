@@ -4,17 +4,24 @@ import {IERC20} from "../../src/interfaces/IERC20.sol";
 import "../../src/interfaces/IOpenflow.sol";
 
 contract SdkIntegrationExample {
-    IOpenflowSdk public openflowSdk;
+    IOpenflowSdk public sdk;
 
     constructor(address _openflowFactory) {
         address sdkInstanceManager = msg.sender;
-        openflowSdk = IOpenflowFactory(_openflowFactory).newSdkInstance(
+        sdk = IOpenflowFactory(_openflowFactory).newSdkInstance(
             sdkInstanceManager
         );
     }
 
     function swap(address fromToken, address toToken) external {
-        IERC20(fromToken).approve(address(openflowSdk), type(uint256).max);
-        openflowSdk.swap(fromToken, toToken);
+        IERC20(fromToken).approve(address(sdk), type(uint256).max);
+        sdk.swap(fromToken, toToken);
+    }
+
+    function updateOptions() external {
+        IOpenflowSdk.Options memory options = sdk.options();
+        options.auctionDuration = 60 * 5; // Set auction duration to 5 Minutes.
+        options.slippageBips = 40; // Update slippage bips to 40.
+        sdk.setOptions(options);
     }
 }
