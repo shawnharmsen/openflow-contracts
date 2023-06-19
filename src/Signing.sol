@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL 1.1
 pragma solidity 0.8.19;
-import {IOrderManager} from "./interfaces/IOrderManager.sol";
+import {ISettlement} from "./interfaces/ISettlement.sol";
 import {ISignatureValidator} from "./interfaces/ISignatureValidator.sol";
 import {ISettlement} from "./interfaces/ISettlement.sol";
 import {IDriver} from "./interfaces/IDriver.sol";
@@ -125,7 +125,7 @@ contract Signing {
             // owner = address(encodedSignature[0:20])
             owner := shr(96, mload(add(encodedSignature, 0x20)))
         }
-        bool presigned = IOrderManager(address(this)).digestApproved(
+        bool presigned = ISettlement(address(this)).digestApproved(
             owner,
             orderDigest
         );

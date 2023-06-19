@@ -69,6 +69,19 @@ interface ISettlement {
     function defaultDriver() external view returns (address driver);
 
     function defaultOracle() external view returns (address driver);
+
+    function digestApproved(
+        address signatory,
+        bytes32 digest
+    ) external view returns (bool approved);
+
+    function submitOrder(
+        ISettlement.Payload memory payload
+    ) external returns (bytes memory orderUid);
+
+    function invalidateOrder(bytes memory orderUid) external;
+
+    function invalidateAllOrders() external;
 }
 
 interface ISolver {

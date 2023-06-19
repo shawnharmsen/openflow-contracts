@@ -5,7 +5,7 @@ import "./interfaces/IERC20.sol";
 import {Signing} from "./Signing.sol";
 import {OrderManager} from "./OrderManager.sol";
 import {OrderLib} from "./lib/Order.sol";
-import {IOrderManager} from "./interfaces/IOrderManager.sol";
+import {ISettlement} from "./interfaces/ISettlement.sol";
 import {IDriver} from "./interfaces/IDriver.sol";
 
 /// @author Openflow

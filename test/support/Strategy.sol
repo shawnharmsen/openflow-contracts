@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 import {IERC20} from "../../src/interfaces/IERC20.sol";
 import {IMasterChef} from "../../src/interfaces/IMasterChef.sol";
+import {ISettlement} from "../../src/interfaces/ISettlement.sol";
 import {OpenflowSdk} from "../../src/OpenflowSdk.sol";
 
 contract Strategy is OpenflowSdk {
@@ -27,6 +28,11 @@ contract Strategy is OpenflowSdk {
 
     function harvest() external {
         IMasterChef(masterChef).getReward();
-        _swap(reward, asset);
+        // _swap(reward, asset);
+
+        ISettlement.Payload memory payload;
+        payload.fromToken = reward;
+        payload.toToken = asset;
+        _submitOrder(payload);
     }
 }
