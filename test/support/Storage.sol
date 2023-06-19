@@ -11,7 +11,7 @@ import {Driver} from "../../src/Driver.sol";
 import {OrderExecutor} from "../../src/executors/OrderExecutor.sol";
 import {UniswapV2Aggregator} from "../../src/solvers/UniswapV2Aggregator.sol";
 import {YearnVaultInteractions, IVaultRegistry, IVault} from "../support/YearnVaultInteractions.sol";
-import {OpenflowFactory} from "../../src/OpenflowSdk.sol";
+import {OpenflowSdkFactory} from "../../src/sdk/OpenflowSdkFactory.sol";
 
 contract Storage is Test {
     Strategy public strategy;
@@ -49,14 +49,14 @@ contract Storage is Test {
         vaultInteractions = address(
             new YearnVaultInteractions(address(settlement))
         );
-        OpenflowFactory openflowFactory = new OpenflowFactory(
+        OpenflowSdkFactory openflowSdkFactory = new OpenflowSdkFactory(
             address(settlement)
         );
         strategy = new Strategy(
             dai,
             usdc,
             address(masterChef),
-            address(openflowFactory)
+            address(openflowSdkFactory)
         );
 
         masterChef.initialize(address(strategy));
