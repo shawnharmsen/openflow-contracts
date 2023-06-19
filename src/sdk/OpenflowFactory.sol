@@ -10,13 +10,16 @@ contract OpenflowFactory {
     }
 
     function newSdkInstance() external returns (OpenflowSdk openflowSdk) {
-        return newSdkInstance(msg.sender, msg.sender, msg.sender);
+        address _manager = msg.sender;
+        return newSdkInstance(_manager);
     }
 
     function newSdkInstance(
         address _manager
-    ) external returns (OpenflowSdk openflowSdk) {
-        return newSdkInstance(_manager, msg.sender, msg.sender);
+    ) public returns (OpenflowSdk openflowSdk) {
+        address _sender = msg.sender;
+        address _recipient = msg.sender;
+        return newSdkInstance(_manager, _sender, _recipient);
     }
 
     function newSdkInstance(
