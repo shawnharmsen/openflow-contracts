@@ -33,6 +33,9 @@ contract Oracle {
         uint256 _amountIn,
         uint256 _slippageBips
     ) external view returns (uint256 amountOut) {
+        if (!(_fromToken == usdc || _fromToken == dai)) {
+            revert("Oracle: Unsupported token");
+        }
         uint256 fromTokenPrice = getChainlinkPrice(_fromToken);
         uint256 toTokenPrice = getChainlinkPrice(_toToken);
         uint256 fromTokenDecimals = IERC20(_fromToken).decimals();

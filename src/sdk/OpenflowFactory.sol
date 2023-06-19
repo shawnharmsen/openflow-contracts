@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 import {OpenflowSdk} from "./OpenflowSdk.sol";
 
-contract OpenflowSdkFactory {
+contract OpenflowFactory {
     address public settlement;
 
     constructor(address _settlement) {
