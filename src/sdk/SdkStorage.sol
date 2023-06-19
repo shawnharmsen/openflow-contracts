@@ -44,4 +44,12 @@ contract SdkStorage {
         );
         _;
     }
+
+    modifier onlyManagerOrSender() {
+        require(
+            msg.sender == sdkOptions.manager || msg.sender == sdkOptions.sender,
+            "Only the swap manager or sender can call this function."
+        );
+        _;
+    }
 }

@@ -16,10 +16,99 @@ contract OpenflowSdk is OrderDelegator {
     /*******************************************************
      * Order creation
      *******************************************************/
-    // Fully configurable swap
+    /// @notice Fully configurable swap
+    /// @param payload Complete swap payload
+    /// @dev If not all options are set in payload defaults will be used
+    /// @return orderUid UID of the order
     function submitOrder(
         ISettlement.Payload memory payload
+    ) external returns (bytes memory orderUid) {
+        orderUid = _submitOrder(payload);
+    }
+
+    /// @notice Simple swap alias
+    /// @param fromToken Token to swap from
+    /// @param toToken Token to swap to
+    /// @return orderUid UID of the order
+    function swap(
+        address fromToken,
+        address toToken
     ) public returns (bytes memory orderUid) {
+        ISettlement.Payload memory payload;
+        payload.fromToken = fromToken;
+        payload.toToken = toToken;
+        orderUid = _submitOrder(payload);
+    }
+
+    /// @notice Sell as price of fromToken goes up
+    /// TODO: Implement
+    /// @param fromToken Token to swap from
+    /// @param toToken Token to swap to
+    /// @return orderUid UID of the order
+    function incrementalSwap(
+        address fromToken,
+        address toToken,
+        uint256 targetPrice,
+        uint256 stopLossPrice,
+        uint256 steps
+    ) public returns (bytes memory orderUid) {}
+
+    /// @notice Sell as price of fromToken goes up
+    /// TODO: Implement
+    /// @param fromToken Token to swap from
+    /// @param toToken Token to swap to
+
+    /// @return orderUid UID of the order
+    function dcaSwap(
+        address fromToken,
+        address toToken,
+        uint256 targetPrice,
+        uint256 stopLossPrice,
+        uint256 steps
+    ) public returns (bytes memory orderUid) {}
+
+    /// @notice Alias to sell token only after a certain time
+    /// @param fromToken Token to swap from
+    /// @param toToken Token to swap to
+    /// @param validFrom Unix timestamp from which to start the auction
+    /// @return orderUid UID of the order
+    function gatSwap(
+        address fromToken,
+        address toToken,
+        uint32 validFrom
+    ) public returns (bytes memory orderUid) {
+        ISettlement.Payload memory payload;
+        payload.fromToken = fromToken;
+        payload.toToken = toToken;
+        payload.validFrom = validFrom;
+        orderUid = _submitOrder(payload);
+    }
+
+    /// @notice Alias to sell token only if a certain condition is met
+    /// @param fromToken Token to swap from
+    /// @param toToken Token to swap to
+    /// @param fromToken Token to swap from
+    /// @param condition Condition which must be met for a swap to succeed
+    /// @return orderUid UID of the order
+    function conditionalSwap(
+        address fromToken,
+        address toToken,
+        ISettlement.Condition memory condition
+    ) public returns (bytes memory orderUid) {
+        ISettlement.Payload memory payload;
+        payload.fromToken = fromToken;
+        payload.toToken = toToken;
+        payload.condition = condition;
+        orderUid = _submitOrder(payload);
+    }
+
+    /// @notice Internal swap method
+    /// @dev Responsible for authentication and default param selection
+    /// @param payload Order payload
+    /// @return orderUid UID of the order
+    function _submitOrder(
+        ISettlement.Payload memory payload
+    ) internal onlyManagerOrSender returns (bytes memory orderUid) {
         if (payload.recipient == address(0)) {
             payload.recipient = sdkOptions.recipient;
         }
@@ -54,72 +143,6 @@ contract OpenflowSdk is OrderDelegator {
         }
         payload.scheme = ISettlement.Scheme.PreSign;
         orderUid = ISettlement(settlement).submitOrder(payload);
-    }
-
-    /// @notice Simple swap alias
-    /// @param fromToken Token to swap from
-    /// @param toToken Token to swap to
-    function swap(
-        address fromToken,
-        address toToken
-    ) public returns (bytes memory orderUid) {
-        ISettlement.Payload memory payload;
-        payload.fromToken = fromToken;
-        payload.toToken = toToken;
-        orderUid = submitOrder(payload);
-    }
-
-    /// @notice Sell as price of fromToken goes up
-    /// TODO: Implement
-    function incrementalSwap(
-        address fromToken,
-        address toToken,
-        uint256 targetPrice,
-        uint256 stopLossPrice,
-        uint256 steps
-    ) public returns (bytes memory orderUid) {}
-
-    /// @notice Sell as price of fromToken goes up
-    /// TODO: Implement
-    function dcaSwap(
-        address fromToken,
-        address toToken,
-        uint256 targetPrice,
-        uint256 stopLossPrice,
-        uint256 steps
-    ) public returns (bytes memory orderUid) {}
-
-    /// @notice Alias to sell token only after a certain time
-    /// @param fromToken Token to swap from
-    /// @param toToken Token to swap to
-    /// @param validFrom Unix timestamp from which to start the auction
-    function gatSwap(
-        address fromToken,
-        address toToken,
-        uint32 validFrom
-    ) public returns (bytes memory orderUid) {
-        ISettlement.Payload memory payload;
-        payload.fromToken = fromToken;
-        payload.toToken = toToken;
-        payload.validFrom = validFrom;
-        orderUid = submitOrder(payload);
-    }
-
-    /// @notice Alias to sell token only if a certain condition is met
-    /// @param fromToken Token to swap from
-    /// @param toToken Token to swap to
-    /// @param fromToken Token to swap from
-    /// @param condition Condition which must be met for a swap to succeed
-    function conditionalSwap(
-        address fromToken,
-        address toToken,
-        ISettlement.Condition memory condition
-    ) public returns (bytes memory orderUid) {
-        ISettlement.Payload memory payload;
-        payload.fromToken = fromToken;
-        payload.toToken = toToken;
-        payload.condition = condition;
-        orderUid = submitOrder(payload);
     }
 
     /*******************************************************
