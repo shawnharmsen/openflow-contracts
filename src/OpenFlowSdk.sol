@@ -1,35 +1,54 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.19;
-import {IERC20} from "./interfaces/IERC20.sol";
-import {ISettlement} from "./interfaces/ISettlement.sol";
-import {IOracle} from "./interfaces/IOracle.sol";
 
+/*******************************************************
+ * Interfaces
+ *******************************************************/
+import {ISettlement} from "./interfaces/ISettlement.sol";
+
+interface IERC20 {
+    function balanceOf(address) external view returns (uint256);
+}
+
+interface IOracle {
+    function calculateEquivalentAmountAfterSlippage(
+        address _fromToken,
+        address _toToken,
+        uint256 _amountIn,
+        uint256 _slippageBips
+    ) external view returns (uint256 amountOut);
+}
+
+/*******************************************************
+ * Storage
+ *******************************************************/
 contract OpenflowSdkStorage {
-    struct SwapConfig {
+    struct SdkOptions {
         address driver; // Driver is responsible for authenticating quote selection
         address oracle; // Oracle is responsible for determining minimum amount out for an order
         uint256 slippageBips; // Acceptable slippage threshold denoted in BIPs
         uint256 auctionDuration; // Maximum duration for auction
-        address manager;
+        address manager; // Manager is responsible for managing swap config
     }
+
+    SdkOptions public sdkOptions;
     address public settlement;
-    SwapConfig public swapConfig;
 
     constructor(address _settlement) {
         settlement = _settlement;
-        swapConfig.driver = ISettlement(_settlement).defaultDriver();
-        swapConfig.oracle = ISettlement(_settlement).defaultOracle();
-        swapConfig.slippageBips = 150;
-        swapConfig.manager = msg.sender;
+        sdkOptions.driver = ISettlement(_settlement).defaultDriver();
+        sdkOptions.oracle = ISettlement(_settlement).defaultOracle();
+        sdkOptions.slippageBips = 150;
+        sdkOptions.manager = msg.sender;
     }
 
-    function setSwapConfig(SwapConfig memory _swapConfig) external onlyManager {
-        swapConfig = _swapConfig;
+    function setSwapConfig(SdkOptions memory _swapConfig) public onlyManager {
+        sdkOptions = _swapConfig;
     }
 
     modifier onlyManager() {
         require(
-            msg.sender == swapConfig.manager,
+            msg.sender == sdkOptions.manager,
             "Only the swap manager can call this function."
         );
         _;
@@ -59,7 +78,7 @@ contract OpenflowSdk is OpenflowSdkStorage {
                 payload.sender
             );
         }
-        if (payload.toAmount == 0 && swapConfig.oracle != address(0)) {
+        if (payload.toAmount == 0 && sdkOptions.oracle != address(0)) {
             payload.toAmount = calculateMininumAmountOut(
                 payload.fromToken,
                 payload.toToken,
@@ -70,11 +89,11 @@ contract OpenflowSdk is OpenflowSdkStorage {
             payload.validFrom = uint32(block.timestamp);
         }
         if (payload.validTo == 0) {
-            uint256 auctionDuration = swapConfig.auctionDuration;
+            uint256 auctionDuration = sdkOptions.auctionDuration;
             payload.validTo = uint32(block.timestamp + auctionDuration);
         }
         if (payload.driver == address(0)) {
-            payload.driver = swapConfig.driver;
+            payload.driver = sdkOptions.driver;
         }
         payload.scheme = ISettlement.Scheme.PreSign;
         ISettlement(settlement).submitOrder(payload);
@@ -105,12 +124,12 @@ contract OpenflowSdk is OpenflowSdkStorage {
         address toToken,
         uint256 fromAmount
     ) public view returns (uint256 minimumAmountOut) {
-        minimumAmountOut = IOracle(swapConfig.oracle)
+        minimumAmountOut = IOracle(sdkOptions.oracle)
             .calculateEquivalentAmountAfterSlippage(
                 fromToken,
                 toToken,
                 fromAmount,
-                swapConfig.slippageBips
+                sdkOptions.slippageBips
             );
     }
 }
