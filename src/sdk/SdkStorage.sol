@@ -38,9 +38,10 @@ contract SdkStorage {
         _;
     }
 
-    modifier onlyManagerOrSender() {
+    modifier auth() {
         require(
-            msg.sender == options.manager || msg.sender == options.sender,
+            msg.sender == options.sender ||
+                (options.managerCanSwap && msg.sender == options.manager),
             "Only the swap manager or sender can call this function."
         );
         _;

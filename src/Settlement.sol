@@ -160,6 +160,9 @@ contract Settlement is OrderManager, Signing {
         }
     }
 
+    /// @notice The condition check must pass in order for the swap to succeed.
+    /// @dev Always reverts on failure if the condition check fails.
+    /// @param condition The condition to check
     function checkCondition(
         ISettlement.Condition memory condition
     ) public view {

@@ -19,7 +19,11 @@ interface IOpenflowSdk {
         uint256 auctionDuration;
         /// @dev Manager is responsible for managing SDK options.
         address manager;
-        /// @dev Funds will be transferred to settlement from this sender.
+        /// @dev If true manager is allowed to perform swaps on behalf of the
+        /// instance initiator (sender).
+        bool managerCanSwap;
+        /// @dev When a swap is executed, transfer funds from sender to Settlement
+        /// via SDK instance. Sender must allow the SDK instance to spend fromToken
         address sender;
         /// @dev Funds will be sent to recipient after swap.
         address recipient;

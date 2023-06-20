@@ -108,7 +108,7 @@ contract OpenflowSdk is OrderDelegator {
     /// @return orderUid UID of the order
     function _submitOrder(
         ISettlement.Payload memory payload
-    ) internal onlyManagerOrSender returns (bytes memory orderUid) {
+    ) internal auth returns (bytes memory orderUid) {
         if (payload.recipient == address(0)) {
             payload.recipient = options.recipient;
         }

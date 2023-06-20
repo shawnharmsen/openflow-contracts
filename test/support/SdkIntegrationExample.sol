@@ -24,10 +24,13 @@ contract SdkIntegrationExample {
 
     /// @notice Update SDK options.
     /// @dev Note: This method has no auth. If your app needs auth make sure to add it.
+    /// @dev For a full list of options see: https://github.com/openflow-fi/openflow-contracts/blob/main/src/interfaces/IOpenflow.sol#L5
     function updateOptions() external {
-        IOpenflowSdk.Options memory options = sdk.options();
+        IOpenflowSdk.Options memory options = sdk.options(); // Load existing options
         options.auctionDuration = 60 * 5; // Set auction duration to 5 Minutes.
-        options.slippageBips = 40; // Update slippage bips to 40.
-        sdk.setOptions(options);
+        options.slippageBips = 60; // Update slippage bips to 60.
+        options.manager = msg.sender; // Set instance manager to msg.sender.
+        options.managerCanSwap = true; // Allow manager to swap.
+        sdk.setOptions(options); // Set options
     }
 }
