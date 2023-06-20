@@ -6,12 +6,15 @@ import {IOracle} from "../interfaces/IOracle.sol";
 import {OrderDelegator} from "./OrderDelegator.sol";
 
 contract OpenflowSdk is OrderDelegator {
-    constructor(
+    function initialize(
         address _settlement,
         address _manager,
         address _sender,
-        address _recipient
-    ) OrderDelegator(_settlement, _manager, _sender, _recipient) {}
+        address _recipient,
+        uint256 _version
+    ) external {
+        _initialize(_settlement, _manager, _sender, _recipient, _version);
+    }
 
     /*******************************************************
      * Order creation

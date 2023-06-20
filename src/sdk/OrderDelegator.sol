@@ -5,13 +5,6 @@ import {ISettlement} from "../interfaces/ISettlement.sol";
 import {IERC20} from "../interfaces/IERC20.sol";
 
 contract OrderDelegator is SdkStorage {
-    constructor(
-        address _settlement,
-        address _manager,
-        address _sender,
-        address _recipient
-    ) SdkStorage(_settlement, _manager, _sender, _recipient) {}
-
     /// @notice Transfer funds from authenticated sender to settlement.
     /// @dev This function is only callable when sent as a pre-swap hook from
     /// executionProxy, where sender is authenticated with signature

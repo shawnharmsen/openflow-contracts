@@ -8,6 +8,7 @@ import {Strategy} from "../support/Strategy.sol";
 import {MasterChef} from "../support/MasterChef.sol";
 import {Oracle} from "../support/Oracle.sol";
 import {Driver} from "../../src/Driver.sol";
+import {OpenflowSdk} from "../../src/sdk/OpenflowSdk.sol";
 import {OrderExecutor} from "../../src/executors/OrderExecutor.sol";
 import {UniswapV2Aggregator} from "../../src/solvers/UniswapV2Aggregator.sol";
 import {YearnVaultInteractions, IVaultRegistry, IVault} from "../support/YearnVaultInteractions.sol";
@@ -51,6 +52,8 @@ contract Storage is Test {
             new YearnVaultInteractions(address(settlement))
         );
         openflowFactory = new OpenflowFactory(address(settlement));
+        address sdkTemplate = address(new OpenflowSdk());
+        openflowFactory.newSdkVersion(sdkTemplate);
         strategy = new Strategy(
             dai,
             usdc,

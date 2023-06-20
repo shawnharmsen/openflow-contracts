@@ -7,13 +7,16 @@ contract SdkStorage {
     IOpenflowSdk.Options public options;
     address public settlement;
     address public executionProxy;
+    uint256 public version;
 
-    constructor(
+    function _initialize(
         address _settlement,
         address _manager,
         address _sender,
-        address _recipient
-    ) {
+        address _recipient,
+        uint256 _version
+    ) internal {
+        require(settlement == address(0), "Already initialized");
         settlement = _settlement;
         executionProxy = ISettlement(_settlement).executionProxy();
         options.driver = ISettlement(_settlement).defaultDriver();
@@ -22,6 +25,7 @@ contract SdkStorage {
         options.manager = _manager;
         options.sender = _sender;
         options.recipient = _recipient;
+        version = _version;
     }
 
     function setOptions(

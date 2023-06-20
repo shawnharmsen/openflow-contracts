@@ -37,6 +37,14 @@ interface IOpenflowSdk {
     function options() external view returns (Options memory options);
 
     function setOptions(Options memory options) external;
+
+    function initialize(
+        address settlement,
+        address manager,
+        address sender,
+        address recipient,
+        uint256 version
+    ) external;
 }
 
 interface IOpenflowFactory {
@@ -51,4 +59,10 @@ interface IOpenflowFactory {
         address sender,
         address recipient
     ) external returns (IOpenflowSdk sdkInstance);
+
+    function implementationByVersion(
+        uint256 version
+    ) external view returns (address implementation);
+
+    function currentVersion() external view returns (uint256 version);
 }
