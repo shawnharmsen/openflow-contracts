@@ -9,7 +9,11 @@ import {IOpenflowFactory} from "../interfaces/IOpenflow.sol";
 /// @dev Only instance owner can update implementation
 /// @dev Implementation can be updated from official SDK releases (from factory)
 /// or alternatively user can provide their own SDK implementation
+/// @dev We use a minimal EIP-1976 version (same codebase as battle tested 0xDAO proxy)
+/// instead of OpenZeppelin implementation because the logic is lightweight/simple and
+/// OpenZeppelin implementation is bloated and complex.
 contract OpenflowSdkProxy {
+    /// @dev Only hashed storage slots are used. This is to prevent any potential storage slot collisions.
     bytes32 constant _IMPLEMENTATION_SLOT =
         0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc; // keccak256('eip1967.proxy.implementation')
     bytes32 constant _OWNER_SLOT =
@@ -17,6 +21,7 @@ contract OpenflowSdkProxy {
     bytes32 constant _FACTORY_SLOT =
         0x59518be4244033293ff114b9adbe6af243c48e1725af3a8f6be4e61b988ce0a9; // keccak256('openflow.factory')
 
+    /// @notice Initialize proxy.
     constructor(address _implementationAddress, address _ownerAddress) {
         assembly {
             sstore(_IMPLEMENTATION_SLOT, _implementationAddress)
@@ -25,6 +30,7 @@ contract OpenflowSdkProxy {
         }
     }
 
+    /// @notice Fetch current implementation address.
     function implementationAddress()
         external
         view
@@ -35,44 +41,61 @@ contract OpenflowSdkProxy {
         }
     }
 
+    /// @notice Fetch current proxy owner address.
     function owner() public view returns (address _ownerAddress) {
         assembly {
             _ownerAddress := sload(_OWNER_SLOT)
         }
     }
 
+    /// @notice Fetch current factory address.
     function factory() public view returns (address _factoryAddress) {
         assembly {
             _factoryAddress := sload(_FACTORY_SLOT)
         }
     }
 
+    /// @notice Update implementation to a user defined implementation.
+    /// @dev Only proxy owner can update implementation.
+    /// @dev Warning: user must be careful to avoid storage slot collisions.
+    /// @dev Use at your own risk.
+    /// @param _implementation Implementation address to upgrade to.
     function updateImplementation(address _implementation) external {
-        require(
-            msg.sender == owner() || msg.sender == address(this),
-            "Only owner can update implementation"
-        );
+        require(msg.sender == owner(), "Only owner can update implementation");
         _updateImplementation(_implementation);
     }
 
+    /// @notice Update to the latest SDK version.
+    /// @dev SDK version comes from factory.
+    /// @dev Only proxy owner can update version.
     function updateSdkVersion() external {
         uint256 currentVersion = IOpenflowFactory(factory()).currentVersion();
         updateSdkVersion(currentVersion);
     }
 
+    /// @notice Update version to a specific factory SDK version
+    /// @dev Also supports downgrades.
+    /// @dev Only proxy owner can update version.
+    /// @param version Version to update to.
     function updateSdkVersion(uint256 version) public {
         require(msg.sender == owner(), "Only owner can update SDK version");
+        uint256 currentVersion = IOpenflowFactory(factory()).currentVersion();
+        require(version <= currentVersion && version != 0, "Invalid version");
         address implementation = IOpenflowFactory(factory())
             .implementationByVersion(version);
         _updateImplementation(implementation);
     }
 
+    /// @notice Internal method for updating implementation
+    /// @param _implementation Implementation address to upgrade to.
     function _updateImplementation(address _implementation) internal {
         assembly {
             sstore(_IMPLEMENTATION_SLOT, _implementation)
         }
     }
 
+    /// @notice Update proxy owner.
+    /// @dev Only current owner can update owner.
     function updateOwner(address _owner) external {
         require(msg.sender == owner(), "Only owners can update owners");
         assembly {
@@ -80,6 +103,8 @@ contract OpenflowSdkProxy {
         }
     }
 
+    /// @notice Fallback to delegate method calls to current implementation.
+    /// @dev Code comes from Gnosis Safe.
     fallback() external {
         assembly {
             let contractLogic := sload(_IMPLEMENTATION_SLOT)

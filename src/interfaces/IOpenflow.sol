@@ -45,6 +45,10 @@ interface IOpenflowSdk {
         address recipient,
         uint256 version
     ) external;
+
+    function updateSdkVersion() external;
+
+    function updateSdkVersion(uint256 version) external;
 }
 
 interface IOpenflowFactory {
