@@ -34,10 +34,9 @@ contract HooksTest is Storage {
         uint256 toAmount = (quote.quoteAmount * 95) / 100;
 
         // Build hooks
-        ISettlement.Interaction[] memory preHooks;
-        ISettlement.Interaction[]
-            memory postHooks = new ISettlement.Interaction[](1);
-        postHooks[0] = ISettlement.Interaction({
+        ISettlement.Hooks memory hooks;
+        hooks.postHooks = new ISettlement.Interaction[](1);
+        hooks.postHooks[0] = ISettlement.Interaction({
             target: vaultInteractions,
             value: 0,
             data: abi.encodeWithSignature(
@@ -45,10 +44,6 @@ contract HooksTest is Storage {
                 toToken,
                 userA
             )
-        });
-        ISettlement.Hooks memory hooks = ISettlement.Hooks({
-            preHooks: preHooks,
-            postHooks: postHooks
         });
 
         // Build paylod
