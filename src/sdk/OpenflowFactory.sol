@@ -4,21 +4,32 @@ import {IOpenflowSdk} from "../interfaces/IOpenflow.sol";
 import {OpenflowSdkProxy} from "./OpenflowSdkProxy.sol";
 
 contract OpenflowFactory {
-    address public settlement;
-    address public owner;
-    uint256 public currentVersion;
+    address public settlement; // Settlement address.
+    address public owner; // Owner of the factory. Should be Openflow multisig.
+    uint256 public currentVersion; // Current official release version of the SDK.
+
+    /// @dev Map SDK release versions to implementation addresses.
     mapping(uint256 => address) public implementationByVersion;
 
+    /// @dev Initialize the factory.
     constructor(address _settlement) {
         settlement = _settlement;
         owner = msg.sender;
     }
 
+    /// @notice Generate a new SDK instance with default settings.
+    /// @dev Generally it makes more sense for users to use the method below where
+    /// manager can be specified. Use this method if your SDK instance manager
+    /// is the smart contract initiator itself rather than EOA.
+    /// @return sdk Openflow SDK instance
     function newSdkInstance() external returns (IOpenflowSdk sdk) {
         address _manager = msg.sender;
         return newSdkInstance(_manager);
     }
 
+    /// @notice Generate a new SDK instance with a user specified manager.
+    /// @param _manager Address of the SDK instance manager.
+    /// @return sdk Openflow SDK instance
     function newSdkInstance(
         address _manager
     ) public returns (IOpenflowSdk sdk) {
@@ -27,15 +38,11 @@ contract OpenflowFactory {
         return newSdkInstance(_manager, _sender, _recipient);
     }
 
-    function newSdkVersion(address implementation) external {
-        require(
-            msg.sender == owner,
-            "Only Openflow multisig can add new SDK versions"
-        );
-        currentVersion++;
-        implementationByVersion[currentVersion] = implementation;
-    }
-
+    /// @notice Generate an SDK instance with custom manager, sender and recipient.
+    /// @param _manager Address of the SDK instance manager.
+    /// @param _sender Address of SDK's default sender.
+    /// @param _recipient Address of SDK's default recipient.
+    /// @return sdk Openflow SDK instance
     function newSdkInstance(
         address _manager,
         address _sender,
@@ -55,23 +62,14 @@ contract OpenflowFactory {
         );
     }
 
-    /// @notice Clones using EIP-1167 template
-    function _cloneWithTemplateAddress(
-        address templateAddress
-    ) internal returns (address poolAddress) {
-        bytes20 _templateAddress = bytes20(templateAddress);
-        assembly {
-            let clone := mload(0x40)
-            mstore(
-                clone,
-                0x3d602d80600a3d3981f3363d3d373d3d3d363d73000000000000000000000000
-            )
-            mstore(add(clone, 0x14), _templateAddress)
-            mstore(
-                add(clone, 0x28),
-                0x5af43d82803e903d91602b57fd5bf30000000000000000000000000000000000
-            )
-            poolAddress := create(0, clone, 0x37)
-        }
+    /// @notice Publish a new official SDK version.
+    /// @dev Only factory owner can publish new versions.
+    function newSdkVersion(address implementation) external {
+        require(
+            msg.sender == owner,
+            "Only Openflow multisig can add new SDK versions"
+        );
+        currentVersion++;
+        implementationByVersion[currentVersion] = implementation;
     }
 }
