@@ -6,6 +6,9 @@ import {IOracle} from "../interfaces/IOracle.sol";
 import {OrderDelegator} from "./OrderDelegator.sol";
 
 contract OpenflowSdk is OrderDelegator {
+    /// @notice Initialize SDK.
+    /// @dev Can only be initialized once.
+    /// @dev SDK is automatically initialized during instance creation.
     function initialize(
         address _settlement,
         address _manager,
@@ -60,7 +63,6 @@ contract OpenflowSdk is OrderDelegator {
     /// TODO: Implement
     /// @param fromToken Token to swap from
     /// @param toToken Token to swap to
-
     /// @return orderUid UID of the order
     function dcaSwap(
         address fromToken,
@@ -128,11 +130,13 @@ contract OpenflowSdk is OrderDelegator {
         );
         payload.sender = address(this);
         if (payload.toAmount == 0 && options.oracle != address(0)) {
-            payload.toAmount = calculateMininumAmountOut(
-                payload.fromToken,
-                payload.toToken,
-                payload.fromAmount
-            );
+            payload.toAmount = IOracle(options.oracle)
+                .calculateEquivalentAmountAfterSlippage(
+                    payload.fromToken,
+                    payload.toToken,
+                    payload.fromAmount,
+                    options.slippageBips
+                );
         }
         if (payload.validFrom == 0) {
             payload.validFrom = uint32(block.timestamp);
@@ -157,20 +161,5 @@ contract OpenflowSdk is OrderDelegator {
 
     function invalidateAllOrders() external onlyManager {
         ISettlement(settlement).invalidateAllOrders();
-    }
-
-    /// @notice Calculate minimum amount out using configured oracle
-    function calculateMininumAmountOut(
-        address fromToken,
-        address toToken,
-        uint256 fromAmount
-    ) public view returns (uint256 minimumAmountOut) {
-        minimumAmountOut = IOracle(options.oracle)
-            .calculateEquivalentAmountAfterSlippage(
-                fromToken,
-                toToken,
-                fromAmount,
-                options.slippageBips
-            );
     }
 }
