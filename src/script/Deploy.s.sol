@@ -11,6 +11,7 @@ import {OrderExecutor} from "../../src/executors/OrderExecutor.sol";
 import {UniswapV2Aggregator} from "../../src/solvers/UniswapV2Aggregator.sol";
 import {YearnVaultInteractions} from "../../test/support/YearnVaultInteractions.sol";
 import {OpenflowFactory} from "../../src/sdk/OpenflowFactory.sol";
+import {SdkIntegrationExample} from "../../test/support/SdkIntegrationExample.sol";
 
 contract Deploy is Script {
     Driver public driver;
