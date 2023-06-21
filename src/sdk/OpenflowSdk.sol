@@ -13,10 +13,9 @@ contract OpenflowSdk is OrderDelegator {
         address _settlement,
         address _manager,
         address _sender,
-        address _recipient,
-        uint256 _version
+        address _recipient
     ) external {
-        _initialize(_settlement, _manager, _sender, _recipient, _version);
+        _initialize(_settlement, _manager, _sender, _recipient);
     }
 
     /*******************************************************

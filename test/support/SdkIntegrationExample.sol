@@ -10,11 +10,8 @@ contract SdkIntegrationExample {
 
     /// @notice Create a new SDK instance.
     constructor(address _openflowFactory) {
-        address sdkInstanceManager = address(this);
-        sdk = IOpenflowFactory(_openflowFactory).newSdkInstance(
-            sdkInstanceManager
-        );
         owner = msg.sender;
+        sdk = IOpenflowFactory(_openflowFactory).newSdkInstance(owner);
     }
 
     /// @notice Execute a basic swap.

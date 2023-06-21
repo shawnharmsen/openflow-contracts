@@ -38,14 +38,12 @@ contract Deploy is Script {
         uniswapAggregator = new UniswapV2Aggregator();
         openflowFactory = new OpenflowFactory(address(settlement));
         openflowSdk = new OpenflowSdk();
+        openflowFactory.newSdkVersion(address(openflowSdk));
         vaultInteractions = new YearnVaultInteractions(address(settlement));
         orderExecutor = new OrderExecutor(address(settlement));
         sdkIntegrationExample = new SdkIntegrationExample(
             address(openflowFactory)
         );
-
-        // Initialize
-        openflowFactory.newSdkVersion(address(openflowSdk));
 
         // Print
         console.log("oracle", address(oracle));

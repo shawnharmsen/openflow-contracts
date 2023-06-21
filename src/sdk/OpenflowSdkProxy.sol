@@ -11,7 +11,9 @@ import {OpenflowProxy} from "../sdk/OpenflowProxy.sol";
 /// or alternatively user can provide their own SDK implementation
 contract OpenflowSdkProxy is OpenflowProxy {
     bytes32 constant _FACTORY_SLOT =
-        0x59518be4244033293ff114b9adbe6af243c48e1725af3a8f6be4e61b988ce0a9; // keccak256('openflow.factory')
+        bc0b033692987f57b00e59fb320fa52dee8008f8dd89a9404b16c6c70befc06d; // keccak256('openflow.sdk.factory')
+    bytes32 constant _VERSION_SLOT =
+        d9b5749cb01e4e7fad114e8dee44b84863de878d17f808275ae4b45e0620d128; // keccak256('openflow.sdk.version')
 
     /// @notice Initialize proxy.
     constructor(
@@ -30,6 +32,13 @@ contract OpenflowSdkProxy is OpenflowProxy {
         }
     }
 
+    /// @notice Fetch current implementation version.
+    function implementationVersion() public view returns (address _version) {
+        assembly {
+            _version := sload(_VERSION_SLOT)
+        }
+    }
+
     /// @notice Update to the latest SDK version.
     /// @dev SDK version comes from factory.
     /// @dev Only proxy owner can update version.
@@ -44,6 +53,9 @@ contract OpenflowSdkProxy is OpenflowProxy {
     /// @param version Version to update to.
     function updateSdkVersion(uint256 version) public {
         require(msg.sender == owner(), "Only owner can update SDK version");
+        assembly {
+            sstore(_VERSION_SLOT, version)
+        }
         uint256 currentVersion = IOpenflowFactory(factory()).currentVersion();
         require(version <= currentVersion && version != 0, "Invalid version");
         address implementation = IOpenflowFactory(factory())
