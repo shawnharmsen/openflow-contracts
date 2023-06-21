@@ -10,12 +10,12 @@ contract OpenflowSdk is OrderDelegator {
     /// @dev Can only be initialized once.
     /// @dev SDK is automatically initialized during instance creation.
     function initialize(
-        address _settlement,
+        address settlement,
         address _manager,
         address _sender,
         address _recipient
     ) external {
-        _initialize(_settlement, _manager, _sender, _recipient);
+        _initialize(settlement, _manager, _sender, _recipient);
     }
 
     /*******************************************************
@@ -155,17 +155,17 @@ contract OpenflowSdk is OrderDelegator {
             payload.driver = options.driver;
         }
         payload.scheme = ISettlement.Scheme.PreSign;
-        orderUid = ISettlement(settlement).submitOrder(payload);
+        orderUid = ISettlement(_settlement).submitOrder(payload);
     }
 
     /*******************************************************
      * Order Invalidation
      *******************************************************/
     function invalidateOrder(bytes memory orderUid) external onlyManager {
-        ISettlement(settlement).invalidateOrder(orderUid);
+        ISettlement(_settlement).invalidateOrder(orderUid);
     }
 
     function invalidateAllOrders() external onlyManager {
-        ISettlement(settlement).invalidateAllOrders();
+        ISettlement(_settlement).invalidateAllOrders();
     }
 }

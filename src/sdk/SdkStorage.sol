@@ -5,20 +5,20 @@ import "../interfaces/IOpenflow.sol";
 
 contract SdkStorage {
     IOpenflowSdk.Options public options;
-    address public settlement;
+    address internal _settlement;
     address internal _executionProxy;
 
     function _initialize(
-        address _settlement,
+        address settlement,
         address _manager,
         address _sender,
         address _recipient
     ) internal {
-        require(settlement == address(0), "Already initialized");
-        settlement = _settlement;
-        _executionProxy = ISettlement(_settlement).executionProxy();
-        options.driver = ISettlement(_settlement).defaultDriver();
-        options.oracle = ISettlement(_settlement).defaultOracle();
+        require(_settlement == address(0), "Already initialized");
+        _settlement = settlement;
+        _executionProxy = ISettlement(settlement).executionProxy();
+        options.driver = ISettlement(settlement).defaultDriver();
+        options.oracle = ISettlement(settlement).defaultOracle();
         options.slippageBips = 150;
         options.manager = _manager;
         options.sender = _sender;

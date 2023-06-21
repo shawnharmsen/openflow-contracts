@@ -23,7 +23,7 @@ contract OrderDelegator is SdkStorage {
             signatory == address(this),
             "Transfer must be initiated from SDK"
         );
-        IERC20(fromToken).transferFrom(sender, settlement, fromAmount);
+        IERC20(fromToken).transferFrom(sender, _settlement, fromAmount);
     }
 
     function _appendTransferToPreswapHooks(
