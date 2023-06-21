@@ -13,6 +13,8 @@ interface IOpenflowSdk {
         /// @dev Oracle is responsible for determining minimum amount out for an order.
         /// If no oracle is provided the default Openflow oracle will be used.
         address oracle;
+        /// @dev If true calls will revert if oracle is not able to find an appropriate price.
+        bool requireOracle;
         /// @dev Acceptable slippage threshold denoted in BIPs.
         uint256 slippageBips;
         /// @dev Maximum duration for auction. The order is invalid after the auction ends.

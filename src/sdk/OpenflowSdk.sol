@@ -129,14 +129,21 @@ contract OpenflowSdk is OrderDelegator {
             payload.fromAmount
         );
         payload.sender = address(this);
-        if (payload.toAmount == 0 && options.oracle != address(0)) {
-            payload.toAmount = IOracle(options.oracle)
-                .calculateEquivalentAmountAfterSlippage(
+        if (payload.toAmount == 0) {
+            try
+                IOracle(options.oracle).calculateEquivalentAmountAfterSlippage(
                     payload.fromToken,
                     payload.toToken,
                     payload.fromAmount,
                     options.slippageBips
-                );
+                )
+            returns (uint256 toAmount) {
+                payload.toAmount = toAmount;
+            } catch {
+                if (options.requireOracle) {
+                    revert("Oracle is not able to find an appropriate price");
+                }
+            }
         }
         if (payload.validFrom == 0) {
             payload.validFrom = uint32(block.timestamp);
