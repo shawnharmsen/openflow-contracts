@@ -20,8 +20,10 @@ contract OpenflowSdkProxy is OpenflowProxy {
         address _implementationAddress,
         address _ownerAddress
     ) OpenflowProxy(_implementationAddress, _ownerAddress) {
+        uint256 currentVersion = IOpenflowFactory(msg.sender).currentVersion();
         assembly {
             sstore(_FACTORY_SLOT, caller())
+            sstore(_VERSION_SLOT, currentVersion)
         }
     }
 

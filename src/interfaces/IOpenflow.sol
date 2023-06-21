@@ -44,8 +44,7 @@ interface IOpenflowSdk {
         address settlement,
         address manager,
         address sender,
-        address recipient,
-        uint256 version
+        address recipient
     ) external;
 
     function updateSdkVersion() external;

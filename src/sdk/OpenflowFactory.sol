@@ -52,13 +52,7 @@ contract OpenflowFactory {
             new OpenflowSdkProxy(currentImplementation(), _manager)
         );
         sdk = IOpenflowSdk(sdkProxy);
-        sdk.initialize(
-            settlement,
-            _manager,
-            _sender,
-            _recipient,
-            currentVersion
-        );
+        sdk.initialize(settlement, _manager, _sender, _recipient);
     }
 
     /// @notice Publish a new official SDK version.
