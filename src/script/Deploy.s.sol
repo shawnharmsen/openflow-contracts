@@ -40,7 +40,7 @@ contract Deploy is Script {
         openflowSdk = new OpenflowSdk();
         vaultInteractions = new YearnVaultInteractions(address(settlement));
         orderExecutor = new OrderExecutor(address(settlement));
-        integrationExample = new SdkIntegrationExample();
+        sdkIntegrationExample = new SdkIntegrationExample();
 
         // Initialize
         openflowFactory.newSdkVersion(address(openflowSdk));
