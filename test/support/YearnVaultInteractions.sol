@@ -16,14 +16,20 @@ import {IVaultRegistry} from "../../test/interfaces/IVaultRegistry.sol";
 /// the actual underlying token swap to the complete pool of solvers vs a small subset of solvers.
 /// This will result in the user getting access to a much larger pool of competitive swap rate quotes.
 contract YearnVaultInteractions {
-    IVaultRegistry registry =
-        IVaultRegistry(0x50c1a2eA0a861A967D9d0FFE2AE4012c2E053804);
+    IVaultRegistry public registry;
     address public settlement;
     address public executionProxy;
 
     constructor(address _settlement) {
         settlement = _settlement;
         executionProxy = ISettlement(settlement).executionProxy();
+    }
+
+    /// @notice Allow ont time initialization
+    /// @param _registry Yearn vault registry address
+    function initialize(address _registry) external {
+        require(address(registry) == address(0), "Already initialized.");
+        registry = IVaultRegistry(_registry);
     }
 
     /// @notice Deposit swapped tokens on behalf of a user (zap in)

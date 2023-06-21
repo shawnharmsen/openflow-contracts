@@ -3,8 +3,20 @@ src = "src"
 out = "out"
 libs = ["lib"]
 
-# See more config options https://github.com/foundry-rs/foundry/tree/master/config
+fs_permissions = [{ access = "read-write", path = "./"}]
 
 [rpc_endpoints]
 mainnet = "https://eth.llamarpc.com"
 fantom = "https://rpc.ankr.com/fantom"
+avalanche = "https://avalanche.blockpi.network/v1/rpc/public"
+
+[etherscan]
+mainnet = { key = "${ETHERSCAN_MAINNET_KEY}", url = "https://api.etherscan.io/api" }
+fantom = { key = "${ETHERSCAN_FANTOM_KEY}", url = "https://api.ftmscan.com/api" }
+cronos = { key = "${ETHERSCAN_CRONOS_KEY}", url = "https://api.cronoscan.com/api" }
+arbitrum = { key = "${ETHERSCAN_ARBITRUM_KEY}", url = "https://api.arbiscan.io/api" }
+avalanche = { key = "${ETHERSCAN_AVALANCHE_KEY}", url = "https://api.snowtrace.io/api" }
+optimism = { key = "${ETHERSCAN_OPTIMISM_KEY}", url = "https://api-optimistic.etherscan.io/api" }
+bsc = { key = "${ETHERSCAN_BSC_KEY}", url = "https://api.bscscan.com/api" }
+polygon = { key = "${ETHERSCAN_POLYGON_KEY}", url = "https://api.polygonscan.com/api" }
+celo = { key = "${ETHERSCAN_CELO_KEY}", url = "https://api.celoscan.io/api" }

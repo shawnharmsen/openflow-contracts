@@ -14,7 +14,9 @@ import {UniswapV2Aggregator} from "../../src/solvers/UniswapV2Aggregator.sol";
 import {YearnVaultInteractions, IVaultRegistry, IVault} from "../support/YearnVaultInteractions.sol";
 import {OpenflowFactory} from "../../src/sdk/OpenflowFactory.sol";
 
-contract Storage is Test {
+contract Deployment {}
+
+contract Storage is Deployment, Test {
     Strategy public strategy;
     Oracle public oracle;
     IERC20 public rewardToken;
@@ -30,7 +32,7 @@ contract Storage is Test {
     UniswapV2Aggregator public uniswapAggregator;
     Driver public driver;
     OpenflowFactory public openflowFactory;
-    address public vaultInteractions;
+    YearnVaultInteractions public vaultInteractions;
     uint256 internal constant _USER_A_PRIVATE_KEY = 0xB0B;
     uint256 internal constant _USER_B_PRIVATE_KEY = 0xA11CE;
     address public immutable userA = vm.addr(_USER_A_PRIVATE_KEY);
@@ -48,9 +50,9 @@ contract Storage is Test {
         signers[1] = userB;
         driver.setSigners(signers, true);
         driver.setSignatureThreshold(2);
-        vaultInteractions = address(
-            new YearnVaultInteractions(address(settlement))
-        );
+        vaultInteractions = new YearnVaultInteractions(address(settlement));
+        address registry = 0x50c1a2eA0a861A967D9d0FFE2AE4012c2E053804;
+        vaultInteractions.initialize(registry);
         openflowFactory = new OpenflowFactory(address(settlement));
         address sdkTemplate = address(new OpenflowSdk());
         openflowFactory.newSdkVersion(sdkTemplate);

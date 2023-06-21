@@ -37,7 +37,7 @@ contract HooksTest is Storage {
         ISettlement.Hooks memory hooks;
         hooks.postHooks = new ISettlement.Interaction[](1);
         hooks.postHooks[0] = ISettlement.Interaction({
-            target: vaultInteractions,
+            target: address(vaultInteractions),
             value: 0,
             data: abi.encodeWithSignature(
                 "deposit(address,address)",
@@ -54,7 +54,7 @@ contract HooksTest is Storage {
             fromAmount: fromAmount,
             toAmount: toAmount,
             sender: userA,
-            recipient: vaultInteractions,
+            recipient: address(vaultInteractions),
             validFrom: uint32(block.timestamp),
             validTo: uint32(block.timestamp),
             scheme: ISettlement.Scheme.Eip712,
@@ -127,7 +127,7 @@ contract HooksTest is Storage {
         ISettlement.Interaction[]
             memory preHooks = new ISettlement.Interaction[](1);
         preHooks[0] = ISettlement.Interaction({
-            target: vaultInteractions,
+            target: address(vaultInteractions),
             value: 0,
             data: abi.encodeWithSignature("withdraw(address)", address(vault))
         });
@@ -223,7 +223,7 @@ contract HooksTest is Storage {
         ISettlement.Interaction[]
             memory postHooks = new ISettlement.Interaction[](1);
         postHooks[0] = ISettlement.Interaction({
-            target: vaultInteractions,
+            target: address(vaultInteractions),
             value: 0,
             data: "deadbeef"
         });
@@ -240,7 +240,7 @@ contract HooksTest is Storage {
             fromAmount: fromAmount,
             toAmount: toAmount,
             sender: userA,
-            recipient: vaultInteractions,
+            recipient: address(vaultInteractions),
             validFrom: uint32(block.timestamp),
             validTo: uint32(block.timestamp),
             condition: condition,
