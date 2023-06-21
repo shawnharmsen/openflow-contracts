@@ -13,6 +13,7 @@ import {OrderExecutor} from "../../src/executors/OrderExecutor.sol";
 import {UniswapV2Aggregator} from "../../src/solvers/UniswapV2Aggregator.sol";
 import {YearnVaultInteractions, IVaultRegistry, IVault} from "../support/YearnVaultInteractions.sol";
 import {OpenflowFactory} from "../../src/sdk/OpenflowFactory.sol";
+import {OpenflowProxy} from "../../src/sdk/OpenflowProxy.sol";
 
 contract Deployment {}
 
@@ -42,7 +43,8 @@ contract Storage is Deployment, Test {
         masterChef = new MasterChef();
         oracle = new Oracle();
         driver = new Driver();
-        settlement = new Settlement(address(driver), address(oracle));
+        OpenflowProxy blankProxy = new OpenflowProxy(address(this), msg.sender);
+        settlement = new Settlement(address(driver), address(blankProxy));
         executionProxy = ExecutionProxy(settlement.executionProxy());
         driver.initialize(address(settlement));
         address[] memory signers = new address[](2);
