@@ -6,6 +6,7 @@ import "../../src/interfaces/IOpenflow.sol";
 contract SdkIntegrationExample {
     /// @notice Initialize SDK instance variable.
     IOpenflowSdk public sdk;
+    address owner;
 
     /// @notice Create a new SDK instance.
     constructor(address _openflowFactory) {
@@ -13,19 +14,21 @@ contract SdkIntegrationExample {
         sdk = IOpenflowFactory(_openflowFactory).newSdkInstance(
             sdkInstanceManager
         );
+        owner = msg.sender;
     }
 
     /// @notice Execute a basic swap.
     /// @dev Note: This method has no auth. If your app needs auth make sure to add it.
     function swap(address fromToken, address toToken) external {
+        require(msg.sender == owner, "Only owner");
         IERC20(fromToken).approve(address(sdk), type(uint256).max);
         sdk.swap(fromToken, toToken);
     }
 
     /// @notice Update SDK options.
-    /// @dev Note: This method has no auth. If your app needs auth make sure to add it.
     /// @dev For a full list of options see: https://github.com/openflow-fi/openflow-contracts/blob/main/src/interfaces/IOpenflow.sol#L5
     function updateOptions() external {
+        require(msg.sender == owner, "Only owner");
         IOpenflowSdk.Options memory options = sdk.options(); // Load existing options
         options.auctionDuration = 60 * 5; // Set auction duration to 5 Minutes.
         options.slippageBips = 60; // Update slippage bips to 60.

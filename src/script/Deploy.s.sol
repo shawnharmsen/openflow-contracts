@@ -18,23 +18,42 @@ contract Deploy is Script {
     ExecutionProxy public executionProxy;
     UniswapV2Aggregator public uniswapAggregator;
     OpenflowFactory public openflowFactory;
-    OpenflowSdk public sdkTemplate;
+    OpenflowSdk public openflowSdk;
     YearnVaultInteractions public vaultInteractions;
     OrderExecutor public orderExecutor;
     OpenflowProxy public oracle;
+    SdkIntegrationExample public sdkIntegrationExample;
 
     function run() public {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployer = vm.addr(deployerPrivateKey);
         vm.startBroadcast(deployerPrivateKey);
+
+        // Deploy
         driver = new Driver();
         oracle = new OpenflowProxy(address(0), deployer);
         settlement = new Settlement(address(driver), address(oracle));
         executionProxy = ExecutionProxy(settlement.executionProxy());
         uniswapAggregator = new UniswapV2Aggregator();
         openflowFactory = new OpenflowFactory(address(settlement));
-        sdkTemplate = new OpenflowSdk();
+        openflowSdk = new OpenflowSdk();
         vaultInteractions = new YearnVaultInteractions(address(settlement));
         orderExecutor = new OrderExecutor(address(settlement));
+        integrationExample = new SdkIntegrationExample();
+
+        // Initialize
+        openflowFactory.newSdkVersion(address(openflowSdk));
+
+        // Print
+        console.log("oracle", address(oracle));
+        console.log("settlement", address(settlement));
+        console.log("executionProxy", address(executionProxy));
+        console.log("uniswapAggregator", address(uniswapAggregator));
+        console.log("openflowFactory", address(openflowFactory));
+        console.log("openflowSdk", address(openflowSdk));
+        console.log("vaultInteractions", address(vaultInteractions));
+        console.log("orderExecutor", address(orderExecutor));
+        console.log("driver", address(driver));
+        console.log("sdkIntegrationExample", address(sdkIntegrationExample));
     }
 }
