@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
 import "forge-std/Test.sol";
@@ -27,7 +27,6 @@ contract DexAggregatorTest is Test {
         });
 
         uniswapAggregator.addDex(dex);
-
         vm.expectRevert("Dex exists");
         uniswapAggregator.addDex(dex);
 

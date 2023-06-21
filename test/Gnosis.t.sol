@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 import {ISafe} from "../test/interfaces/IGnosisSafe.sol";
 import {GnosisHelper} from "../test/support/GnosisHelper.sol";

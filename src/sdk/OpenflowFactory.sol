@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.19;
 import {IOpenflowSdk} from "../interfaces/IOpenflow.sol";
 import {OpenflowSdkProxy} from "./OpenflowSdkProxy.sol";
@@ -48,9 +48,8 @@ contract OpenflowFactory {
         address _sender,
         address _recipient
     ) public returns (IOpenflowSdk sdk) {
-        address currentImplementation = implementationByVersion[currentVersion];
         address sdkProxy = address(
-            new OpenflowSdkProxy(currentImplementation, _manager)
+            new OpenflowSdkProxy(currentImplementation(), _manager)
         );
         sdk = IOpenflowSdk(sdkProxy);
         sdk.initialize(
@@ -71,5 +70,15 @@ contract OpenflowFactory {
         );
         currentVersion++;
         implementationByVersion[currentVersion] = implementation;
+    }
+
+    /// @notice Fetch current implementation
+    /// @return implementation Current implementation
+    function currentImplementation()
+        public
+        view
+        returns (address implementation)
+    {
+        implementation = implementationByVersion[currentVersion];
     }
 }

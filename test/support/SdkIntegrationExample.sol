@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 import {IERC20} from "../../src/interfaces/IERC20.sol";
 import "../../src/interfaces/IOpenflow.sol";

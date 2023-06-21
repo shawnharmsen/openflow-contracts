@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 import {ISettlement} from "../interfaces/ISettlement.sol";
 import "../interfaces/IOpenflow.sol";
