@@ -14,7 +14,7 @@ contract OrderDelegator is SdkStorage {
         address fromToken,
         uint256 fromAmount
     ) external {
-        require(msg.sender == executionProxy, "Only execution proxy");
+        require(msg.sender == _executionProxy, "Only execution proxy");
         address signatory;
         assembly {
             signatory := shr(96, calldataload(sub(calldatasize(), 20)))

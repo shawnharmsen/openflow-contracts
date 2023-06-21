@@ -6,7 +6,7 @@ import "../interfaces/IOpenflow.sol";
 contract SdkStorage {
     IOpenflowSdk.Options public options;
     address public settlement;
-    address public executionProxy;
+    address internal _executionProxy;
 
     function _initialize(
         address _settlement,
@@ -16,7 +16,7 @@ contract SdkStorage {
     ) internal {
         require(settlement == address(0), "Already initialized");
         settlement = _settlement;
-        executionProxy = ISettlement(_settlement).executionProxy();
+        _executionProxy = ISettlement(_settlement).executionProxy();
         options.driver = ISettlement(_settlement).defaultDriver();
         options.oracle = ISettlement(_settlement).defaultOracle();
         options.slippageBips = 150;
