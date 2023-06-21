@@ -11,9 +11,9 @@ import {OpenflowProxy} from "../sdk/OpenflowProxy.sol";
 /// or alternatively user can provide their own SDK implementation
 contract OpenflowSdkProxy is OpenflowProxy {
     bytes32 constant _FACTORY_SLOT =
-        bc0b033692987f57b00e59fb320fa52dee8008f8dd89a9404b16c6c70befc06d; // keccak256('openflow.sdk.factory')
+        0xbc0b033692987f57b00e59fb320fa52dee8008f8dd89a9404b16c6c70befc06d; // keccak256('openflow.sdk.factory')
     bytes32 constant _VERSION_SLOT =
-        d9b5749cb01e4e7fad114e8dee44b84863de878d17f808275ae4b45e0620d128; // keccak256('openflow.sdk.version')
+        0xd9b5749cb01e4e7fad114e8dee44b84863de878d17f808275ae4b45e0620d128; // keccak256('openflow.sdk.version')
 
     /// @notice Initialize proxy.
     constructor(
