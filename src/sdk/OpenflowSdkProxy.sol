@@ -35,7 +35,7 @@ contract OpenflowSdkProxy is OpenflowProxy {
     }
 
     /// @notice Fetch current implementation version.
-    function implementationVersion() public view returns (address _version) {
+    function implementationVersion() public view returns (uint256 _version) {
         assembly {
             _version := sload(_VERSION_SLOT)
         }
