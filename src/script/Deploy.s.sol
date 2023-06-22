@@ -46,15 +46,15 @@ contract Deploy is Script {
         );
 
         // Print
-        console.log("oracle", address(oracle));
         console.log("settlement", address(settlement));
-        console.log("executionProxy", address(executionProxy));
-        console.log("uniswapAggregator", address(uniswapAggregator));
+        console.log("sdkIntegrationExample", address(sdkIntegrationExample));
         console.log("openflowFactory", address(openflowFactory));
         console.log("openflowSdk", address(openflowSdk));
-        console.log("vaultInteractions", address(vaultInteractions));
         console.log("orderExecutor", address(orderExecutor));
         console.log("driver", address(driver));
-        console.log("sdkIntegrationExample", address(sdkIntegrationExample));
+        console.log("executionProxy", address(executionProxy));
+        console.log("oracle", address(oracle));
+        console.log("vaultInteractions", address(vaultInteractions));
+        console.log("uniswapAggregator", address(uniswapAggregator));
     }
 }
